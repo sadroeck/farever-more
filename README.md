@@ -72,6 +72,7 @@ add-on notes.
 ## Roadmap
 
 [The roadmap](ROADMAP.md) lists current priorities and known limitations.
+See [CHANGELOG.md](CHANGELOG.md) for release history.
 
 ## Credits
 
