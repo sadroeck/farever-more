@@ -1,0 +1,28 @@
+/// Windows currently open in the game UI.
+interface windows {
+    use common.{event-header, state-status};
+
+    record windows-state {
+        /// Unique game window class IDs. List order has no meaning.
+        open-windows: list<string>,
+        /// Frontmost game window ID from BaseUI ordering, not control focus.
+        focused-window: option<string>,
+    }
+
+    record windows-snapshot {
+        /// Capture time, revision, or the reason no window state is available.
+        status: state-status,
+        /// Window state for this callback. None when status.reason is set.
+        value: option<windows-state>,
+    }
+
+    record window-event {
+        /// Sequence and host normalization time for this window change.
+        header: event-header,
+        /// Game window class ID that opened or closed.
+        window-id: string,
+    }
+
+    /// Returns game-window state for this callback.
+    current: func() -> windows-snapshot;
+}

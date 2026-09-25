@@ -1,0 +1,19 @@
+{
+  "manifest-version": 1,
+  "id": "minimap",
+  "version": "0.1.0",
+  "name": "Minimap",
+  "description": "World minimap with POI markers.",
+  "tags": ["map", "overlay", "poi"],
+  "dependencies": [
+    {
+      "addon": "poi-database",
+      "services": [
+        {
+          "id": "poi",
+          "version": "^1"
+        }
+      ]
+    }
+  ]
+}

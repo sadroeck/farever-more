@@ -1,0 +1,41 @@
+/// Synchronous access to services exported by declared add-on dependencies.
+interface dependencies {
+    record service-handle {
+        /// Host-owned handle scoped to the calling add-on instance.
+        id: u32,
+        /// Version of the providing add-on, which is also the version of the
+        /// service: services carry no version of their own.
+        version: string,
+    }
+
+    variant open-error {
+        undeclared-dependency,
+        unavailable,
+        unavailable-service,
+        incompatible-version,
+        quota-exceeded,
+    }
+
+    variant call-error {
+        invalid-handle,
+        unavailable,
+        request-too-large,
+        response-too-large,
+        quota-exceeded,
+        provider-failed(string),
+        provider-error(string),
+    }
+
+    /// Opens one service provided by an add-on the caller declares as a
+    /// dependency. `dependency` is that provider's add-on id, spelled exactly
+    /// as the caller's manifest declares it.
+    open: func(dependency: string, service: string) -> result<service-handle, open-error>;
+
+    /// Calls the provider synchronously. Operation numbers and payload encoding are
+    /// owned by the provider-specific protocol, not by the Farever host.
+    call: func(
+        service: service-handle,
+        operation: u32,
+        request: list<u8>,
+    ) -> result<list<u8>, call-error>;
+}

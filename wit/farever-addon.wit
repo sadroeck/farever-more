@@ -1,0 +1,22 @@
+package farever:addon@1.0.0;
+
+/// The imports and callbacks available to a Farever add-on.
+world farever-addon {
+    import runtime;
+    import assets;
+
+    import game;
+    import player;
+    import party;
+    import camera;
+    import combat;
+    import instance-session;
+    import zone;
+    import windows;
+
+    import bus;
+    import dependencies;
+    import config;
+    import chat;
+    export plugin;
+}

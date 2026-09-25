@@ -1,0 +1,12 @@
+/// Local chat-window output owned by the add-on host.
+interface chat {
+    /// Stages a normal line for the local player's chat window. The host emits
+    /// it only if the current event, message, tick, or UI callback succeeds.
+    /// The text is never sent to the game server or another player.
+    print: func(text: string);
+
+    /// Stages a line using Farever's built-in chat-error style. The host emits
+    /// it only if the current event, message, tick, or UI callback succeeds.
+    /// The text is never sent to the game server or another player.
+    print-error: func(text: string);
+}

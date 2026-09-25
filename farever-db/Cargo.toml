@@ -1,0 +1,28 @@
+[package]
+name = "farever-db"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+# Bundled assets have separate notices; review package licensing before publishing.
+publish = false
+
+[features]
+default = ["embedded"]
+# Compiles the generated tables in. Turned off for `extract-db`, which must
+# build even when a table is stale or missing: rewriting them is its whole job,
+# and it cannot do that from a package they prevent from compiling.
+embedded = []
+
+[[bin]]
+name = "placements"
+path = "src/bin/placements.rs"
+# The projection reads the tables, so this binary is only meaningful - and only
+# buildable - when they are compiled in.
+required-features = ["embedded"]
+
+[dependencies]
+hex.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+sha2.workspace = true
+thiserror.workspace = true

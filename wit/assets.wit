@@ -1,0 +1,29 @@
+/// Fonts and image IDs available to add-ons.
+interface assets {
+    /// An image ID understood by the host renderer.
+    record image-ref {
+        /// Identifier supplied by the host. An unknown ID renders as blank space.
+        id: string,
+    }
+
+    enum text-style {
+        /// Normal interface text.
+        body,
+        /// Smaller supporting text.
+        small,
+        /// Emphasized body text.
+        strong,
+        /// Section heading text.
+        heading,
+        /// Fixed-width text.
+        monospace,
+    }
+
+    /// Registers an add-on-local font ID for the selected styles. bytes must
+    /// contain one OpenType face. This function is available only during activate.
+    register-font: func(id: string, styles: list<text-style>, bytes: list<u8>) -> result<_, string>;
+
+    /// Registers an immutable add-on-local image and returns its opaque host ID.
+    /// png must contain one PNG image. This function is available only during activate.
+    register-image: func(id: string, png: list<u8>) -> result<image-ref, string>;
+}

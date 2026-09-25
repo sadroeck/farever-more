@@ -1,0 +1,48 @@
+/// Current party membership and player identity metadata.
+interface party {
+    use assets.{image-ref};
+    use common.{event-header, state-status};
+
+    record party-member {
+        /// Opaque host actor ID, stable only within the attached game process.
+        /// The local member uses the same value as player.runtime-id when both
+        /// providers expose one.
+        actor-id: string,
+        /// True only for the local player.
+        is-local: bool,
+        /// Player name shown by the game, when available.
+        name: option<string>,
+        /// Stable game class ID, not a localized class name.
+        class-id: option<string>,
+        /// Host-owned current-build class icon, when available.
+        class-icon: option<image-ref>,
+        /// Member combat state, when the party provider can observe it.
+        in-combat: option<bool>,
+    }
+
+    record party-state {
+        /// Opaque game party ID, when supplied by the provider. It is scoped to
+        /// the attached game process and is not an account or network identity.
+        party-id: option<string>,
+        /// Current members in stable host order. Every actor-id is unique.
+        members: list<party-member>,
+    }
+
+    record party-snapshot {
+        /// Capture time, revision, or the reason no party state is available.
+        status: state-status,
+        /// Current party state. A solo player may be represented as a one-member
+        /// party; none means the provider is unavailable, not that the party is empty.
+        value: option<party-state>,
+    }
+
+    record party-event {
+        /// Sequence and host normalization time for this roster change.
+        header: event-header,
+        /// Party snapshot revision containing the roster change.
+        revision: u64,
+    }
+
+    /// Returns party membership for this callback.
+    current: func() -> party-snapshot;
+}

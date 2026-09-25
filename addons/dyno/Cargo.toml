@@ -1,0 +1,13 @@
+[package]
+name = "dyno"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+# Bundled assets have separate notices; review package licensing before publishing.
+publish = false
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+farever-more-sdk.workspace = true

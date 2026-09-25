@@ -1,0 +1,47 @@
+/// Types shared by game state and events.
+interface common {
+    /// Why a state query has no value.
+    enum unavailable-reason {
+        /// The player is not in a loaded world.
+        not-in-world,
+        /// The game is changing or loading world state.
+        loading,
+        /// The provider has no current value. The host does not retain stale values.
+        not-yet-observed,
+        /// The active game build or host does not implement this provider.
+        unsupported,
+        /// Host policy denied access to this provider.
+        permission-denied,
+        /// The provider encountered an error while reading the state.
+        provider-failed,
+    }
+
+    record state-status {
+        /// Milliseconds since this host process session began when the value was read.
+        /// None when the query returned no value.
+        observed-at-ms: option<u64>,
+        /// Changes when the captured domain value changes. Provider availability
+        /// may change without advancing it. Scoped to the host process session.
+        revision: u64,
+        /// Why the query returned no value. None when a value is present.
+        reason: option<unavailable-reason>,
+    }
+
+    /// Raw position read from the game. Axis directions and units are not yet calibrated.
+    record vec3 {
+        /// Raw X component.
+        x: f32,
+        /// Raw Y component.
+        y: f32,
+        /// Raw Z component.
+        z: f32,
+    }
+
+    record event-header {
+        /// Order assigned when the host normalizes the event.
+        sequence: u64,
+        /// Host-process milliseconds when the event was normalized. This can be
+        /// later than the game occurrence.
+        monotonic-ms: u64,
+    }
+}

@@ -1,0 +1,24 @@
+/// The current game session and snapshot identity.
+interface game {
+    /// Identifies the snapshot used by every state query in this callback.
+    record observation-metadata {
+        /// Snapshot number within the host process session.
+        sequence: u64,
+        /// Milliseconds since the host process session began when it was captured.
+        captured-at-ms: u64,
+        /// Opaque ID for the current host process session.
+        process-session: u64,
+    }
+
+    record session-state {
+        /// The same host process session ID returned by observation().
+        process-session: u64,
+        /// Whether the player is currently in a loaded game world.
+        in-world: bool,
+    }
+
+    /// Returns the identity and time of the snapshot used by this callback.
+    observation: func() -> observation-metadata;
+    /// Returns session state from that same snapshot.
+    session: func() -> session-state;
+}

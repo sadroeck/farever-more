@@ -1,0 +1,94 @@
+/// Combat state, targets, damage, and combat start/end events.
+interface combat {
+    use assets.{image-ref};
+    use common.{event-header, state-status, vec3};
+
+    /// The game field that holds this target.
+    enum combat-reference-slot {
+        /// Hero.target.
+        target,
+        /// Hero.lockedTarget.
+        locked-target,
+        /// Hero.autoTarget.
+        auto-target,
+    }
+
+    record combat-reference {
+        /// The Hero field in which this target was found.
+        slot: combat-reference-slot,
+        /// None when the target exists but its position could not be read.
+        position: option<vec3>,
+    }
+
+    record combat-state {
+        /// The local Hero's combat flag. None when that field could not be read.
+        in-combat: option<bool>,
+        /// Occupied Hero target slots. Empty means all slots were read and were empty.
+        references: list<combat-reference>,
+    }
+
+    record combat-snapshot {
+        /// Capture time, revision, or the reason no combat state is available.
+        status: state-status,
+        /// Combat state for this callback. None when status.reason is set.
+        value: option<combat-state>,
+    }
+
+    enum actor-relation {
+        /// The local player.
+        local-player,
+        /// A player in the local player's current validated party.
+        group-member,
+        /// An actor known not to be the local player or a group member.
+        other,
+        /// The host could not safely determine the actor's relation.
+        unknown,
+    }
+
+    record combat-actor-ref {
+        /// Opaque host actor ID, stable only within the attached game process.
+        /// Group-member IDs correspond to party-member.actor-id.
+        actor-id: option<string>,
+        /// Relationship to the local player at the event boundary.
+        relation: actor-relation,
+        /// Runtime actor kind or class name, when available. This is descriptive
+        /// metadata and does not identify one actor instance.
+        kind: option<string>,
+    }
+
+    record damage-event {
+        /// Sequence and host normalization time for this hit.
+        header: event-header,
+        /// Actor that dealt the damage.
+        source: combat-actor-ref,
+        /// Actor that received the damage.
+        target: combat-actor-ref,
+        /// Stable game skill ID used for aggregation.
+        skill-id: string,
+        /// The game's display name, when known.
+        skill-display-name: option<string>,
+        /// The game's skill icon, when known.
+        skill-icon: option<image-ref>,
+        /// Damage reported for this hit. The blocked amount is not added to it.
+        amount: f64,
+        /// Number of hits represented by this event. Direct capture currently reports one.
+        hit-count: u32,
+        /// Whether the game marked this hit as critical.
+        critical: bool,
+        /// Whether the game marked this hit as killing the target.
+        killed: bool,
+        /// The blocked amount. None means it was not reported.
+        blocked: option<f64>,
+    }
+
+    /// A host-defined fight. IDs increase within the host process session.
+    record combat-event {
+        /// Sequence and host normalization time for this boundary.
+        header: event-header,
+        /// Host-assigned fight ID, unique within the host process session.
+        fight-id: u64,
+    }
+
+    /// Returns combat state for this callback.
+    current: func() -> combat-snapshot;
+}

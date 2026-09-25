@@ -1,0 +1,13 @@
+/// Logging and recurring tick scheduling.
+interface runtime {
+    enum log-level { trace, info, warning, error }
+
+    /// Writes one bounded add-on diagnostic message to the host log.
+    log: func(level: log-level, message: string);
+
+    /// Starts or replaces this add-on's single recurring timer. The interval is
+    /// clamped to 16 through 60,000 milliseconds and the accepted value is returned.
+    /// The last call in a callback wins, and takes effect only if that callback succeeds.
+    /// A call from on-tick replaces the old timer regardless of continue-ticking.
+    schedule-tick: func(interval-ms: u32) -> u32;
+}

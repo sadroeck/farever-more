@@ -1,0 +1,91 @@
+/// Callbacks implemented by every add-on.
+interface plugin {
+    use bus.{addon-message};
+    use events.{event-batch};
+    use overlay.{ui-event, ui-update};
+
+    /// Values supplied when an add-on starts.
+    record activation-context {
+        /// ID used for configuration, messages, and host ownership. The current
+        /// host derives it from the component filename.
+        addon-id: string,
+        /// Version read from the WebAssembly component, when present.
+        addon-version: option<string>,
+        /// ID unique among instances loaded by this host. It changes on reload.
+        instance-id: u64,
+        /// Milliseconds since the host process started when activation began.
+        monotonic-ms: u64,
+    }
+
+    /// One tick from the add-on's recurring timer.
+    record tick {
+        /// Latest interval boundary represented by this callback, in host milliseconds.
+        scheduled-at-ms: u64,
+        /// Host monotonic time sampled immediately before invoking on-tick.
+        delivered-at-ms: u64,
+        /// Time since the previous delivered tick. Equals interval-ms on the first tick.
+        elapsed-ms: u64,
+        /// Interval accepted by schedule-tick, in milliseconds.
+        interval-ms: u32,
+        /// Earlier interval boundaries coalesced into this callback.
+        missed: u32,
+    }
+
+    record activation-output {
+        /// Initial UI action applied after activation succeeds.
+        ui: ui-update,
+    }
+
+    /// Changes to the add-on's UI.
+    record callback-output {
+        /// UI action applied after the callback succeeds.
+        ui: ui-update,
+    }
+
+    /// Tick output. False stops the current timer.
+    record tick-output {
+        /// Whether the timer that caused this tick remains active.
+        continue-ticking: bool,
+        /// UI action applied after the tick succeeds.
+        ui: ui-update,
+    }
+
+    enum deactivation-reason {
+        /// The host is stopping normally.
+        host-shutdown,
+        /// A newly compiled generation is replacing this instance.
+        reloaded,
+        /// The user or host disabled this add-on.
+        disabled,
+        /// The installed component was removed.
+        removed,
+        /// The add-on reached the host's consecutive-failure limit.
+        repeated-failure,
+    }
+
+    /// Starts one add-on instance. Host calls made during activation take effect
+    /// only when this callback succeeds.
+    activate: func(context: activation-context) -> result<activation-output, string>;
+    /// Handles one synchronous, read-only call to a service declared by this add-on.
+    /// Service names, operation numbers, and payloads belong to its typed protocol.
+    call-service: func(
+        service: string,
+        operation: u32,
+        request: list<u8>,
+    ) -> result<list<u8>, string>;
+    /// Handles one UI action. Delivery is at most once. A failed callback is not
+    /// retried. Changes already made to add-on memory are not rolled back.
+    on-ui-event: func(event: ui-event) -> result<callback-output, string>;
+    /// Handles one event batch. Delivery is at most once. A failed callback is
+    /// not retried. Changes already made to add-on memory are not rolled back.
+    on-event: func(batch: event-batch) -> result<callback-output, string>;
+    /// Handles messages in ascending message ID order. dropped-before counts
+    /// messages omitted since the previous delivery. Delivery is at most once.
+    /// A failed callback is not retried, and add-on memory is not rolled back.
+    on-message: func(dropped-before: u64, messages: list<addon-message>) -> result<callback-output, string>;
+    /// Handles one due recurring tick. A failed callback is not retried, and
+    /// changes already made to add-on memory are not rolled back.
+    on-tick: func(tick: tick) -> result<tick-output, string>;
+    /// Performs best-effort cleanup. The host discards the instance afterwards.
+    deactivate: func(reason: deactivation-reason);
+}

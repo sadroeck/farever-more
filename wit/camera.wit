@@ -1,0 +1,20 @@
+/// The camera state available during the current callback.
+interface camera {
+    use common.{state-status};
+
+    record camera-state {
+        /// Raw camera heading in radians. Zero and positive rotation are not yet
+        /// calibrated against the position axes.
+        heading-radians: f32,
+    }
+
+    record camera-snapshot {
+        /// Capture time, revision, or the reason no camera state is available.
+        status: state-status,
+        /// Camera state for this callback. None when status.reason is set.
+        value: option<camera-state>,
+    }
+
+    /// Returns the camera state for this callback.
+    current: func() -> camera-snapshot;
+}

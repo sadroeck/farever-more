@@ -1,0 +1,31 @@
+/// The current zone and zone-change events.
+interface zone {
+    use common.{event-header, state-status};
+
+    record zone-state {
+        /// Raw game level ID, such as "World/W2_Dungeon". None when the world
+        /// has no readable level ID.
+        area-id: option<string>,
+        /// Host-formatted label derived from area-id. None when area-id is absent.
+        display-name: option<string>,
+    }
+
+    record zone-snapshot {
+        /// Capture time, revision, or the reason no zone state is available.
+        status: state-status,
+        /// Zone state for this callback. None when status.reason is set.
+        value: option<zone-state>,
+    }
+
+    record zone-event {
+        /// Sequence and host normalization time for this change.
+        header: event-header,
+        /// Area before the change. None when no area was loaded.
+        previous-area-id: option<string>,
+        /// Area after the change. None when the world was unloaded.
+        area-id: option<string>,
+    }
+
+    /// Returns the current zone for this callback.
+    current: func() -> zone-snapshot;
+}

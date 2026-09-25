@@ -1,0 +1,64 @@
+/// Ordered game events delivered to an add-on.
+interface events {
+    use combat.{combat-event, damage-event};
+    use common.{event-header};
+    use instance-session.{instance-event};
+    use party.{party-event};
+    use zone.{zone-event};
+    use windows.{window-event};
+
+    variant event {
+        /// One host-selected actor-attributed damage hit.
+        damage(damage-event),
+        /// The host opened a fight.
+        combat-started(combat-event),
+        /// The host closed a fight.
+        combat-ended(combat-event),
+        /// The validated party roster changed.
+        party-changed(party-event),
+        /// The logical world-instance session changed.
+        instance-changed(instance-event),
+        /// The current area ID changed.
+        zone-changed(zone-event),
+        /// A game UI window opened.
+        window-opened(window-event),
+        /// A game UI window closed.
+        window-closed(window-event),
+        /// The local player disconnected from the current server session.
+        player-disconnected(player-disconnected-event),
+    }
+
+    /// Normalized reason for a local-player disconnect. `unknown` is used when
+    /// an older game build exposes only an ambiguous boolean.
+    enum disconnect-reason {
+        manual-exit,
+        kick,
+        timeout,
+        switching-server,
+        unknown,
+    }
+
+    /// One local-player disconnect edge.
+    record player-disconnected-event {
+        header: event-header,
+        reason: disconnect-reason,
+    }
+
+    record event-batch {
+        /// Host process session to which every event in this batch belongs.
+        process-session: u64,
+        /// Sequence of the first included event. None when events is empty.
+        first-sequence: option<u64>,
+        /// Sequence the host will assign to the next event it creates.
+        next-sequence: u64,
+        /// Number of events omitted before next-sequence. Omissions may fall
+        /// before, between, or after the events retained in this batch.
+        dropped-before: u64,
+        /// True when the host cannot guarantee continuity and the add-on must
+        /// rebuild event-derived state from current queries.
+        snapshot-required: bool,
+        /// Events in ascending sequence order. When non-empty, first-sequence
+        /// equals the first event header's sequence.
+        events: list<event>,
+    }
+}

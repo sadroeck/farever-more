@@ -1,0 +1,35 @@
+/// The local player's state during the current callback.
+interface player {
+    use common.{state-status, vec3};
+
+    record player-state {
+        /// Opaque game object ID, when supplied by the provider. Valid only for
+        /// the attached game process.
+        runtime-id: option<string>,
+        /// Player name shown by the game. None when not supplied by the provider.
+        name: option<string>,
+        /// Game class ID, not a localized class name. None when not supplied.
+        class-id: option<string>,
+        /// Current character level. None when not supplied by the provider.
+        level: option<u32>,
+        /// Raw game position. None when it could not be read.
+        position: option<vec3>,
+        /// Raw character heading in radians. Zero and positive rotation are not
+        /// yet calibrated.
+        heading-radians: option<f32>,
+        /// Current health points. None when not supplied by the provider.
+        health: option<f64>,
+        /// Maximum health points. None when not supplied by the provider.
+        max-health: option<f64>,
+    }
+
+    record player-snapshot {
+        /// Capture time, revision, or the reason no player state is available.
+        status: state-status,
+        /// Player state for this callback. None when status.reason is set.
+        value: option<player-state>,
+    }
+
+    /// Returns the local player's state for this callback.
+    current: func() -> player-snapshot;
+}

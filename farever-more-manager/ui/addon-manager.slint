@@ -1,0 +1,1118 @@
+import { AboutSlint, LineEdit, ScrollView } from "std-widgets.slint";
+
+export enum AddonState { active, compiling, disabled, incompatible }
+enum NavigationIcon { addons, chat }
+
+export struct AddonItem {
+    id: string,
+    initials: string,
+    name: string,
+    short-name: string,
+    metadata: string,
+    state: AddonState,
+    enabled: bool,
+    locked: bool,
+    error-message: string,
+    expanded: bool,
+}
+
+global FareverPalette {
+    out property <color> titlebar: #3d2d27;
+    out property <color> sidebar: #49342c;
+    out property <color> chrome-raised: #594138;
+    out property <color> chrome-hover: #654a3f;
+    out property <color> chrome-text: #f9efe8;
+    out property <color> chrome-muted: #d4b8aa;
+    out property <color> content: #cfbcb3;
+    out property <color> pane: #ead6cc;
+    out property <color> pane-alt: #dfcbc1;
+    out property <color> pane-hover: #f1ded5;
+    out property <color> error-surface: #e5c2b9;
+    out property <color> code-surface: #3a2823;
+    out property <color> ink: #372922;
+    out property <color> muted: #70584d;
+    out property <color> border: #9c7968;
+    out property <color> border-soft: #b8998c;
+    out property <color> accent: #9b6f56;
+    out property <color> gold: #e2be48;
+    out property <color> gold-ink: #87620f;
+    out property <color> success: #3f825b;
+    out property <color> error: #a64739;
+    out property <color> control: #b89e94;
+    out property <color> control-hovered: #c6aba1;
+    out property <color> control-active: #9b6f56;
+    out property <color> control-disabled: #cab5ac;
+}
+
+component FareverButton inherits Rectangle {
+    in property <string> text;
+    in property <bool> enabled: true;
+    in property <bool> on-light-background: false;
+    in property <float> ui-scale: 1.0;
+    out property <bool> has-focus: focus-scope.has-focus;
+    callback clicked;
+
+    height: 30px * root.ui-scale;
+    min-width: 64px * root.ui-scale;
+    border-radius: 5px * root.ui-scale;
+    border-width: root.has-focus ? 2px : 1px;
+    border-color: root.has-focus ? FareverPalette.gold
+        : root.on-light-background ? FareverPalette.border
+        : FareverPalette.chrome-hover;
+    background: !root.enabled ? FareverPalette.control-disabled
+        : touch.pressed ? FareverPalette.control-active
+        : touch.has-hover ? (root.on-light-background ? FareverPalette.control-hovered : FareverPalette.chrome-hover)
+        : root.on-light-background ? FareverPalette.control
+        : FareverPalette.chrome-raised;
+    forward-focus: focus-scope;
+
+    accessible-role: button;
+    accessible-enabled: root.enabled;
+    accessible-label: root.text;
+    accessible-action-default => {
+        if (root.enabled) {
+            root.clicked();
+        }
+    }
+
+    animate background, border-color { duration: 120ms; }
+
+    Text {
+        text: root.text;
+        color: root.enabled ? FareverPalette.chrome-text : FareverPalette.muted;
+        horizontal-alignment: center;
+        vertical-alignment: center;
+        font-size: 11px * root.ui-scale;
+        font-weight: 500;
+    }
+
+    touch := TouchArea {
+        enabled: root.enabled;
+        mouse-cursor: pointer;
+        clicked => { root.clicked(); }
+    }
+
+    focus-scope := FocusScope {
+        x: 0;
+        width: 0px;
+        enabled: root.enabled;
+
+        key-pressed(event) => {
+            if (event.text == Key.Space || event.text == Key.Return) {
+                root.clicked();
+                return accept;
+            }
+            return reject;
+        }
+    }
+}
+
+component FareverSwitch inherits Rectangle {
+    in property <bool> checked;
+    in property <bool> enabled: true;
+    in property <string> accessible-name;
+    in property <float> ui-scale: 1.0;
+    out property <bool> has-focus: focus-scope.has-focus;
+    callback toggled;
+
+    function activate() {
+        if (root.enabled) {
+            root.toggled();
+        }
+    }
+
+    width: 40px * root.ui-scale;
+    height: 22px * root.ui-scale;
+    border-radius: 11px * root.ui-scale;
+    border-width: root.has-focus ? 2px : 1px;
+    border-color: root.has-focus ? FareverPalette.gold
+        : root.checked ? transparent
+        : FareverPalette.border;
+    background: !root.enabled ? FareverPalette.control-disabled
+        : root.checked && touch.has-hover ? FareverPalette.control-hovered
+        : root.checked ? FareverPalette.accent
+        : touch.has-hover ? FareverPalette.control-hovered
+        : FareverPalette.control-disabled;
+    forward-focus: focus-scope;
+
+    accessible-role: switch;
+    accessible-enabled: root.enabled;
+    accessible-label: root.accessible-name;
+    accessible-checkable: true;
+    accessible-checked: root.checked;
+    accessible-action-default => { root.activate(); }
+
+    animate background, border-color { duration: 120ms; }
+
+    knob := Rectangle {
+        x: root.checked ? parent.width - self.width - 3px * root.ui-scale : 3px * root.ui-scale;
+        y: (parent.height - self.height) / 2;
+        width: 16px * root.ui-scale;
+        height: 16px * root.ui-scale;
+        border-radius: 8px * root.ui-scale;
+        background: FareverPalette.chrome-text;
+
+        animate x { duration: 120ms; easing: ease-in-out; }
+    }
+
+    touch := TouchArea {
+        enabled: root.enabled;
+        mouse-cursor: pointer;
+        clicked => { root.activate(); }
+    }
+
+    focus-scope := FocusScope {
+        x: 0;
+        width: 0px;
+        enabled: root.enabled;
+
+        key-pressed(event) => {
+            if (event.text == Key.Space || event.text == Key.Return) {
+                root.activate();
+                return accept;
+            }
+            return reject;
+        }
+    }
+}
+
+component NavigationMark inherits Rectangle {
+    in property <NavigationIcon> kind;
+    in property <color> ink;
+    in property <float> ui-scale: 1.0;
+
+    width: 18px * root.ui-scale;
+    height: 18px * root.ui-scale;
+    background: transparent;
+
+    if root.kind == NavigationIcon.addons : Rectangle {
+        x: 2px * root.ui-scale; y: 2px * root.ui-scale; width: 5px * root.ui-scale; height: 5px * root.ui-scale;
+        border-radius: 1px; background: root.ink;
+    }
+    if root.kind == NavigationIcon.addons : Rectangle {
+        x: 11px * root.ui-scale; y: 2px * root.ui-scale; width: 5px * root.ui-scale; height: 5px * root.ui-scale;
+        border-radius: 1px; background: root.ink;
+    }
+    if root.kind == NavigationIcon.addons : Rectangle {
+        x: 2px * root.ui-scale; y: 11px * root.ui-scale; width: 5px * root.ui-scale; height: 5px * root.ui-scale;
+        border-radius: 1px; background: root.ink;
+    }
+    if root.kind == NavigationIcon.addons : Rectangle {
+        x: 11px * root.ui-scale; y: 11px * root.ui-scale; width: 5px * root.ui-scale; height: 5px * root.ui-scale;
+        border-radius: 1px; background: root.ink;
+    }
+
+    if root.kind == NavigationIcon.chat : Rectangle {
+        x: 2px * root.ui-scale; y: 3px * root.ui-scale; width: 14px * root.ui-scale; height: 11px * root.ui-scale;
+        border-radius: 3px * root.ui-scale;
+        border-width: 2px;
+        border-color: root.ink;
+        background: transparent;
+    }
+    if root.kind == NavigationIcon.chat : Rectangle {
+        x: 5px * root.ui-scale; y: 13px * root.ui-scale; width: 5px * root.ui-scale; height: 3px * root.ui-scale;
+        background: root.ink;
+    }
+}
+
+component NavigationRow inherits Rectangle {
+    in property <NavigationIcon> icon;
+    in property <string> label;
+    in property <int> count: -1;
+    in property <bool> selected;
+    in property <float> ui-scale: 1.0;
+    callback clicked;
+
+    height: 40px * root.ui-scale;
+    border-radius: 6px * root.ui-scale;
+    background: root.selected ? FareverPalette.accent
+        : touch.has-hover ? FareverPalette.chrome-raised
+        : transparent;
+
+    HorizontalLayout {
+        padding-left: 10px;
+        padding-right: 10px;
+        spacing: 10px;
+
+        VerticalLayout {
+            width: 18px * root.ui-scale;
+            alignment: center;
+
+            NavigationMark {
+                kind: root.icon;
+                ink: FareverPalette.chrome-text;
+                ui-scale: root.ui-scale;
+            }
+        }
+
+        Text {
+            horizontal-stretch: 1;
+            text: root.label;
+            color: FareverPalette.chrome-text;
+            vertical-alignment: center;
+            font-size: 14px * root.ui-scale;
+            font-weight: root.selected ? 600 : 400;
+        }
+
+        if root.count >= 0 : VerticalLayout {
+            width: 28px;
+            alignment: center;
+
+            Rectangle {
+                height: 20px;
+                border-radius: 10px;
+                background: root.selected ? #51382f : FareverPalette.chrome-raised;
+
+                Text {
+                    text: "\{root.count}";
+                    color: FareverPalette.chrome-text;
+                    horizontal-alignment: center;
+                    vertical-alignment: center;
+                    font-size: 11px * root.ui-scale;
+                }
+            }
+        }
+    }
+
+    touch := TouchArea {
+        mouse-cursor: pointer;
+        clicked => { root.clicked(); }
+    }
+}
+
+component InstalledAddonRow inherits Rectangle {
+    in property <AddonItem> addon;
+    in property <bool> selected;
+    in property <float> ui-scale: 1.0;
+    callback clicked;
+
+    height: 36px * root.ui-scale;
+    border-radius: 5px * root.ui-scale;
+    background: root.selected ? FareverPalette.chrome-hover
+        : touch.has-hover ? FareverPalette.chrome-raised
+        : transparent;
+
+    HorizontalLayout {
+        padding-left: 14px;
+        padding-right: 8px;
+        spacing: 12px;
+
+        VerticalLayout {
+            width: 8px * root.ui-scale;
+            alignment: center;
+
+            Rectangle {
+                height: 8px * root.ui-scale;
+                border-radius: 4px * root.ui-scale;
+                background: root.addon.state == AddonState.active ? #71bb87
+                    : root.addon.state == AddonState.compiling ? FareverPalette.gold
+                    : root.addon.state == AddonState.incompatible ? FareverPalette.gold-ink
+                    : #e57c6d;
+            }
+        }
+
+        Text {
+            horizontal-stretch: 1;
+            text: root.addon.short-name;
+            color: FareverPalette.chrome-text;
+            vertical-alignment: center;
+            overflow: elide;
+            font-size: 13px * root.ui-scale;
+        }
+    }
+
+    touch := TouchArea {
+        mouse-cursor: pointer;
+        clicked => { root.clicked(); }
+    }
+}
+
+component StatusLabel inherits Rectangle {
+    in property <AddonState> state;
+    in property <float> ui-scale: 1.0;
+
+    width: 94px * root.ui-scale;
+    height: 24px * root.ui-scale;
+    background: transparent;
+
+    HorizontalLayout {
+        alignment: end;
+        spacing: 7px;
+
+        VerticalLayout {
+            width: 8px * root.ui-scale;
+            alignment: center;
+
+            Rectangle {
+                height: 8px * root.ui-scale;
+                border-radius: 4px * root.ui-scale;
+                background: root.state == AddonState.active ? FareverPalette.success
+                    : root.state == AddonState.compiling ? FareverPalette.gold-ink
+                    : root.state == AddonState.incompatible ? FareverPalette.gold-ink
+                    : FareverPalette.error;
+            }
+        }
+
+        Text {
+            text: root.state == AddonState.active ? "Active"
+                : root.state == AddonState.compiling ? "Compiling"
+                : root.state == AddonState.incompatible ? "Incompatible"
+                : "Disabled";
+            color: root.state == AddonState.disabled
+                ? FareverPalette.error
+                : FareverPalette.ink;
+            vertical-alignment: center;
+            font-size: 12px * root.ui-scale;
+        }
+    }
+}
+
+component AddonRow inherits Rectangle {
+    in property <AddonItem> addon;
+    in property <int> row-index;
+    in property <float> ui-scale: 1.0;
+    callback toggle-enabled(int);
+    callback toggle-expanded(int);
+    callback retry-activation(int);
+    callback remove-addon(int);
+
+    height: root.addon.expanded && root.addon.error-message != "" ? 226px * root.ui-scale : 72px * root.ui-scale;
+    background: transparent;
+
+    VerticalLayout {
+        spacing: 0px;
+
+        row-main := Rectangle {
+            height: 71px * root.ui-scale;
+            background: row-touch.has-hover ? FareverPalette.pane-hover
+                : Math.mod(root.row-index, 2) == 0 ? FareverPalette.pane
+                : FareverPalette.pane-alt;
+
+            row-touch := TouchArea {
+                mouse-cursor: pointer;
+                clicked => { root.toggle-expanded(root.row-index); }
+            }
+
+            HorizontalLayout {
+                padding-left: 12px * root.ui-scale;
+                padding-right: 12px * root.ui-scale;
+                spacing: 12px * root.ui-scale;
+
+                VerticalLayout {
+                    width: 38px * root.ui-scale;
+                    alignment: center;
+
+                    Rectangle {
+                        height: 38px * root.ui-scale;
+                        border-radius: 7px * root.ui-scale;
+                        background: FareverPalette.accent;
+
+                        Text {
+                            text: root.addon.initials;
+                            color: FareverPalette.chrome-text;
+                            horizontal-alignment: center;
+                            vertical-alignment: center;
+                            font-size: 12px * root.ui-scale;
+                            font-weight: 600;
+                        }
+                    }
+                }
+
+                VerticalLayout {
+                    horizontal-stretch: 1;
+                    alignment: center;
+                    spacing: 3px * root.ui-scale;
+
+                    Text {
+                        height: 20px * root.ui-scale;
+                        text: root.addon.name;
+                        color: FareverPalette.ink;
+                        vertical-alignment: center;
+                        overflow: elide;
+                        font-size: 14px * root.ui-scale;
+                        font-weight: 600;
+                    }
+
+                    Text {
+                        height: 18px * root.ui-scale;
+                        text: root.addon.metadata;
+                        color: FareverPalette.muted;
+                        vertical-alignment: center;
+                        overflow: elide;
+                        font-size: 11px * root.ui-scale;
+                    }
+                }
+
+                if root.addon.error-message != "" : Text {
+                    width: 16px * root.ui-scale;
+                    text: root.addon.expanded ? "^" : "v";
+                    color: FareverPalette.muted;
+                    horizontal-alignment: center;
+                    vertical-alignment: center;
+                    font-size: 15px * root.ui-scale;
+                }
+
+                VerticalLayout {
+                    width: 94px * root.ui-scale;
+                    alignment: center;
+
+                    StatusLabel { state: root.addon.state; ui-scale: root.ui-scale; }
+                }
+
+                VerticalLayout {
+                    width: 40px * root.ui-scale;
+                    alignment: center;
+
+                    FareverSwitch {
+                        checked: root.addon.enabled;
+                        enabled: !root.addon.locked;
+                        ui-scale: root.ui-scale;
+                        accessible-name: "Enable " + root.addon.name;
+                        toggled => { root.toggle-enabled(root.row-index); }
+                    }
+                }
+
+                VerticalLayout {
+                    width: 72px * root.ui-scale;
+                    alignment: center;
+
+                    FareverButton {
+                        width: 72px * root.ui-scale;
+                        text: "Remove";
+                        enabled: !root.addon.locked;
+                        ui-scale: root.ui-scale;
+                        on-light-background: true;
+                        clicked => { root.remove-addon(root.row-index); }
+                    }
+                }
+            }
+        }
+
+        Rectangle { height: 1px; background: FareverPalette.border-soft; }
+
+        if root.addon.expanded && root.addon.error-message != "" : Rectangle {
+            height: 154px * root.ui-scale;
+            background: transparent;
+
+            HorizontalLayout {
+                padding-left: 62px * root.ui-scale;
+                padding-right: 8px * root.ui-scale;
+                padding-bottom: 14px * root.ui-scale;
+
+                Rectangle {
+                    border-radius: 5px;
+                    background: FareverPalette.error-surface;
+
+                    HorizontalLayout {
+                        spacing: 0px;
+
+                        Rectangle { width: 3px; background: FareverPalette.error; }
+
+                        VerticalLayout {
+                            padding: 12px * root.ui-scale;
+                            spacing: 8px * root.ui-scale;
+
+                            HorizontalLayout {
+                                height: 37px * root.ui-scale;
+                                spacing: 10px * root.ui-scale;
+
+                                Text {
+                                    width: 14px * root.ui-scale;
+                                    text: "!";
+                                    color: FareverPalette.error;
+                                    horizontal-alignment: center;
+                                    vertical-alignment: top;
+                                    font-size: 17px * root.ui-scale;
+                                    font-weight: 700;
+                                }
+
+                                VerticalLayout {
+                                    spacing: 2px;
+
+                                    Text {
+                                        text: "Activation failed";
+                                        color: FareverPalette.error;
+                                        font-size: 13px * root.ui-scale;
+                                        font-weight: 600;
+                                    }
+
+                                    Text {
+                                        text: "The previous instance was removed. No rollback was attempted.";
+                                        color: FareverPalette.error;
+                                        overflow: elide;
+                                        font-size: 11px * root.ui-scale;
+                                    }
+                                }
+                            }
+
+                            Rectangle {
+                                height: 32px * root.ui-scale;
+                                border-radius: 4px * root.ui-scale;
+                                background: FareverPalette.code-surface;
+
+                                Text {
+                                    x: 10px * root.ui-scale;
+                                    width: parent.width - 20px * root.ui-scale;
+                                    text: root.addon.error-message;
+                                    color: FareverPalette.chrome-text;
+                                    vertical-alignment: center;
+                                    overflow: elide;
+                                    font-size: 10px * root.ui-scale;
+                                }
+                            }
+
+                            HorizontalLayout {
+                                height: 32px * root.ui-scale;
+                                spacing: 12px * root.ui-scale;
+
+                                FareverButton {
+                                    width: 136px * root.ui-scale;
+                                    text: "Retry activation";
+                                    ui-scale: root.ui-scale;
+                                    on-light-background: true;
+                                    clicked => { root.retry-activation(root.row-index); }
+                                }
+
+                                Rectangle { horizontal-stretch: 1; background: transparent; }
+
+                                Text {
+                                    text: "The full error is also available in host.log.";
+                                    color: FareverPalette.muted;
+                                    vertical-alignment: center;
+                                    horizontal-alignment: right;
+                                    font-size: 10px * root.ui-scale;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+export component AddonManagerWindow inherits Window {
+    title: "Farever Add-on Manager";
+    preferred-width: 980px;
+    preferred-height: 700px;
+    min-width: 760px;
+    min-height: 540px;
+    background: FareverPalette.content;
+
+    // Resolution-independent scale: every font, button, and row below
+    // derives from this. It is pushed from Rust (see fit_scale) in a few
+    // discrete steps instead of binding to the window width, which Slint
+    // would flag as a layout loop.
+    in-out property <float> ui-scale: 1.0;
+
+    in property <[AddonItem]> addons;
+    in property <int> active-count;
+    in property <int> compiling-count;
+    in property <int> disabled-count;
+    in property <int> incompatible-count;
+    in property <string> addon-directory;
+    in property <string> status-message;
+    in property <string> runtime-version;
+    in property <bool> runtime-installed;
+    in property <string> game-dir;
+    in property <string> config-source;
+    in-out property <int> selected-index: -1;
+    in-out property <bool> about-visible: false;
+    in-out property <bool> config-visible: false;
+    in-out property <string> game-dir-text;
+
+    callback toggle-enabled(int);
+    callback toggle-expanded(int);
+    callback retry-activation(int);
+    callback select-addon(int);
+    callback remove-addon(int);
+    callback refresh();
+    callback install-from-file();
+    callback update-runtime();
+    callback save-config(string);
+
+    VerticalLayout {
+        spacing: 0px;
+
+        Rectangle {
+            height: 64px * root.ui-scale;
+            background: FareverPalette.titlebar;
+
+            HorizontalLayout {
+                padding-left: 20px * root.ui-scale;
+                padding-right: 18px * root.ui-scale;
+                spacing: 12px * root.ui-scale;
+
+                VerticalLayout {
+                    width: 36px * root.ui-scale;
+                    alignment: center;
+
+                    Rectangle {
+                        height: 36px * root.ui-scale;
+                        border-radius: 18px * root.ui-scale;
+                        background: #d09a78;
+
+                        Text {
+                            text: "F";
+                            color: FareverPalette.ink;
+                            horizontal-alignment: center;
+                            vertical-alignment: center;
+                            font-size: 17px * root.ui-scale;
+                            font-weight: 600;
+                        }
+                    }
+                }
+
+                VerticalLayout {
+                    alignment: center;
+                    spacing: 1px;
+
+                    Text {
+                        height: 19px * root.ui-scale;
+                        text: "Farever";
+                        color: FareverPalette.chrome-text;
+                        font-size: 14px * root.ui-scale;
+                        font-weight: 600;
+                    }
+
+                    Text {
+                        height: 16px * root.ui-scale;
+                        text: "Add-on settings";
+                        color: FareverPalette.chrome-muted;
+                        font-size: 12px * root.ui-scale;
+                    }
+                }
+
+                Rectangle { horizontal-stretch: 1; background: transparent; }
+
+                VerticalLayout {
+                    width: 84px * root.ui-scale;
+                    alignment: center;
+
+                    FareverButton {
+                        text: "Settings";
+                        ui-scale: root.ui-scale;
+                        clicked => {
+                            root.game-dir-text = root.game-dir;
+                            root.config-visible = true;
+                        }
+                    }
+                }
+
+                VerticalLayout {
+                    width: 64px * root.ui-scale;
+                    alignment: center;
+
+                    FareverButton {
+                        text: "About";
+                        ui-scale: root.ui-scale;
+                        clicked => { root.about-visible = true; }
+                    }
+                }
+            }
+        }
+
+        Rectangle { height: 1px; background: FareverPalette.border; }
+
+        HorizontalLayout {
+            spacing: 0px;
+            vertical-stretch: 1;
+
+            Rectangle {
+                width: 230px * root.ui-scale;
+                background: FareverPalette.sidebar;
+
+                VerticalLayout {
+                    padding-left: 16px * root.ui-scale;
+                    padding-right: 16px * root.ui-scale;
+                    padding-top: 16px * root.ui-scale;
+                    padding-bottom: 14px * root.ui-scale;
+                    spacing: 3px * root.ui-scale;
+
+                    Text {
+                        height: 24px * root.ui-scale;
+                        text: "FAREVER";
+                        color: FareverPalette.chrome-muted;
+                        vertical-alignment: center;
+                        font-size: 10px * root.ui-scale;
+                        font-weight: 600;
+                    }
+
+                    NavigationRow {
+                        icon: NavigationIcon.addons;
+                        label: "Add-ons";
+                        count: root.addons.length;
+                        selected: root.selected-index < 0;
+                        ui-scale: root.ui-scale;
+                        clicked => { root.selected-index = -1; }
+                    }
+
+                    Rectangle { height: 12px * root.ui-scale; background: transparent; }
+
+                    Text {
+                        height: 24px * root.ui-scale;
+                        text: "INSTALLED ADD-ONS";
+                        color: FareverPalette.chrome-muted;
+                        vertical-alignment: center;
+                        font-size: 10px * root.ui-scale;
+                        font-weight: 600;
+                    }
+
+                    for addon[index] in root.addons : InstalledAddonRow {
+                        addon: addon;
+                        selected: root.selected-index == index;
+                        ui-scale: root.ui-scale;
+                        clicked => {
+                            root.selected-index = index;
+                            root.select-addon(index);
+                        }
+                    }
+
+                    Rectangle { vertical-stretch: 1; background: transparent; }
+                }
+            }
+
+            Rectangle { width: 1px; background: FareverPalette.border; }
+
+            Rectangle {
+                horizontal-stretch: 1;
+                background: FareverPalette.content;
+
+                VerticalLayout {
+                    padding-left: 28px * root.ui-scale;
+                    padding-right: 28px * root.ui-scale;
+                    padding-top: 24px * root.ui-scale;
+                    padding-bottom: 18px * root.ui-scale;
+                    spacing: 16px * root.ui-scale;
+
+                    Rectangle {
+                        height: 88px * root.ui-scale;
+                        background: transparent;
+
+                        HorizontalLayout {
+                            spacing: 18px * root.ui-scale;
+
+                            VerticalLayout {
+                                horizontal-stretch: 1;
+                                spacing: 2px * root.ui-scale;
+
+                                Text {
+                                    height: 14px * root.ui-scale;
+                                    text: "FAREVER / ADD-ONS";
+                                    color: FareverPalette.accent;
+                                    font-size: 10px * root.ui-scale;
+                                    font-weight: 600;
+                                }
+
+                                Text {
+                                    height: 32px * root.ui-scale;
+                                    text: "Add-ons";
+                                    color: FareverPalette.ink;
+                                    font-size: 28px * root.ui-scale;
+                                    font-weight: 500;
+                                }
+                            }
+
+                            VerticalLayout {
+                                width: 184px * root.ui-scale;
+                                alignment: end;
+                                spacing: 4px * root.ui-scale;
+
+                                Text {
+                                    text: "\{root.active-count} active  ·  \{root.compiling-count} compiling";
+                                    color: FareverPalette.ink;
+                                    horizontal-alignment: right;
+                                    font-size: 11px * root.ui-scale;
+                                }
+
+                                Text {
+                                    text: root.incompatible-count > 0
+                                        ? "\{root.disabled-count} disabled  ·  \{root.incompatible-count} incompatible"
+                                        : "\{root.disabled-count} disabled";
+                                    color: FareverPalette.error;
+                                    horizontal-alignment: right;
+                                    font-size: 11px * root.ui-scale;
+                                }
+
+                                if root.runtime-installed && root.runtime-version != "" : Text {
+                                    text: "Runtime v\{root.runtime-version}";
+                                    color: FareverPalette.muted;
+                                    horizontal-alignment: right;
+                                    font-size: 11px * root.ui-scale;
+                                }
+
+                                if root.runtime-installed && root.runtime-version == "" : Text {
+                                    text: "Runtime installed";
+                                    color: FareverPalette.muted;
+                                    horizontal-alignment: right;
+                                    font-size: 11px * root.ui-scale;
+                                }
+
+                                if !root.runtime-installed : FareverButton {
+                                    width: 128px * root.ui-scale;
+                                    text: "Install runtime";
+                                    ui-scale: root.ui-scale;
+                                    on-light-background: true;
+                                    clicked => { root.update-runtime(); }
+                                }
+                            }
+                        }
+                    }
+
+                    Rectangle {
+                        height: 40px * root.ui-scale;
+                        background: transparent;
+
+                        HorizontalLayout {
+                            spacing: 8px * root.ui-scale;
+
+                            FareverButton {
+                                width: 84px * root.ui-scale;
+                                text: "Refresh";
+                                ui-scale: root.ui-scale;
+                                on-light-background: true;
+                                clicked => { root.refresh(); }
+                            }
+
+                            FareverButton {
+                                width: 128px * root.ui-scale;
+                                text: "Update runtime";
+                                ui-scale: root.ui-scale;
+                                on-light-background: true;
+                                clicked => { root.update-runtime(); }
+                            }
+
+                            FareverButton {
+                                width: 148px * root.ui-scale;
+                                text: "Install from file";
+                                ui-scale: root.ui-scale;
+                                on-light-background: true;
+                                clicked => { root.install-from-file(); }
+                            }
+
+                            Rectangle { horizontal-stretch: 1; background: transparent; }
+                        }
+                    }
+
+                    Rectangle {
+                        vertical-stretch: 1;
+                        border-radius: 7px;
+                        border-width: 1px;
+                        border-color: FareverPalette.border;
+                        background: FareverPalette.pane;
+                        clip: true;
+                        drop-shadow-blur: 8px;
+                        drop-shadow-offset-y: 2px;
+                        drop-shadow-color: #37292228;
+
+                        ScrollView {
+                            x: 1px;
+                            y: 1px;
+                            width: parent.width - 2px;
+                            height: parent.height - 2px;
+                            horizontal-scrollbar-policy: always-off;
+                            content-width: self.width;
+
+                            VerticalLayout {
+                                width: parent.width;
+                                spacing: 0px;
+
+                                for addon[index] in root.addons : AddonRow {
+                                    addon: addon;
+                                    row-index: index;
+                                    ui-scale: root.ui-scale;
+                                    toggle-enabled(i) => { root.toggle-enabled(i); }
+                                    toggle-expanded(i) => { root.toggle-expanded(i); }
+                                    retry-activation(i) => { root.retry-activation(i); }
+                                    remove-addon(i) => { root.remove-addon(i); }
+                                }
+                            }
+                        }
+                    }
+
+                    Rectangle {
+                        height: 24px * root.ui-scale;
+                        background: transparent;
+
+                        HorizontalLayout {
+                            spacing: 8px * root.ui-scale;
+
+                            Text {
+                                horizontal-stretch: 1;
+                                text: "\{root.addon-directory}";
+                                color: FareverPalette.muted;
+                                vertical-alignment: center;
+                                overflow: elide;
+                                font-size: 10px * root.ui-scale;
+                            }
+
+                            VerticalLayout {
+                                width: 8px * root.ui-scale;
+                                alignment: center;
+
+                                Rectangle {
+                                    height: 8px * root.ui-scale;
+                                    border-radius: 4px * root.ui-scale;
+                                    background: FareverPalette.gold-ink;
+                                }
+                            }
+
+                            Text {
+                                text: root.status-message;
+                                color: FareverPalette.muted;
+                                vertical-alignment: center;
+                                horizontal-alignment: right;
+                                overflow: elide;
+                                font-size: 10px * root.ui-scale;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if root.about-visible : Rectangle {
+        background: #00000099;
+
+        TouchArea { }
+
+        Rectangle {
+            width: 380px * root.ui-scale;
+            height: 210px * root.ui-scale;
+            x: (parent.width - self.width) / 2;
+            y: (parent.height - self.height) / 2;
+            border-radius: 7px * root.ui-scale;
+            border-width: 1px;
+            border-color: FareverPalette.border;
+            background: FareverPalette.content;
+            drop-shadow-blur: 20px;
+            drop-shadow-offset-y: 6px;
+            drop-shadow-color: #00000066;
+
+            VerticalLayout {
+                padding: 16px * root.ui-scale;
+                spacing: 10px * root.ui-scale;
+
+                HorizontalLayout {
+                    height: 32px * root.ui-scale;
+
+                    Text {
+                        horizontal-stretch: 1;
+                        text: "About Farever Add-on Manager";
+                        color: FareverPalette.ink;
+                        vertical-alignment: center;
+                        font-size: 15px * root.ui-scale;
+                        font-weight: 600;
+                    }
+
+                    FareverButton {
+                        width: 72px * root.ui-scale;
+                        text: "Close";
+                        ui-scale: root.ui-scale;
+                        on-light-background: true;
+                        clicked => { root.about-visible = false; }
+                    }
+                }
+
+                Rectangle { height: 1px; background: FareverPalette.border; }
+
+                AboutSlint { vertical-stretch: 1; }
+            }
+        }
+    }
+
+    if root.config-visible : Rectangle {
+        background: #00000099;
+
+        TouchArea { }
+
+        Rectangle {
+            width: 460px * root.ui-scale;
+            height: 250px * root.ui-scale;
+            x: (parent.width - self.width) / 2;
+            y: (parent.height - self.height) / 2;
+            border-radius: 7px * root.ui-scale;
+            border-width: 1px;
+            border-color: FareverPalette.border;
+            background: FareverPalette.content;
+            drop-shadow-blur: 20px;
+            drop-shadow-offset-y: 6px;
+            drop-shadow-color: #00000066;
+
+            VerticalLayout {
+                padding: 16px * root.ui-scale;
+                spacing: 10px * root.ui-scale;
+
+                Text {
+                    height: 24px * root.ui-scale;
+                    text: "Settings";
+                    color: FareverPalette.ink;
+                    vertical-alignment: center;
+                    font-size: 15px * root.ui-scale;
+                    font-weight: 600;
+                }
+
+                Rectangle { height: 1px; background: FareverPalette.border; }
+
+                Text {
+                    height: 18px * root.ui-scale;
+                    text: "Game install location";
+                    color: FareverPalette.ink;
+                    vertical-alignment: center;
+                    font-size: 12px * root.ui-scale;
+                    font-weight: 600;
+                }
+
+                LineEdit {
+                    height: 32px * root.ui-scale;
+                    font-size: 12px * root.ui-scale;
+                    text: root.game-dir-text;
+                    placeholder-text: "Folder containing Farever.exe";
+                    edited(text) => { root.game-dir-text = text; }
+                    accepted(text) => {
+                        root.save-config(text);
+                        root.config-visible = false;
+                    }
+                }
+
+                Text {
+                    height: 16px * root.ui-scale;
+                    text: "Currently: \{root.config-source}";
+                    color: FareverPalette.muted;
+                    vertical-alignment: center;
+                    overflow: elide;
+                    font-size: 10px * root.ui-scale;
+                }
+
+                Rectangle { vertical-stretch: 1; background: transparent; }
+
+                HorizontalLayout {
+                    height: 32px * root.ui-scale;
+                    spacing: 12px * root.ui-scale;
+
+                    Rectangle { horizontal-stretch: 1; background: transparent; }
+
+                    FareverButton {
+                        width: 84px * root.ui-scale;
+                        text: "Cancel";
+                        ui-scale: root.ui-scale;
+                        on-light-background: true;
+                        clicked => { root.config-visible = false; }
+                    }
+
+                    FareverButton {
+                        width: 84px * root.ui-scale;
+                        text: "Save";
+                        ui-scale: root.ui-scale;
+                        on-light-background: true;
+                        clicked => {
+                            root.save-config(root.game-dir-text);
+                            root.config-visible = false;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,66 @@
+[workspace]
+members = [
+    "farever-db",
+    "farever-client",
+    "farever-api-inspector",
+    "farever-api-inspector/vendor/hlbc/crates/hlbc",
+    "farever-api-inspector/vendor/hlbc/crates/derive",
+    "farever-more-api",
+    "farever-more-manifest",
+    "farever-more-manager",
+    "farever-more-sdk",
+    "farever-more-build",
+    "farever-more-runtime",
+    "farever-more-host",
+    "farever-more-proxy",
+]
+exclude = ["addons"]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+repository = ""
+
+[workspace.dependencies]
+clap = { version = "4.5", features = ["derive"] }
+eframe = { version = "0.32", default-features = false, features = ["default_fonts", "glow"] }
+egui = { version = "0.33", default-features = false, features = ["default_fonts"] }
+egui_extras = { version = "0.33", default-features = false }
+hex = "0.4"
+image = { version = "0.25", default-features = false, features = ["png"] }
+memchr = "2.7"
+notify = { version = "6.1.1", default-features = false }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+sha2 = "0.10"
+slint = { version = "=1.18.0", default-features = false, features = ["accessibility", "backend-winit", "compat-1-18", "renderer-femtovg", "std"] }
+slint-build = { version = "=1.18.0", default-features = false, features = ["compat-1-18"] }
+thiserror = "2.0"
+wasmtime = { version = "=48.0.2", default-features = false, features = ["anyhow", "component-model", "cranelift", "runtime", "std"] }
+wasm-metadata = "0.254"
+wit-bindgen-rt = { version = "0.41.0", features = ["bitflags"] }
+wit-component = "0.254"
+flate2 = "1.1"
+windows-sys = { version = "0.59", features = [
+    "Win32_Foundation",
+    "Win32_Graphics_Gdi",
+    "Win32_Security",
+    "Win32_Storage_FileSystem",
+    "Win32_System_Diagnostics_Debug",
+    "Win32_System_Diagnostics_ToolHelp",
+    "Win32_System_LibraryLoader",
+    "Win32_System_Memory",
+    "Win32_System_ProcessStatus",
+    "Win32_System_SystemInformation",
+    "Win32_System_SystemServices",
+    "Win32_System_Threading",
+    "Win32_UI_WindowsAndMessaging",
+    "Win32_UI_Input_KeyboardAndMouse",
+    "Win32_UI_Controls_Dialogs",
+] }
+[profile.release]
+lto = "thin"
+codegen-units = 1
+strip = true

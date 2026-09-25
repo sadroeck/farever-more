@@ -1,0 +1,23 @@
+[package]
+name = "farever-more-manager"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+build = "build.rs"
+
+[dependencies]
+farever-db = { path = "../farever-db" }
+farever-more-manifest = { path = "../farever-more-manifest" }
+flate2.workspace = true
+hex.workspace = true
+serde_json.workspace = true
+sha2.workspace = true
+slint.workspace = true
+wasm-metadata.workspace = true
+
+[target.'cfg(windows)'.dependencies]
+windows-sys.workspace = true
+
+[build-dependencies]
+slint-build.workspace = true

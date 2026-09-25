@@ -1,0 +1,439 @@
+/// UI that add-ons ask the host to draw. Measurements use logical points.
+/// Non-finite numbers reject the callback's complete UI update. Finite values
+/// outside a documented range are clamped by the host.
+interface overlay {
+    use assets.{image-ref, text-style};
+
+    record rgba {
+        /// Red channel, clamped to 0.0 through 1.0.
+        red: f32,
+        /// Green channel, clamped to 0.0 through 1.0.
+        green: f32,
+        /// Blue channel, clamped to 0.0 through 1.0.
+        blue: f32,
+        /// Opacity, clamped from 0.0 (transparent) to 1.0 (opaque).
+        alpha: f32,
+    }
+    record point {
+        /// Horizontal position, increasing to the right and clamped to -100,000
+        /// through 100,000 logical points.
+        x: f32,
+        /// Vertical position, increasing downward and clamped to -100,000
+        /// through 100,000 logical points.
+        y: f32,
+    }
+    record size {
+        /// Width, clamped to 1 through 4,096 logical points when used by an image
+        /// or canvas.
+        width: f32,
+        /// Height, clamped to 1 through 4,096 logical points when used by an image
+        /// or canvas.
+        height: f32,
+    }
+
+    enum surface-anchor { top-left, top-right, bottom-left, bottom-right, center, top-center }
+    enum layout-direction { vertical, horizontal }
+    enum container-style { plain, group, scroll }
+    enum horizontal-alignment { left, center, right }
+    variant table-column-sizing {
+        /// Width follows the column's content.
+        auto,
+        /// Fixed width, clamped to 8 through 4,096 logical points.
+        exact(f32),
+        /// Uses the remaining table width.
+        remainder,
+    }
+    record table-column {
+        /// How this column's width is chosen.
+        sizing: table-column-sizing,
+        /// Horizontal alignment of content inside each cell.
+        alignment: horizontal-alignment,
+        /// Minimum available table width at which this column is shown, clamped
+        /// to 0 through 4,096 logical points.
+        /// None keeps it visible at every width.
+        visible-from-width: option<f32>,
+        /// Horizontal padding on both sides of a cell, clamped to 0 through 64
+        /// logical points. None means zero.
+        content-padding: option<f32>,
+    }
+    record table-widget {
+        /// Columns in display order. At least one column must always be visible.
+        columns: list<table-column>,
+        /// Whether body rows alternate their host-theme background.
+        striped: bool,
+        /// Maximum body height, clamped to 32 through 4,096 logical points.
+        /// None disables table scrolling.
+        max-body-height: option<f32>,
+    }
+    enum table-row-kind { header, body }
+    record table-row-widget {
+        /// Whether this is the optional header row or a body row.
+        kind: table-row-kind,
+        /// Row height, clamped to 12 through 512 logical points.
+        height: f32,
+        /// Background drawn across the full row. None uses the table background.
+        background: option<rgba>,
+        /// Progress bar drawn behind the row content.
+        progress: option<table-row-progress>,
+    }
+    /// A progress bar drawn behind a table row.
+    record table-row-progress {
+        /// Filled share, clamped to 0.0 through 1.0.
+        fraction: f32,
+        /// Fill color.
+        color: rgba,
+        /// Zero-based first column covered by the bar. None starts at the table edge.
+        /// A selected start column must be always visible.
+        start-column: option<u32>,
+    }
+    record table-cell-widget {
+        /// Zero-based index into the parent table's columns.
+        column: u32,
+    }
+
+    record container-widget {
+        /// Direction in which direct children are laid out.
+        direction: layout-direction,
+        /// Plain layout, a host-themed group, or a scroll area.
+        style: container-style,
+        /// Space between direct children, clamped to 0 through 64 logical points.
+        /// None uses the host default.
+        spacing: option<f32>,
+        /// Maximum height of a vertical scroll area, clamped to 32 through 4,096
+        /// logical points. None uses the host default.
+        max-height: option<f32>,
+    }
+    /// A titled section. The host draws the header in the same style as its own
+    /// page headers and lays the children out underneath.
+    record section-widget {
+        /// Header text.
+        title: string,
+        /// Muted line drawn under the title. None draws the title alone.
+        description: option<string>,
+    }
+    record stroke {
+        /// Line width, clamped to 0 through 64 logical points.
+        width: f32,
+        /// Line color.
+        color: rgba,
+    }
+    record text-widget {
+        /// Text to display.
+        text: string,
+        /// Semantic style resolved by the host.
+        style: text-style,
+        /// Text color. None uses the host theme.
+        color: option<rgba>,
+        /// An outline drawn behind the text. Its width is capped at 4 logical points.
+        outline: option<stroke>,
+        /// Whether text may wrap onto multiple lines.
+        wrap: bool,
+    }
+    record image-widget {
+        /// Host image to draw.
+        source: image-ref,
+        /// Drawn size in logical points.
+        size: size,
+        /// Optional color multiplied with the image pixels.
+        tint: option<rgba>,
+    }
+    /// A button. Its node ID is returned when it is pressed.
+    record button-widget {
+        /// Text shown on the button.
+        label: string,
+        /// Disabled buttons are drawn but do not emit button-pressed.
+        enabled: bool,
+    }
+    /// A controlled boolean input for a config menu. Its containing node ID
+    /// and requested checked state are returned when it is changed.
+    record checkbox-widget {
+        /// Text shown beside the checkbox.
+        label: string,
+        /// Current add-on-owned value.
+        checked: bool,
+        /// Disabled checkboxes are drawn but do not emit checkbox-changed.
+        enabled: bool,
+    }
+    /// One stable, user-visible choice in a dropdown.
+    record dropdown-option {
+        /// Stable add-on-local value returned when this option is selected.
+        id: string,
+        /// User-visible option text.
+        label: string,
+    }
+    /// A controlled single-choice input for a config menu.
+    record dropdown-widget {
+        /// Text shown beside the dropdown.
+        label: string,
+        /// ID of the currently selected option.
+        selected-id: string,
+        /// Choices in display order. IDs must be unique and selected-id must exist.
+        options: list<dropdown-option>,
+        /// Disabled dropdowns are drawn but do not emit dropdown-changed.
+        enabled: bool,
+    }
+    /// A controlled numeric input over one contiguous range for a config menu.
+    record slider-widget {
+        /// Text shown beside the slider.
+        label: string,
+        /// Current add-on-owned value, within minimum through maximum.
+        value: f64,
+        /// Inclusive lower bound.
+        minimum: f64,
+        /// Inclusive upper bound, strictly greater than minimum.
+        maximum: f64,
+        /// Optional positive increment anchored at minimum. None is continuous.
+        step: option<f64>,
+        /// Disabled sliders are drawn but do not emit slider-changed.
+        enabled: bool,
+    }
+    record progress-widget {
+        /// Filled share, clamped to 0.0 through 1.0.
+        fraction: f32,
+        /// Text drawn over the bar. None shows a percentage.
+        label: option<string>,
+        /// Fill color. None uses the host theme.
+        color: option<rgba>,
+    }
+    record spacer-widget {
+        /// Empty space along the parent layout direction, clamped to 0 through
+        /// 1,024 logical points.
+        size: f32,
+    }
+    record canvas-widget {
+        /// Canvas size in logical points.
+        size: size,
+    }
+    variant widget {
+        /// Lays out child nodes.
+        container(container-widget),
+        /// Owns a host-styled header and the child nodes grouped under it.
+        section(section-widget),
+        /// Displays text.
+        text(text-widget),
+        /// Displays a host-owned image.
+        image(image-widget),
+        /// Emits button-pressed when activated.
+        button(button-widget),
+        /// Emits checkbox-changed when activated. Only valid in config menus.
+        checkbox(checkbox-widget),
+        /// Emits dropdown-changed when a choice is selected. Config menus only.
+        dropdown(dropdown-widget),
+        /// Emits slider-changed when a value is committed. Config menus only.
+        slider(slider-widget),
+        /// Displays a horizontal progress bar.
+        progress(progress-widget),
+        /// Draws a host-themed separator.
+        separator,
+        /// Adds empty layout space.
+        spacer(spacer-widget),
+        /// Draws commands targeted to this node.
+        canvas(canvas-widget),
+        /// Owns table-row children.
+        table(table-widget),
+        /// Owns table-cell children and must be a direct child of a table.
+        table-row(table-row-widget),
+        /// Owns ordinary widgets and must be a direct child of a table row.
+        table-cell(table-cell-widget),
+    }
+    record ui-node {
+        /// ID unique within the containing surface or config menu.
+        id: string,
+        /// ID of an earlier compatible node. None makes this a root node.
+        parent: option<string>,
+        /// Content and layout behavior for this node.
+        widget: widget,
+    }
+
+    record line-primitive {
+        /// Start position relative to the canvas top-left corner.
+        start: point,
+        /// End position relative to the canvas top-left corner.
+        end: point,
+        /// Line width and color.
+        stroke: stroke,
+    }
+    record rect-primitive {
+        /// First corner relative to the canvas top-left corner.
+        min: point,
+        /// Opposite corner relative to the canvas top-left corner.
+        max: point,
+        /// Corner radius, clamped to 0 through 256 logical points.
+        corner-radius: f32,
+        /// Interior color. None leaves the interior transparent.
+        fill: option<rgba>,
+        /// Border. None draws no border.
+        stroke: option<stroke>,
+    }
+    record circle-primitive {
+        /// Center relative to the canvas top-left corner.
+        center: point,
+        /// Radius, clamped to 0 through 4,096 logical points.
+        radius: f32,
+        /// Interior color. None leaves the interior transparent.
+        fill: option<rgba>,
+        /// Border. None draws no border.
+        stroke: option<stroke>,
+    }
+    record path-primitive {
+        /// Vertices relative to the canvas top-left corner.
+        points: list<point>,
+        /// Whether to connect the last vertex back to the first.
+        closed: bool,
+        /// Interior color. A filled path is treated as closed.
+        fill: option<rgba>,
+        /// Path outline. None draws no outline.
+        stroke: option<stroke>,
+    }
+    record canvas-text-primitive {
+        /// Top-left text position relative to the canvas.
+        position: point,
+        /// Text to draw.
+        text: string,
+        /// Text color.
+        color: rgba,
+        /// Font size, clamped to 6 through 96 logical points.
+        size: f32,
+    }
+    record canvas-image-primitive {
+        /// Host-owned image to sample.
+        source: image-ref,
+        /// Destination bounds relative to the canvas top-left corner.
+        destination-min: point,
+        destination-max: point,
+        /// Normalized source UV bounds. Values are clamped to 0 through 1.
+        uv-min: point,
+        uv-max: point,
+        /// Rotation around the destination center in radians. Positive values
+        /// follow the host canvas's screen-space convention.
+        rotation-radians: f32,
+        /// Optional color multiplied with the sampled image pixels.
+        tint: option<rgba>,
+        /// Rounded-corner radius. A radius at least half the smaller dimension
+        /// produces a circular/elliptical mask.
+        corner-radius: f32,
+    }
+    variant canvas-primitive {
+        line(line-primitive),
+        rect(rect-primitive),
+        circle(circle-primitive),
+        path(path-primitive),
+        text(canvas-text-primitive),
+        image(canvas-image-primitive),
+    }
+    record canvas-command {
+        /// ID of a canvas node in the same surface or config menu.
+        canvas-id: string,
+        /// Shape or text to draw on that canvas.
+        primitive: canvas-primitive,
+    }
+
+    /// Optional window appearance. None uses the host theme.
+    record surface-style {
+        /// Whether the host draws the surface title bar.
+        title-bar: bool,
+        /// Surface background color.
+        fill: rgba,
+        /// Surface border. None draws no border.
+        stroke: option<stroke>,
+        /// Corner radius, clamped to 0 through 64 logical points.
+        corner-radius: f32,
+        /// Space between the surface edge and its content, clamped to 0 through
+        /// 64 logical points.
+        padding: f32,
+    }
+
+    record ui-surface {
+        /// Stable add-on-local ID used to retain the surface and route input.
+        id: string,
+        /// Display title. Visible when the selected style has a title bar.
+        title: string,
+        /// Screen point from which margins are measured.
+        anchor: surface-anchor,
+        /// Horizontal offset. Center anchors clamp to -4,096 through 4,096 logical
+        /// points; corner anchors clamp to 0 through 4,096.
+        margin-x: f32,
+        /// Vertical offset. Center clamps to -4,096 through 4,096 logical points;
+        /// other anchors clamp to 0 through 4,096.
+        margin-y: f32,
+        /// Preferred content width, clamped to 64 through 4,096 logical points.
+        /// None sizes to content.
+        width: option<f32>,
+        /// Explicit appearance. None uses the host theme.
+        style: option<surface-style>,
+        /// Complete node tree in parent-before-child order.
+        nodes: list<ui-node>,
+        /// Drawing commands for canvas nodes in this surface.
+        canvas: list<canvas-command>,
+    }
+
+    /// Add-on content shown in the host's settings window.
+    record config-menu {
+        /// Stable add-on-local ID used in visibility events and input routes.
+        id: string,
+        /// Label shown in the host's settings navigation.
+        title: string,
+        /// Complete node tree in parent-before-child order.
+        nodes: list<ui-node>,
+        /// Drawing commands for canvas nodes in this menu.
+        canvas: list<canvas-command>,
+    }
+
+    record ui-frame {
+        /// All standalone overlay surfaces owned by the add-on.
+        surfaces: list<ui-surface>,
+        /// All add-on pages contributed to the host settings window.
+        config-menus: list<config-menu>,
+    }
+
+    /// The UI document that owns a control.
+    variant ui-view {
+        /// An overlay surface ID.
+        surface(string),
+        /// A settings menu ID.
+        config-menu(string),
+    }
+    record button-pressed {
+        /// Surface or config menu that owns the button.
+        view: ui-view,
+        /// ID of the button's ui-node.
+        node-id: string,
+    }
+    record canvas-pressed {
+        /// Surface or config menu that owns the canvas.
+        view: ui-view,
+        /// ID of the canvas's ui-node.
+        node-id: string,
+        /// Pointer position in canvas-local logical points, with the canvas's
+        /// top-left corner as the origin. Only presses that land on the canvas
+        /// are reported, so an add-on can hit-test its own drawing directly.
+        position: tuple<f64, f64>,
+    }
+    /// UI actions sent to an add-on.
+    variant ui-event {
+        /// The named settings menu became visible.
+        config-menu-shown(string),
+        /// The named settings menu became hidden.
+        config-menu-hidden(string),
+        /// An enabled button was pressed.
+        button-pressed(button-pressed),
+        /// A pointer press landed on a canvas node.
+        canvas-pressed(canvas-pressed),
+        /// An enabled config checkbox changed. Tuple is (node-id, checked).
+        checkbox-changed(tuple<string, bool>),
+        /// An enabled config dropdown changed. Tuple is (node-id, option-id).
+        dropdown-changed(tuple<string, string>),
+        /// An enabled config slider changed. Tuple is (node-id, value).
+        slider-changed(tuple<string, f64>),
+    }
+
+    /// Keeps, replaces, or removes the add-on's UI.
+    variant ui-update {
+        /// Keep the last successful frame.
+        unchanged,
+        /// Replace the entire retained frame.
+        replace(ui-frame),
+        /// Remove every retained surface and config menu.
+        clear,
+    }
+}

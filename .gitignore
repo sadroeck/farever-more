@@ -1,0 +1,22 @@
+# Rust and cargo-component build outputs
+target/
+
+# Local development/package outputs
+dist/
+dist-*/
+
+# Runtime state created by the external QA host
+farever-addons/
+*.log
+
+# Editor and operating-system files
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Local-only maintenance notes retained in the working tree.
+/AGENTS.md
+/LICENSING.md
+/docs/backlog/
+/docs/history/

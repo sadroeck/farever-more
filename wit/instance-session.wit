@@ -1,0 +1,45 @@
+/// Host-owned world-instance sessions used to retain encounter history.
+interface instance-session {
+    use common.{event-header, state-status};
+
+    enum instance-kind {
+        /// A shared overworld or other non-instanced play space.
+        open-world,
+        /// A dungeon run whose encounter history can be aggregated.
+        dungeon,
+        /// A known instanced activity that is not a dungeon.
+        other,
+        /// The provider cannot safely classify the current world instance.
+        unknown,
+    }
+
+    record instance-state {
+        /// Non-zero host ID unique within the host process session. It changes
+        /// when the player leaves or enters a different logical world instance.
+        session-id: u64,
+        /// Best validated classification of this instance.
+        kind: instance-kind,
+        /// Area ID observed when this session was opened, when available.
+        area-id: option<string>,
+    }
+
+    record instance-snapshot {
+        /// Capture time, revision, or the reason no instance state is available.
+        status: state-status,
+        /// Current logical instance. None means the provider is unavailable or
+        /// the player is not in a loaded world.
+        value: option<instance-state>,
+    }
+
+    record instance-event {
+        /// Sequence and host normalization time for this transition.
+        header: event-header,
+        /// Previous instance, or none when entering from outside the world.
+        previous: option<instance-state>,
+        /// Current instance, or none when leaving the world.
+        current: option<instance-state>,
+    }
+
+    /// Returns the logical world-instance session for this callback.
+    current: func() -> instance-snapshot;
+}

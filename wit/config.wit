@@ -1,0 +1,64 @@
+/// Settings declared and stored by an add-on.
+interface config {
+    enum config-value-kind { boolean, integer, number, text, bytes }
+
+    variant config-value {
+        boolean(bool),
+        integer(s64),
+        number(f64),
+        text(string),
+        bytes(list<u8>),
+    }
+
+    /// How the host presents a setting.
+    enum config-property-access {
+        /// The user and add-on may change the value.
+        editable,
+        /// Host UI shows but does not edit the value. The add-on may still change it.
+        readonly,
+        /// Host UI omits the value. The add-on may still change it.
+        hidden,
+    }
+
+    record config-property-descriptor {
+        /// Stable add-on-local key used by get, set, and remove.
+        key: string,
+        /// Label shown in host-generated settings UI.
+        label: string,
+        /// Optional help text shown with the setting.
+        description: option<string>,
+        /// Value type accepted for this key.
+        value-kind: config-value-kind,
+        /// Value used when the add-on has not stored an explicit override.
+        /// Defaults are descriptor metadata and do not consume storage quota.
+        default-value: config-value,
+        /// Whether host-generated settings UI allows the user to edit this value.
+        access: config-property-access,
+    }
+
+    record config-status {
+        /// Increases after each persisted change. Unchanged writes keep the revision.
+        revision: u64,
+        /// Add-on version that last changed the stored values.
+        saved-by-addon-version: option<string>,
+        /// Bytes used by the add-on's encoded stored values.
+        used-bytes: u64,
+        /// Maximum encoded value bytes available to this add-on.
+        quota-bytes: u64,
+    }
+
+    /// Declares a setting during activation and returns its effective value:
+    /// the saved override when present, otherwise the declared default.
+    register-property: func(descriptor: config-property-descriptor) -> result<config-value, string>;
+
+    /// Returns current storage usage and revision.
+    status: func() -> config-status;
+    /// Returns a declared setting's effective saved-or-default value.
+    get: func(key: string) -> result<config-value, string>;
+
+    /// Saves a setting immediately.
+    set: func(key: string, value: config-value) -> result<config-status, string>;
+    /// Removes a saved override. The setting remains declared and resolves to
+    /// its default value.
+    remove: func(key: string) -> result<config-status, string>;
+}

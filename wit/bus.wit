@@ -1,0 +1,51 @@
+/// Messages sent between add-ons.
+interface bus {
+    /// Sends to every subscriber or to one named add-on.
+    variant message-target {
+        /// Every active exact-topic subscriber except the publisher.
+        subscribers,
+        /// One add-on ID, if that add-on subscribed to the topic. Self-targeting is allowed.
+        addon(string),
+    }
+
+    /// A message whose payload format is defined by its topic.
+    record addon-message {
+        /// Host-assigned message order within this host process.
+        id: u64,
+        /// Milliseconds since this host process started.
+        monotonic-ms: u64,
+        /// Stable add-on ID, or reserved `farever.host` for host-originated messages.
+        source-addon-id: string,
+        /// Exact subscribed topic that defines the payload format.
+        topic: string,
+        /// Publisher-chosen request ID. Scoped to source-addon-id.
+        correlation-id: option<u64>,
+        /// Opaque bytes whose encoding is defined by the topic.
+        payload: list<u8>,
+    }
+
+    enum message-error {
+        /// The topic does not meet the host's topic syntax rules.
+        invalid-topic,
+        /// This message exceeds the per-message payload limit.
+        payload-too-large,
+        /// The add-on has reached its subscription limit.
+        too-many-subscriptions,
+        /// This callback exceeded its message count or byte quota.
+        quota-exceeded,
+        /// The function was called outside a permitted callback.
+        wrong-lifecycle-phase,
+    }
+
+    /// Subscribes to a topic during activation.
+    subscribe: func(topic: string) -> result<_, message-error>;
+
+    /// Stages a message until the callback succeeds. The result is the number
+    /// of active subscribers matched at that time, not a delivery acknowledgement.
+    publish: func(
+        topic: string,
+        target: message-target,
+        correlation-id: option<u64>,
+        payload: list<u8>,
+    ) -> result<u32, message-error>;
+}

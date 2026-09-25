@@ -1,0 +1,9 @@
+[package]
+name = "farever-loot-client"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+eframe.workspace = true
+farever-db = { path = "../farever-db" }

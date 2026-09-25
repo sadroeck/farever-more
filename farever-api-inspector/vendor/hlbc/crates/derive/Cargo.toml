@@ -1,0 +1,21 @@
+[package]
+name = "hlbc-derive"
+version = "0.8.0"
+
+description = "Procedural macros for the 'hlbc' crate"
+rust-version = "1.61"
+authors = ["Guillaume Anthouard <25181283+Gui-Yom@users.noreply.github.com>"]
+edition = "2021"
+repository = "https://github.com/Gui-Yom/hlbc"
+license = "MIT"
+publish = false
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+proc-macro = true
+
+[dependencies]
+quote = "1"
+syn = { version = "2", features = ["full", "extra-traits"] }
+proc-macro2 = "1"
