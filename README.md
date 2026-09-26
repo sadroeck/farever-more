@@ -93,3 +93,9 @@ game-derived content remain subject to their respective rights holders.
 The project source is licensed under MIT; see [LICENSE-MIT](LICENSE-MIT). That
 license does not cover Farever-derived artwork or data. See [the third-party
 notices](THIRD_PARTY_NOTICES.md) for other licenses and attributions.
+
+## Support
+
+<a href="https://www.buymeacoffee.com/colorise" target="_blank" rel="noopener noreferrer">
+  <img src="https://cdn.buymeacoffee.com/buttons/v2/default-blue.png" alt="Buy Me a Coffee" style="height: 60px !important; width: 217px !important;">
+</a>

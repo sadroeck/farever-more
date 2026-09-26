@@ -198,3 +198,9 @@ damage aggregation.
 
 The encounter behavior, displayed totals, and layout still need more in-game
 QA.
+
+## Support
+
+<a href="https://www.buymeacoffee.com/colorise" target="_blank" rel="noopener noreferrer">
+  <img src="https://cdn.buymeacoffee.com/buttons/v2/default-blue.png" alt="Buy Me a Coffee" style="height: 60px !important; width: 217px !important;">
+</a>

@@ -35,3 +35,9 @@ notices](../../THIRD_PARTY_NOTICES.md) for data and artwork boundaries.
 The map currently covers W1. It has no panning, zoom controls, or party
 markers. Clicking a marker requires the GPS add-on to show a waypoint arrow.
 The map's appearance and hooks still need in-game QA on each supported build.
+
+## Support
+
+<a href="https://www.buymeacoffee.com/colorise" target="_blank" rel="noopener noreferrer">
+  <img src="https://cdn.buymeacoffee.com/buttons/v2/default-blue.png" alt="Buy Me a Coffee" style="height: 60px !important; width: 217px !important;">
+</a>
