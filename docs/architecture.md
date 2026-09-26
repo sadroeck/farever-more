@@ -182,4 +182,4 @@ See the [lifecycle and tick overview](lifecycle.md),
 [`farever-addon.wit`](../wit/farever-addon.wit) contract.
 
 The reference meter's behavior and remaining live QA are documented in
-[`dyno.md`](dyno.md).
+[`addons/dyno/README.md`](../addons/dyno/README.md).

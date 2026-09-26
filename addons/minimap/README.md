@@ -23,13 +23,12 @@ poi-database service.
 
 The add-on owns its world-to-image conversion and map image. It uses the generic
 image and canvas features in the add-on API, without a minimap-specific host
-interface. See the [asset note](../addons/minimap/assets/README.md) for
-provenance and attribution.
+interface. See the [asset note](assets/README.md) for provenance and
+attribution.
 
 The point-of-interest provider currently serves the bundled W1 dataset. See
-[services.md](services.md) for the service and
-[the third-party notices](../THIRD_PARTY_NOTICES.md) for data and artwork
-boundaries.
+[services.md](../../docs/services.md) for the service and [the third-party
+notices](../../THIRD_PARTY_NOTICES.md) for data and artwork boundaries.
 
 ## Limits and live QA
 

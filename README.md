@@ -67,8 +67,9 @@ Get-Help .\scripts\farever-addons.ps1 -Full
 Contributor checks are listed in [CONTRIBUTING.md](CONTRIBUTING.md). The
 [architecture guide](docs/architecture.md) lists supported game builds and
 where more in-game QA is needed. The
-[documentation index](docs/README.md) links the SDK guide and reference
-add-on notes.
+[framework documentation index](docs/README.md) covers the framework. Guides
+for the [damage meter](addons/dyno/README.md), [GPS](addons/gps/README.md), and
+[minimap](addons/minimap/README.md) live alongside their source.
 
 ## Release history
 
