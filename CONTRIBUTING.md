@@ -24,7 +24,7 @@ included here.
 ~~~powershell
 cargo fmt --all --check
 cargo test --workspace --exclude hlbc --exclude hlbc-derive
-cargo clippy --workspace --all-targets --exclude hlbc --exclude hlbc-derive
+cargo clippy --workspace --all-targets --no-deps --exclude farever-api-inspector --exclude hlbc --exclude hlbc-derive -- -D warnings -A clippy::too_many_arguments -A clippy::large_enum_variant -A clippy::type_complexity -A clippy::items_after_test_module -A clippy::redundant_closure
 .\scripts\sync-addon-sdk.ps1 -Check
 .\scripts\check-addon-sdk-boundary.ps1
 .\scripts\build-wasm-addons.ps1
@@ -43,6 +43,11 @@ These checks run offline. If a change depends on Farever internals, include
 the game build you checked and say whether you tried it in a live game. A
 successful build or test does not establish live compatibility. Close Farever
 before installing or updating native files.
+
+GitHub Actions runs these checks on `windows-latest` for pushes to `main` and
+pull requests. It also builds the optimized native framework and componentizes
+all maintained reference add-ons, so a green CI run confirms Windows build and
+packaging validation but not live in-game behavior.
 
 ## Keep docs in sync
 

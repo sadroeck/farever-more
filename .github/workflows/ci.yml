@@ -1,0 +1,75 @@
+name: Windows CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  windows:
+    name: Windows build and tests
+    runs-on: windows-latest
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v5
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+          components: rustfmt, clippy
+
+      - name: Cache Rust artifacts
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: |
+            .
+            addons
+
+      - name: Install pinned cargo-component
+        shell: pwsh
+        run: cargo install cargo-component --version 0.21.1 --locked
+
+      - name: Check WIT and SDK synchronization
+        shell: pwsh
+        run: .\scripts\sync-addon-sdk.ps1 -Check
+
+      - name: Check add-on SDK boundary
+        shell: pwsh
+        run: .\scripts\check-addon-sdk-boundary.ps1
+
+      - name: Check framework formatting
+        run: cargo fmt --all --check
+
+      - name: Check add-on formatting
+        run: cargo fmt --manifest-path addons\Cargo.toml --all --check
+
+      - name: Test framework workspace
+        run: cargo test --workspace --exclude hlbc --exclude hlbc-derive
+
+      - name: Test add-on workspace
+        run: cargo test --manifest-path addons\Cargo.toml --workspace --all-targets
+
+      - name: Lint framework workspace
+        run: cargo clippy --workspace --all-targets --no-deps --exclude farever-api-inspector --exclude hlbc --exclude hlbc-derive -- -D warnings -A clippy::too_many_arguments -A clippy::large_enum_variant -A clippy::type_complexity -A clippy::items_after_test_module -A clippy::redundant_closure
+
+      - name: Build framework workspace
+        run: cargo build --workspace --release --exclude hlbc --exclude hlbc-derive
+
+      - name: Build and package reference components
+        shell: pwsh
+        run: .\scripts\build-wasm-addons.ps1 -Configuration Release
+
+      - name: Run host-boundary smoke tests
+        shell: pwsh
+        env:
+          FAREVER_ADDON_SMOKE_DIR: ${{ github.workspace }}\target\addon-dev\addons
+        run: cargo test -p farever-more-runtime -- --ignored

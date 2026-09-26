@@ -6,6 +6,7 @@ These documents describe the framework's current code and contracts.
 | --- | --- |
 | [architecture.md](architecture.md) | How the game loads add-ons, reads game state, and draws overlays |
 | [build-and-install.md](build-and-install.md) | Requirements, build commands, and installation |
+| [releases.md](releases.md) | Windows CI checks, release tags, and published assets |
 | [sdk.md](sdk.md) | Rust authoring SDK, manifests, and component build workflow |
 | [api-versioning.md](api-versioning.md) | How add-on API versions work |
 | [lifecycle.md](lifecycle.md) | When add-ons start, run, and stop |

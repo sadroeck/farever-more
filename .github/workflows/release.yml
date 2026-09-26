@@ -1,0 +1,62 @@
+name: Windows release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  release:
+    name: Build and publish release assets
+    runs-on: windows-latest
+
+    steps:
+      - name: Check out tagged source
+        uses: actions/checkout@v5
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+          components: rustfmt, clippy
+
+      - name: Cache Rust artifacts
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: |
+            .
+            addons
+
+      - name: Install pinned cargo-component
+        shell: pwsh
+        run: cargo install cargo-component --version 0.21.1 --locked
+
+      - name: Validate tagged source
+        shell: pwsh
+        run: |
+          .\scripts\sync-addon-sdk.ps1 -Check
+          .\scripts\check-addon-sdk-boundary.ps1
+          cargo fmt --all --check
+          cargo fmt --manifest-path addons\Cargo.toml --all --check
+          cargo test --workspace --exclude hlbc --exclude hlbc-derive
+          cargo test --manifest-path addons\Cargo.toml --workspace --all-targets
+
+      - name: Package Windows framework and add-ons
+        shell: pwsh
+        run: .\scripts\package-release.ps1 -Version '${{ github.ref_name }}'
+
+      - name: Publish GitHub release
+        uses: softprops/action-gh-release@v3
+        with:
+          name: Farever More ${{ github.ref_name }}
+          generate_release_notes: false
+          body_path: RELEASE_NOTES.md
+          files: |
+            dist/release/*.zip
+            dist/release/release-manifest.json
