@@ -21,4 +21,4 @@ These documents describe the current code and contracts. Read the owner document
 
 The executable contract is [../wit/farever-addon.wit](../wit/farever-addon.wit). Its package version is the add-on API version. See [api-versioning.md](api-versioning.md) for the version rules.
 
-For release readiness, current priorities, and known limitations, see [../ROADMAP.md](../ROADMAP.md). Build and install commands are in the root [README](../README.md).
+Build and install commands are in the root [README](../README.md).

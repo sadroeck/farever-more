@@ -39,7 +39,7 @@ immediately. The host supplies the shell and navigation; the component supplies
 the declarative page and callback behavior. There is no Save button.
 
 Party ranking, additional damage event types, encounter history, and richer
-controls remain planned. The [roadmap](../ROADMAP.md) lists current priorities.
+controls remain planned.
 
 The add-on emits no surface before the first encounter starts. An active
 encounter with no observed damage shows only the title strip and an empty skill

@@ -106,8 +106,8 @@ the recipient must use its topic protocol's resynchronization behavior.
 Messages identify add-ons with the `addon-id` in `activation-context`. The
 current loader derives it from the component filename and allows only one
 active component with that ID. Host messages use the reserved source ID
-`farever.host`, which cannot receive direct messages. The roadmap tracks the
-planned move to stable IDs in the manifest.
+`farever.host`, which cannot receive direct messages. The loader is planned to
+use stable IDs from the manifest in a future release.
 
 The bus does not keep messages private. Any installed add-on can subscribe to
 a topic, so never publish credentials or other secrets. Per-add-on message

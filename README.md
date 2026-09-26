@@ -1,8 +1,9 @@
 # Farever More
 
-An add-on framework for the Steam version of Farever. Add-ons are written in
-Rust and built as WebAssembly components. A native Windows host loads them,
-reads selected game state, and draws their overlays.
+An add-on framework for the Steam version of
+[Farever](https://store.steampowered.com/app/3672400/Farever/). Add-ons are
+written in Rust and built as WebAssembly components. The native Windows host
+loads them, reads selected game state, and draws their overlays.
 
 Farever More is still in early development, so the add-on API and installer may
 change. It currently supports Windows x86-64. Linux and Proton are not
@@ -69,9 +70,8 @@ where more in-game QA is needed. The
 [documentation index](docs/README.md) links the SDK guide and reference
 add-on notes.
 
-## Roadmap
+## Release history
 
-[The roadmap](ROADMAP.md) lists current priorities and known limitations.
 See [CHANGELOG.md](CHANGELOG.md) for release history.
 
 ## Credits

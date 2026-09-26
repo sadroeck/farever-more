@@ -173,13 +173,12 @@ the game window.
 - `windows.focused-window` identifies the frontmost registered game window; it
   does not report keyboard, text-input, or child-control focus.
 - Map parity, broader game-state access, packaged-texture queries, input,
-  storage, and manifest capabilities remain planned; see the [roadmap](../ROADMAP.md).
+  storage, and manifest capabilities remain planned.
 - Components have fuel and memory limits. Wall-clock limits and protections
   against malicious components remain open work.
 
 See the [lifecycle and tick overview](lifecycle.md),
-[add-on message bus](message-bus.md),
-[public roadmap](../ROADMAP.md), and executable
+[add-on message bus](message-bus.md), and executable
 [`farever-addon.wit`](../wit/farever-addon.wit) contract.
 
 The reference meter's behavior and remaining live QA are documented in

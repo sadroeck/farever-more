@@ -100,7 +100,7 @@ separate product slice.
   and cleanup deterministic, at the cost of no rollback after activation has
   begun.
 - Deactivation and activation are synchronous at the safe point. Fuel bounds
-  guest work, but a separate wall-clock deadline is still planned work; see the [roadmap](../ROADMAP.md).
+  guest work, but a separate wall-clock deadline is still planned.
 - If the native watcher misses changes, the host scans the directory again.
   This is only a recovery step, not a periodic scan.
 

@@ -47,9 +47,8 @@ before installing or updating native files.
 ## Keep docs in sync
 
 Update the owning document in `docs/` whenever a change alters a documented
-API, behavior, or workflow. The [documentation index](docs/README.md) points
-to each reference. The [roadmap](ROADMAP.md) lists planned work, not current
-behavior.
+API, behavior, or workflow. Use the [documentation index](docs/README.md) to
+find the right reference.
 
 When changing the WIT contract, bump its version and regenerate the SDK
 bindings with `.\scripts\sync-addon-sdk.ps1`. Then run
