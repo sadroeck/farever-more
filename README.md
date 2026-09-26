@@ -17,52 +17,10 @@ tracking, GPS waypoints, the minimap, and points of interest. The repository
 includes an item-search tool, a Farever API inspector, and game data used by
 the add-ons.
 
-## Before you install
-
-The native host runs inside Farever and uses in-process hooks to read game
-state. An update can change the internals those hooks rely on, and a bug could
-crash or destabilize the game. Check the compatibility notes and try it on an
-installation you can repair. An offline build or test does not show whether the
-host works in-game.
-
-Add-ons run as Wasmtime WebAssembly components and do not receive native game
-pointers. Filesystem and network access through WASI are disabled by default.
-The host itself is trusted native code, so install only add-ons you trust.
-
 ## Build and install
 
-### What you need
-
-- Windows x86-64 and the Steam version of Farever.
-- Stable Rust with the `x86_64-pc-windows-msvc` target.
-- Visual Studio Build Tools with the Desktop development with C++ workload.
-- The `wasm32-unknown-unknown` Rust target for the reference add-ons.
-
-### Build the reference add-ons
-
-To build the reference add-ons from the repository root:
-
-~~~powershell
-rustup target add wasm32-unknown-unknown
-.\scripts\build-wasm-addons.ps1
-~~~
-
-### Install into Farever
-
-Close Farever before installing or updating native files. The installer builds
-and installs the proxy, host, and reference add-ons:
-
-~~~powershell
-.\scripts\farever-addons.ps1 Install
-~~~
-
-The installer uses Farever's `dinput8.dll` proxy slot, which can conflict with
-another mod using the same slot. It tracks the files it owns and refuses to
-replace files it does not own. See the script's other commands and options with:
-
-~~~powershell
-Get-Help .\scripts\farever-addons.ps1 -Full
-~~~
+See the [build and install guide](docs/build-and-install.md) for requirements,
+commands, and installer details.
 
 Contributor checks are listed in [CONTRIBUTING.md](CONTRIBUTING.md). The
 [architecture guide](docs/architecture.md) lists supported game builds and
@@ -86,13 +44,8 @@ Farever-derived artwork.
 
 Farever More is an unofficial community project, not affiliated with or
 endorsed by the Farever developers. Farever names, artwork, maps, and other
-game-derived content remain subject to their respective rights holders.
-
-## License
-
-The project source is licensed under MIT; see [LICENSE-MIT](LICENSE-MIT). That
-license does not cover Farever-derived artwork or data. See [the third-party
-notices](THIRD_PARTY_NOTICES.md) for other licenses and attributions.
+game-derived content remain subject to their respective rights holders. See
+[third-party notices](THIRD_PARTY_NOTICES.md) for asset and data attributions.
 
 ## Support
 

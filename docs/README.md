@@ -5,6 +5,7 @@ These documents describe the framework's current code and contracts.
 | Document | Covers |
 | --- | --- |
 | [architecture.md](architecture.md) | How the game loads add-ons, reads game state, and draws overlays |
+| [build-and-install.md](build-and-install.md) | Requirements, build commands, and installation |
 | [sdk.md](sdk.md) | Rust authoring SDK, manifests, and component build workflow |
 | [api-versioning.md](api-versioning.md) | How add-on API versions work |
 | [lifecycle.md](lifecycle.md) | When add-ons start, run, and stop |
@@ -15,6 +16,7 @@ These documents describe the framework's current code and contracts.
 | [chat-output.md](chat-output.md) | Local chat output |
 | [slash-commands.md](slash-commands.md) | How in-game slash commands reach add-ons |
 | [api-inspector.md](api-inspector.md) | How to inspect Farever's internal API and compare game versions |
+
 The executable contract is [../wit/farever-addon.wit](../wit/farever-addon.wit).
 Its package version is the add-on API version. See [api-versioning.md](api-versioning.md)
 for the version rules.
