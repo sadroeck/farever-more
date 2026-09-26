@@ -56,7 +56,7 @@ jobs:
         with:
           name: Farever More ${{ github.ref_name }}
           generate_release_notes: false
-          body_path: RELEASE_NOTES.md
+          body_path: CHANGELOG.md
           files: |
             dist/release/*.zip
             dist/release/release-manifest.json
