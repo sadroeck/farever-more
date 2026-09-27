@@ -902,6 +902,7 @@ fn load_failure_chat_output(addon_name: &str, error: &str) -> ChatOutput {
     ChatOutput {
         style: ChatOutputStyle::Error,
         text,
+        sender_name: None,
     }
 }
 

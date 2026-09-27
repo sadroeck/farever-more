@@ -672,7 +672,8 @@ fn apply_callback_result(
                 diagnostics.push(message);
             }
             outbound_messages.append(&mut update.outbound);
-            for output in update.chat.drain(..) {
+            for mut output in update.chat.drain(..) {
+                output.sender_name = Some(plugin.chat_name.clone());
                 if let Err(error) = crate::chat_output::enqueue(output) {
                     diagnostics.push(format!(
                         "Wasm chat output dropped path={} error={error}",
@@ -1143,8 +1144,11 @@ impl HostState {
         }
         self.chat_output_count += 1;
         self.chat_output_code_units = next_code_units;
-        self.chat_outputs
-            .push(crate::chat_output::ChatOutput { style, text });
+        self.chat_outputs.push(crate::chat_output::ChatOutput {
+            style,
+            text,
+            sender_name: None,
+        });
     }
 }
 
@@ -1577,6 +1581,7 @@ struct Plugin {
     path: PathBuf,
     namespace: String,
     info: AddonInfo,
+    chat_name: String,
     guest: Rc<RefCell<GuestInstance>>,
     /// Service names this add-on provides, all served at its own `version`.
     provides: Vec<String>,
@@ -1753,6 +1758,12 @@ impl Plugin {
             manifest,
             component,
         } = compiled;
+        let chat_name = manifest
+            .name
+            .as_deref()
+            .map(sanitize_addon_name)
+            .filter(|name| !name.is_empty())
+            .unwrap_or_else(|| info.name.clone());
         check_required_dependencies(&manifest.dependencies, &service_directory.borrow())?;
         let config = ConfigRegistry::open(config_directory, &namespace, info.version.as_deref())
             .map_err(|error| format!("open configuration for {namespace:?}: {error}"))?;
@@ -1827,6 +1838,7 @@ impl Plugin {
             path,
             namespace,
             info,
+            chat_name,
             guest: Rc::new(RefCell::new(GuestInstance { store, bindings })),
             provides: manifest.provides,
             version: manifest.version,

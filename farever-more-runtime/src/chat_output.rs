@@ -22,8 +22,9 @@ use std::sync::OnceLock;
 const CHAT_BOX_TYPE_NAME: &str = "ui.hud.ChatBox";
 const STRING_TYPE_NAME: &str = "String";
 const CHANNEL_TYPE_NAME: &str = "st.Channel";
-const BETA_SENDER_NAME: &str = "Farever-More";
+const FRAMEWORK_SENDER_NAME: &str = "Farever-More";
 pub(crate) const MAX_CHAT_CODE_UNITS: usize = 250;
+const MAX_CHAT_SENDER_CODE_UNITS: usize = 96;
 const OUTPUT_QUEUE_CAPACITY: usize = 128;
 const MAX_OUTPUTS_PER_FRAME: usize = 4;
 
@@ -147,6 +148,9 @@ pub(crate) enum ChatOutputStyle {
 pub(crate) struct ChatOutput {
     pub(crate) style: ChatOutputStyle,
     pub(crate) text: String,
+    /// The host assigns this from the emitting add-on's manifest after a
+    /// successful callback. `None` identifies framework-originated output.
+    pub(crate) sender_name: Option<String>,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -154,6 +158,8 @@ struct RawChatOutput {
     style: ChatOutputStyle,
     length: u16,
     code_units: [u16; MAX_CHAT_CODE_UNITS],
+    sender_length: u16,
+    sender_code_units: [u16; MAX_CHAT_SENDER_CODE_UNITS],
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -275,6 +281,9 @@ pub(crate) fn drain_queued_for_tests() -> Vec<ChatOutput> {
         outputs.push(ChatOutput {
             style: raw.style,
             text: String::from_utf16_lossy(&raw.code_units[..raw.length as usize]),
+            sender_name: (raw.sender_length > 0).then(|| {
+                String::from_utf16_lossy(&raw.sender_code_units[..raw.sender_length as usize])
+            }),
         });
     }
     outputs
@@ -294,6 +303,8 @@ fn encode_output(output: &ChatOutput) -> Result<RawChatOutput, String> {
         style: output.style,
         length: 0,
         code_units: [0; MAX_CHAT_CODE_UNITS],
+        sender_length: 0,
+        sender_code_units: [0; MAX_CHAT_SENDER_CODE_UNITS],
     };
     let mut length = 0_usize;
     for code_unit in output.text.encode_utf16() {
@@ -306,6 +317,19 @@ fn encode_output(output: &ChatOutput) -> Result<RawChatOutput, String> {
         length += 1;
     }
     raw.length = u16::try_from(length).expect("chat output length is bounded to 250");
+    if let Some(sender_name) = &output.sender_name {
+        let mut sender_length = 0_usize;
+        for code_unit in sender_name.encode_utf16() {
+            if sender_length == MAX_CHAT_SENDER_CODE_UNITS {
+                return Err(format!(
+                    "chat sender exceeds {MAX_CHAT_SENDER_CODE_UNITS} UTF-16 code units"
+                ));
+            }
+            raw.sender_code_units[sender_length] = code_unit;
+            sender_length += 1;
+        }
+        raw.sender_length = u16::try_from(sender_length).expect("chat sender length is bounded");
+    }
     Ok(raw)
 }
 
@@ -459,7 +483,7 @@ fn resolve_dispatch(
                     .field_type_address("uid")
                     .ok_or_else(|| "validated beta sender omitted uid".to_owned())?,
             },
-            name: encode_literal(BETA_SENDER_NAME)?,
+            name: encode_literal(FRAMEWORK_SENDER_NAME)?,
             uid: encode_literal("")?,
             hash: hash(c"sender"),
         })
@@ -617,7 +641,14 @@ unsafe fn dispatch_one(
     output: RawChatOutput,
     bindings: DispatchBindings,
 ) -> bool {
-    let Some(text) = (unsafe { allocate_string(&output, bindings) }) else {
+    // Stable's sender field is an ent.Unit, so it cannot carry an add-on name.
+    // chatError likewise has no sender argument. Prefix those lines in bounded
+    // UTF-16 while beta normal lines use the validated sender virtual.
+    let (text_units, text_length) = text_for_dispatch(
+        &output,
+        output.style == ChatOutputStyle::Error || bindings.sender.is_none(),
+    );
+    let Some(text) = (unsafe { allocate_string(&text_units[..text_length], bindings) }) else {
         return false;
     };
     match output.style {
@@ -682,10 +713,18 @@ unsafe fn dispatch_one(
                     if sender_object.is_null() {
                         return false;
                     }
-                    let Some(sender_name) = allocate_string(&sender.name, bindings) else {
+                    let sender_units = if output.sender_length > 0 {
+                        &output.sender_code_units[..usize::from(output.sender_length)]
+                    } else {
+                        &sender.name.code_units[..usize::from(sender.name.length)]
+                    };
+                    let Some(sender_name) = allocate_string(sender_units, bindings) else {
                         return false;
                     };
-                    let Some(sender_uid) = allocate_string(&sender.uid, bindings) else {
+                    let Some(sender_uid) = allocate_string(
+                        &sender.uid.code_units[..usize::from(sender.uid.length)],
+                        bindings,
+                    ) else {
                         return false;
                     };
                     dyn_set_pointer(
@@ -739,15 +778,37 @@ unsafe fn dispatch_one(
     }
 }
 
-unsafe fn allocate_string(
+fn text_for_dispatch(
     output: &RawChatOutput,
-    bindings: DispatchBindings,
-) -> Option<*mut c_void> {
+    prefix_sender: bool,
+) -> ([u16; MAX_CHAT_CODE_UNITS], usize) {
+    let mut units = [0_u16; MAX_CHAT_CODE_UNITS];
+    let mut length = 0;
+    if prefix_sender && output.sender_length > 0 {
+        let sender_length = usize::from(output.sender_length);
+        units[..sender_length].copy_from_slice(&output.sender_code_units[..sender_length]);
+        length = sender_length;
+        units[length] = u16::from(b':');
+        units[length + 1] = u16::from(b' ');
+        length += 2;
+    }
+    let mut text_length = usize::from(output.length).min(MAX_CHAT_CODE_UNITS - length);
+    if text_length < usize::from(output.length)
+        && text_length > 0
+        && (0xD800..=0xDBFF).contains(&output.code_units[text_length - 1])
+    {
+        text_length -= 1;
+    }
+    units[length..length + text_length].copy_from_slice(&output.code_units[..text_length]);
+    (units, length + text_length)
+}
+
+unsafe fn allocate_string(units: &[u16], bindings: DispatchBindings) -> Option<*mut c_void> {
     let alloc_obj: HlAllocObj = function_pointer(bindings.alloc_obj);
     let alloc_bytes: HlAllocBytes = function_pointer(bindings.alloc_bytes);
     // SAFETY: both exports and the concrete String type were build-validated.
     let string = unsafe { alloc_obj(bindings.string.string_type as *mut c_void) };
-    let byte_count = (usize::from(output.length) + 1).checked_mul(size_of::<u16>())?;
+    let byte_count = (units.len() + 1).checked_mul(size_of::<u16>())?;
     let byte_count = i32::try_from(byte_count).ok()?;
     // SAFETY: the bounded byte count includes one UTF-16 terminator.
     let bytes = unsafe { alloc_bytes(byte_count) };
@@ -758,12 +819,8 @@ unsafe fn allocate_string(
     // bounded source and terminator. The object offsets came from String shape
     // validation before the dispatch hook was enabled.
     unsafe {
-        std::ptr::copy_nonoverlapping(
-            output.code_units.as_ptr(),
-            bytes.cast::<u16>(),
-            usize::from(output.length),
-        );
-        bytes.cast::<u16>().add(usize::from(output.length)).write(0);
+        std::ptr::copy_nonoverlapping(units.as_ptr(), bytes.cast::<u16>(), units.len());
+        bytes.cast::<u16>().add(units.len()).write(0);
         std::ptr::write_unaligned(
             string
                 .cast::<u8>()
@@ -776,7 +833,7 @@ unsafe fn allocate_string(
                 .cast::<u8>()
                 .add(bindings.string.length)
                 .cast::<i32>(),
-            i32::from(output.length),
+            i32::try_from(units.len()).ok()?,
         );
     }
     Some(string)
@@ -786,6 +843,7 @@ fn encode_literal(text: &str) -> Result<RawChatOutput, String> {
     encode_output(&ChatOutput {
         style: ChatOutputStyle::Normal,
         text: text.to_owned(),
+        sender_name: None,
     })
 }
 
@@ -805,6 +863,7 @@ mod tests {
         let output = ChatOutput {
             style: ChatOutputStyle::Normal,
             text: format!("{}😀", "a".repeat(248)),
+            sender_name: None,
         };
         let raw = encode_output(&output).expect("250 UTF-16 code units");
         assert_eq!(raw.length, 250);
@@ -812,6 +871,7 @@ mod tests {
         let oversized = ChatOutput {
             style: ChatOutputStyle::Error,
             text: format!("{}😀", "a".repeat(249)),
+            sender_name: None,
         };
         assert!(encode_output(&oversized).is_err());
     }
