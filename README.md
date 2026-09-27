@@ -2,8 +2,10 @@
 
 An add-on framework for the Steam version of
 [Farever](https://store.steampowered.com/app/3672400/Farever/). Add-ons are
-written in Rust and built as WebAssembly components. The native Windows host
-loads them, reads selected game state, and draws their overlays.
+WebAssembly components built against the [WIT API](wit/farever-addon.wit), so
+they can be written in any language that produces a compatible component. We
+provide a first-class [Rust SDK](docs/sdk.md) for that API. The native Windows
+host loads add-ons, reads selected game state, and draws their overlays.
 
 Farever More is still in early development, so the add-on API and installer may
 change. It currently supports Windows x86-64. Linux and Proton are not
@@ -11,8 +13,8 @@ supported yet; Linux support is planned for a future release.
 
 ## What you can build
 
-Farever More includes a Rust SDK and build tools for add-on authors, a desktop
-manager, and an installer. It also comes with reference add-ons for damage
+Farever More includes Rust add-on build tools, a desktop manager, and an
+installer. It also comes with reference add-ons for damage
 tracking, GPS waypoints, the minimap, and points of interest. The repository
 includes an item-search tool, a Farever API inspector, and game data used by
 the add-ons.

@@ -1,8 +1,10 @@
 # Farever More architecture
 
-Farever More runs Rust add-ons as WebAssembly components. A trusted Windows
-host reads selected game state, calls add-ons through a versioned WIT interface,
-and renders their overlays. Each add-on folder under `farever-addons/addons`
+Farever More runs add-ons as WebAssembly components. Authors can use any
+language that produces a component compatible with the versioned WIT interface;
+the repository provides a Rust SDK for that interface. A trusted Windows host
+reads selected game state, calls add-ons, and renders their overlays. Each
+add-on folder under `farever-addons/addons`
 contains an `addon.json` manifest and an `addon.wasm` component.
 
 ## Architecture
