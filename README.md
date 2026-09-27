@@ -11,14 +11,6 @@ Farever More is still in early development, so the add-on API and installer may
 change. It currently supports Windows x86-64. Linux and Proton are not
 supported yet; Linux support is planned for a future release.
 
-## What you can build
-
-Farever More includes Rust add-on build tools, a desktop manager, and an
-installer. It also comes with reference add-ons for damage
-tracking, GPS waypoints, the minimap, and points of interest. The repository
-includes an item-search tool, a Farever API inspector, and game data used by
-the add-ons.
-
 ## Addons
 
 <table>
@@ -38,10 +30,17 @@ the add-ons.
   </tr>
 </table>
 
-## Build and install
+## How to install
 
-See the [build and install guide](docs/build-and-install.md) for requirements,
-commands, and installer details.
+Download the framework and add-ons from the
+[latest release](https://github.com/sadroeck/farever-more/releases/latest). Close
+Farever before installing or updating them.
+
+## Contributing
+
+To build and install from source, see the [build and install
+guide](docs/build-and-install.md) for requirements, commands, and installer
+details.
 
 Contributor checks are listed in [CONTRIBUTING.md](CONTRIBUTING.md). The
 [architecture guide](docs/architecture.md) lists supported game builds and
