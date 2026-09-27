@@ -32,20 +32,24 @@ the surface is hidden. The surface disappears when the sequence is exhausted.
 The sequence remains scoped to the current in-world session and is cleared
 after leaving the world or starting a new process session.
 
-The damage meter subscribes to the `dps` topic. It accepts:
+The Dyno damage meter subscribes to the `dyno` topic. It accepts:
 
 ```text
-/dps reset
-/dps show
-/dps hide
+/dyno clear
+/dyno reset
+/dyno show
+/dyno hide
 ```
 
-`reset` clears the current encounter segment while preserving the visibility
-choice. In an instance Overall view, it also removes that current or most
-recent encounter's damage and duration from Overall. `show` and `hide` update
-the same persisted visibility setting exposed in the add-on configuration
-page; `show` does not create an empty meter before encounter data exists. The
-former configuration-page reset button is intentionally not exposed.
+`clear` and `reset` are aliases. They clear the current encounter segment while
+preserving the visibility choice. In an instance Overall view, they also remove
+that current or most recent encounter's damage and duration from Overall.
+`show` and `hide` update the same persisted visibility setting exposed in the
+add-on configuration page; `show` does not create an empty meter before
+encounter data exists. The former configuration-page reset button is
+intentionally not exposed.
+
+The earlier `/dps` topic remains available and accepts the same actions.
 
 Slash-command interception defaults to enabled. The `Farever More` settings
 page in the central configuration menu exposes an `Enable slash commands`

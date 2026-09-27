@@ -33,10 +33,15 @@ or assets from either one for the damage meter.
 - Warns when event delivery is discontinuous.
 
 The component also registers a `settings` page in the host Add-ons menu from
-activation onward. Its persisted `Show damage meter` checkbox and
-encounter-reset button update component state and replace the retained frame
-immediately. The host supplies the shell and navigation; the component supplies
-the declarative page and callback behavior. There is no Save button.
+activation onward. Its persisted `Enable damage meter` checkbox updates component
+state and replaces the retained frame immediately. The host supplies the shell
+and navigation; the component supplies the declarative page and callback
+behavior. There is no Save button.
+
+Native chat commands `/dyno clear` and `/dyno reset` clear the current encounter
+segment. `/dyno show` and `/dyno hide` update the persisted visibility setting.
+The older `/dps` command name remains an alias. See the [slash-command
+reference](../../docs/slash-commands.md) for the reset behavior.
 
 Party ranking, additional damage event types, encounter history, and richer
 controls remain planned.

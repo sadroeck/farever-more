@@ -2,6 +2,7 @@ use farever_more_sdk::prelude::*;
 use farever_more_sdk::ui;
 use std::collections::BTreeMap;
 
+const DYNO_TOPIC: &str = "dyno";
 const DPS_TOPIC: &str = "dps";
 const HOST_MESSAGE_SOURCE_ID: &str = "farever.host";
 const METER_WIDTH: f32 = 440.0;
@@ -536,10 +537,12 @@ impl DamageMeter {
 impl Addon for DamageMeter {
     fn activate(context: &mut ActivateContext) -> SdkResult<Self> {
         let visible = context.config().register(&VISIBLE)?;
-        context
-            .bus()
-            .subscribe(DPS_TOPIC)
-            .map_err(|error| format!("failed to subscribe to /dps commands: {error:?}"))?;
+        for topic in [DYNO_TOPIC, DPS_TOPIC] {
+            context
+                .bus()
+                .subscribe(topic)
+                .map_err(|error| format!("failed to subscribe to /{topic} commands: {error:?}"))?;
+        }
         context.assets().register_font(
             "noto-sans-regular",
             &[TextStyle::Body, TextStyle::Small],
@@ -588,7 +591,7 @@ impl Addon for DamageMeter {
     fn on_messages(&mut self, context: &mut Context, batch: Messages) -> SdkResult<()> {
         if batch.dropped_before() > 0 {
             let warning = format!(
-                "Dropped {} queued /dps command(s) before delivery",
+                "Dropped {} queued damage-meter command(s) before delivery",
                 batch.dropped_before()
             );
             context.log().warning(&warning);
@@ -597,7 +600,7 @@ impl Addon for DamageMeter {
 
         let mut confirmation = None;
         for message in batch.into_messages() {
-            let Some(command) = host_dps_command(&message) else {
+            let Some(command) = host_meter_command(&message) else {
                 continue;
             };
             match command {
@@ -609,7 +612,7 @@ impl Addon for DamageMeter {
                     confirmation = Some(self.state.apply_command(command));
                 }
                 Err(error) => {
-                    let warning = format!("Ignored /dps command: {error}");
+                    let warning = format!("Ignored /{} command: {error}", message.topic);
                     context.log().warning(&warning);
                     context.chat().error(&warning);
                 }
@@ -975,27 +978,28 @@ fn table_text_cell(
     });
 }
 
-fn parse_dps_command(payload: &[u8]) -> Result<DpsCommand, String> {
+fn parse_meter_command(payload: &[u8]) -> Result<DpsCommand, String> {
     let input =
         std::str::from_utf8(payload).map_err(|_| "the payload is not valid UTF-8".to_owned())?;
     let mut arguments = input.split_whitespace();
     let command = arguments
         .next()
-        .ok_or_else(|| "expected `reset`, `show`, or `hide`".to_owned())?;
+        .ok_or_else(|| "expected `clear`, `reset`, `show`, or `hide`".to_owned())?;
     if arguments.next().is_some() {
         return Err(format!("`{command}` does not accept arguments"));
     }
     match command {
-        "reset" => Ok(DpsCommand::Reset),
+        "clear" | "reset" => Ok(DpsCommand::Reset),
         "show" => Ok(DpsCommand::Show),
         "hide" => Ok(DpsCommand::Hide),
-        _ => Err("expected `reset`, `show`, or `hide`".to_owned()),
+        _ => Err("expected `clear`, `reset`, `show`, or `hide`".to_owned()),
     }
 }
 
-fn host_dps_command(message: &Message) -> Option<Result<DpsCommand, String>> {
-    (message.topic == DPS_TOPIC && message.source_addon_id == HOST_MESSAGE_SOURCE_ID)
-        .then(|| parse_dps_command(&message.payload))
+fn host_meter_command(message: &Message) -> Option<Result<DpsCommand, String>> {
+    ((message.topic == DYNO_TOPIC || message.topic == DPS_TOPIC)
+        && message.source_addon_id == HOST_MESSAGE_SOURCE_ID)
+        .then(|| parse_meter_command(&message.payload))
 }
 
 fn compact_number(value: f64) -> String {
@@ -1606,18 +1610,19 @@ mod tests {
     }
 
     #[test]
-    fn dps_command_parser_accepts_only_the_three_exact_commands() {
-        assert_eq!(parse_dps_command(b"reset"), Ok(DpsCommand::Reset));
-        assert_eq!(parse_dps_command(b" show "), Ok(DpsCommand::Show));
-        assert_eq!(parse_dps_command(b"hide"), Ok(DpsCommand::Hide));
-        assert!(parse_dps_command(b"").is_err());
-        assert!(parse_dps_command(b"show now").is_err());
-        assert!(parse_dps_command(b"SHOW").is_err());
-        assert!(parse_dps_command(&[0xFF]).is_err());
+    fn meter_command_parser_accepts_clear_reset_show_and_hide() {
+        assert_eq!(parse_meter_command(b"clear"), Ok(DpsCommand::Reset));
+        assert_eq!(parse_meter_command(b"reset"), Ok(DpsCommand::Reset));
+        assert_eq!(parse_meter_command(b" show "), Ok(DpsCommand::Show));
+        assert_eq!(parse_meter_command(b"hide"), Ok(DpsCommand::Hide));
+        assert!(parse_meter_command(b"").is_err());
+        assert!(parse_meter_command(b"show now").is_err());
+        assert!(parse_meter_command(b"SHOW").is_err());
+        assert!(parse_meter_command(&[0xFF]).is_err());
     }
 
     #[test]
-    fn only_host_originated_dps_messages_are_commands() {
+    fn only_host_originated_meter_messages_are_commands() {
         let message = |topic: &str, source: &str| Message {
             id: 1,
             monotonic_ms: 1_000,
@@ -1628,14 +1633,21 @@ mod tests {
         };
 
         assert_eq!(
-            host_dps_command(&message(DPS_TOPIC, HOST_MESSAGE_SOURCE_ID)),
+            host_meter_command(&message(DYNO_TOPIC, HOST_MESSAGE_SOURCE_ID)),
             Some(Ok(DpsCommand::Hide))
         );
         assert_eq!(
-            host_dps_command(&message("other", HOST_MESSAGE_SOURCE_ID)),
+            host_meter_command(&message(DPS_TOPIC, HOST_MESSAGE_SOURCE_ID)),
+            Some(Ok(DpsCommand::Hide))
+        );
+        assert_eq!(
+            host_meter_command(&message("other", HOST_MESSAGE_SOURCE_ID)),
             None
         );
-        assert_eq!(host_dps_command(&message(DPS_TOPIC, "other-addon")), None);
+        assert_eq!(
+            host_meter_command(&message(DYNO_TOPIC, "other-addon")),
+            None
+        );
     }
 
     #[test]
