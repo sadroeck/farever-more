@@ -17,6 +17,20 @@ tracking, GPS waypoints, the minimap, and points of interest. The repository
 includes an item-search tool, a Farever API inspector, and game data used by
 the add-ons.
 
+## In-game preview
+
+### Minimap and points of interest
+
+![North-up minimap with a player arrow and nearby points of interest](docs/media/farever_more_minimap.gif)
+
+### Damage meter
+
+![Dyno damage meter showing damage by ability during a fight](docs/media/farever_more_dyno.gif)
+
+### Chat commands
+
+![Local chat showing a Dyno slash command and its response](docs/media/farever_more_chat_commands.gif)
+
 ## Build and install
 
 See the [build and install guide](docs/build-and-install.md) for requirements,
