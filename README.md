@@ -19,17 +19,22 @@ the add-ons.
 
 ## In-game preview
 
-### Minimap and points of interest
-
-![North-up minimap with a player arrow and nearby points of interest](docs/media/farever_more_minimap.gif)
-
-### Damage meter
-
-![Dyno damage meter showing damage by ability during a fight](docs/media/farever_more_dyno.gif)
-
-### Chat commands
-
-![Local chat showing a Dyno slash command and its response](docs/media/farever_more_chat_commands.gif)
+<table>
+  <tr>
+    <th>Minimap and points of interest</th>
+    <th>Damage meter</th>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/media/farever_more_minimap.gif" width="320" alt="North-up minimap with a player arrow and nearby points of interest"></td>
+    <td align="center"><img src="docs/media/farever_more_dyno.gif" width="520" alt="Dyno damage meter showing damage by ability during a fight"></td>
+  </tr>
+  <tr>
+    <th colspan="2">Chat commands</th>
+  </tr>
+  <tr>
+    <td colspan="2" align="center"><img src="docs/media/farever_more_chat_commands.gif" width="606" alt="Local chat showing a Dyno slash command and its response"></td>
+  </tr>
+</table>
 
 ## Build and install
 
