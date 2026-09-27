@@ -17,7 +17,7 @@ tracking, GPS waypoints, the minimap, and points of interest. The repository
 includes an item-search tool, a Farever API inspector, and game data used by
 the add-ons.
 
-## In-game preview
+## Addons
 
 <table>
   <tr>
