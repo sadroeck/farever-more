@@ -157,8 +157,9 @@ debug level. Add-on `log()` messages use the same file and level policy.
 `FAREVER_LOG_LEVEL` accepts `error`, `warn`, `info`, or `debug` and defaults to
 `info`. The log rotates at 8 MB through `host.log.1` to `host.log.3`.
 
-During startup and after logout, a small host panel shows the runtime version
-and loaded add-ons. It disappears when the next character world becomes live.
+During startup, a small host panel shows the runtime version and loaded
+add-ons. Manual logout clears the overlay frame and hides both overlay windows
+at the main menu. They reappear when the next character world is entered.
 The damage meter appears while Farever is usable and active, and scales with
 the game window.
 

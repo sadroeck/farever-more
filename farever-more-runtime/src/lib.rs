@@ -865,7 +865,12 @@ pub fn run(config: RuntimeConfig) {
             }
         }
 
-        if !entered_world {
+        // A manual logout ends the add-on session. Publish an empty frame for
+        // the menu instead of replacing the cleared add-on UI with the startup
+        // status surface.
+        if awaiting_world_after_logout {
+            ui_frame = UiFrame::default();
+        } else if !entered_world {
             append_runtime_status(&mut ui_frame, &displayed_addons);
         }
         // One CPU sample every ten seconds is a health signal, not a fact about
@@ -882,7 +887,8 @@ pub fn run(config: RuntimeConfig) {
                 None => diagnostics.debug("performance host_thread_cpu_percent=unavailable"),
             }
         }
-        let show_overlay = latest_raw.process_found != 0
+        let show_overlay = !awaiting_world_after_logout
+            && latest_raw.process_found != 0
             && (latest_raw.adapter_status == ADAPTER_WAITING_TO_SCAN
                 || latest_raw.adapter_status == ADAPTER_SEARCHING
                 || (latest_raw.adapter_status == ADAPTER_LIVE && latest_raw.app_found != 0));
