@@ -35,12 +35,12 @@ See [CHANGELOG.md](CHANGELOG.md) for release history.
 
 ## Credits
 
-Farever More's minimap was inspired by ramisotti13-eng's [Farever Minimap &
-DPS project](https://github.com/ramisotti13-eng/farever-minimap). Some map and
-marker assets come from its [v1.2.7
-release](https://github.com/ramisotti13-eng/farever-minimap/releases/tag/v1.2.7).
-The [minimap asset note](addons/minimap/assets/README.md) attributes the
-Farever-derived artwork.
+Farever More was inspired by ramisotti13-eng's [Farever Minimap & DPS
+project](https://github.com/ramisotti13-eng/farever-minimap). The W1 map and
+POI atlas assets come from its [v1.2.7
+release](https://github.com/ramisotti13-eng/farever-minimap/releases/tag/v1.2.7);
+the minimap's player arrow is custom artwork authored in SVG and bundled as a
+pre-rendered PNG.
 
 Farever More is an unofficial community project, not affiliated with or
 endorsed by the Farever developers. Farever names, artwork, maps, and other

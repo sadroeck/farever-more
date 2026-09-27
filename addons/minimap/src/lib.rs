@@ -1195,21 +1195,21 @@ fn direction_cone_points(
 
 /// The reference heading convention is already aligned with the north-up map
 /// axes: zero points along the map's +X/right axis and positive angles turn
-/// toward +Y/down. The player asset also points right, so no extra base offset
-/// is applied to either the marker or the direction cones.
+/// toward +Y/down. The bundled player marker faces right, so no extra base
+/// offset is applied to the marker or the direction cones.
 fn heading_vector(heading: f32) -> [f32; 2] {
     [heading.cos(), heading.sin()]
 }
 
 fn player_marker_rotation(heading: Option<f32>) -> f32 {
-    // PlayerMapArrow.png points right in source pixels.
+    // The SVG source points right, matching heading zero.
     heading.unwrap_or(0.0)
 }
 
 farever_more_sdk::export!(MinimapPoc);
 
 const MAP_IMAGE_PNG: &[u8] = include_bytes!("../assets/W1_Siagarta.preview.png");
-const PLAYER_MARKER_PNG: &[u8] = include_bytes!("../assets/PlayerMapArrow.png");
+const PLAYER_MARKER_PNG: &[u8] = include_bytes!("../assets/player_marker.png");
 // Marker source atlases: the farever-minimap release atlases
 // plus one add-on-owned atlas holding generated art (ore crystal, plant
 // leaf, orb). Markers sample cells; see POI_KIND_DEFS for the mapping.

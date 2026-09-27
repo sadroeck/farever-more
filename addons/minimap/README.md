@@ -6,8 +6,8 @@ poi-database service.
 
 ## Behavior
 
-- The map stays north-up. The player arrow follows the player's heading, while
-  a pale cone shows camera direction.
+- The map stays north-up. A custom bronze-and-parchment player arrow follows
+  the player's heading, while a pale cone shows camera direction.
 - A north marker sits above the map edge. The frame can be circular or
   rounded-square.
 - POIs are filtered by category. Clicking a visible marker publishes a
@@ -21,10 +21,11 @@ poi-database service.
 
 ## Data and rendering
 
-The add-on owns its world-to-image conversion and map image. It uses the generic
-image and canvas features in the add-on API, without a minimap-specific host
-interface. See the [asset note](assets/README.md) for provenance and
-attribution.
+The add-on owns its world-to-image conversion and map image. The player arrow
+has a scalable SVG source and a bundled PNG that the host rotates with the
+player's heading. Rendering uses the generic image and canvas features in the
+add-on API, without a minimap-specific host interface. See the [asset
+note](assets/README.md) for provenance and attribution.
 
 The point-of-interest provider currently serves the bundled W1 dataset. See
 [services.md](../../docs/services.md) for the service and [the third-party
