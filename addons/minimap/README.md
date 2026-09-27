@@ -15,9 +15,10 @@ poi-database service.
   map-clicks setting is enabled.
 - The add-on hides outside W1 or when the player is not in the world.
   EscapeMenu, GameMenu, and LoadingScreen may remain open; another registered
-  game window hides the minimap. LoadingScreen is allowed only after the W1
-  area and a valid player position are available, so it cannot expose a map
-  over the character menu.
+  game window hides the minimap. LoadingScreen is allowed only after the host
+  reports the world playable, the W1 area, and a valid player position. This
+  permits the map to appear promptly even if the loading window stays
+  registered after the player can move.
 
 ## Data and rendering
 

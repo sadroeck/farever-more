@@ -2,6 +2,7 @@ use crate::config::{
     ConfigPropertyAccess, ConfigPropertyDescriptor, ConfigRegistry, ConfigStatus, ConfigValue,
     ConfigValueKind,
 };
+use crate::game_build::GAME_APP_LOADING_STATE_PLAYABLE;
 use farever_more_api as api;
 use farever_more_manifest::api::ApiVersion;
 pub(crate) use farever_more_manifest::{
@@ -2469,11 +2470,13 @@ impl Drop for Plugin {
 }
 
 fn to_wit_snapshot(snapshot: &api::GameSnapshot) -> model::CallbackSnapshot {
+    // The world and Hero can be observed while Farever is still drawing its
+    // loading screen, before the final loading state is reached.
+    let in_world = snapshot.session.in_world
+        && snapshot.session.loading_state == Some(GAME_APP_LOADING_STATE_PLAYABLE);
     let status = |revision| {
         let (observed_at_ms, unavailable_reason, has_value) = match snapshot.session.adapter {
-            api::Availability::Live if snapshot.session.in_world => {
-                (Some(snapshot.captured_at_ms), None, true)
-            }
+            api::Availability::Live if in_world => (Some(snapshot.captured_at_ms), None, true),
             api::Availability::Live if snapshot.session.loading_state.is_some() => {
                 (None, Some(model::UnavailableReason::Loading), false)
             }
@@ -2509,7 +2512,7 @@ fn to_wit_snapshot(snapshot: &api::GameSnapshot) -> model::CallbackSnapshot {
         },
         session: model::SessionState {
             process_session: snapshot.session.process_session,
-            in_world: snapshot.session.in_world,
+            in_world,
         },
         player: model::PlayerSnapshot {
             status: to_wit_state_status(&snapshot.player),
@@ -3688,7 +3691,7 @@ mod tests {
                 process_session: 11,
                 adapter: api::Availability::Live,
                 in_world: true,
-                loading_state: None,
+                loading_state: Some(GAME_APP_LOADING_STATE_PLAYABLE),
             },
             player: api::StateSnapshot::live(
                 250,
@@ -4226,6 +4229,32 @@ mod tests {
                 kind: model::InstanceKind::Dungeon,
                 ..
             })
+        ));
+    }
+
+    #[test]
+    fn guest_world_waits_for_playable_loading_state() {
+        const WORLD_ALLOCATED_LOADING_STATE: i32 = 2;
+        let mut source = live_snapshot();
+        source.session.loading_state = Some(WORLD_ALLOCATED_LOADING_STATE);
+        source.ui.open_windows = vec!["ui.win.LoadingScreen".to_owned()];
+
+        let loading = to_wit_snapshot(&source);
+        assert!(!loading.session.in_world);
+        assert_eq!(
+            loading.zone.status.reason,
+            Some(model::UnavailableReason::Loading)
+        );
+        assert!(loading.zone.value.is_none());
+        assert!(loading.windows.value.is_none());
+
+        source.session.loading_state = Some(GAME_APP_LOADING_STATE_PLAYABLE);
+        let playable = to_wit_snapshot(&source);
+        assert!(playable.session.in_world);
+        assert!(playable.zone.value.is_some());
+        assert!(matches!(
+            playable.windows.value.as_ref().map(|windows| windows.open_windows.as_slice()),
+            Some([window]) if window == "ui.win.LoadingScreen"
         ));
     }
 

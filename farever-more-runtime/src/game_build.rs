@@ -3,6 +3,9 @@
 use crate::hashlink::{verify_build, BuildFileSpec, HashLinkBuildSpec};
 use std::path::Path;
 
+/// Final `GameApp.loadingState` shared by the two exact supported builds.
+pub(crate) const GAME_APP_LOADING_STATE_PLAYABLE: i32 = 10;
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) enum GameBuildProfile {
     Stable25257040,

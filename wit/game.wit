@@ -13,7 +13,7 @@ interface game {
     record session-state {
         /// The same host process session ID returned by observation().
         process-session: u64,
-        /// Whether the player is currently in a loaded game world.
+        /// Whether the player is in a playable game world after loading finishes.
         in-world: bool,
     }
 
