@@ -17,11 +17,20 @@ The workflow publishes:
 - `farever-more-framework-v<version>-windows-x86_64.zip`, containing the
   native proxy and host binaries, the direct-install runtime layout,
   and the framework notices;
+- `farever-more-framework-v<version>-windows-x86_64-full.zip`, containing that
+  framework plus Dyno, GPS, Minimap, and POI Database already placed under
+  `farever-addons/addons/<id>/`, including their manifests and notices;
 - one `farever-more-addon-<id>-v<addon-version>.zip` per maintained reference
   add-on, containing `addon.wasm`, its stamped `addon.json`, and any add-on
   notices or licenses;
 - `release-manifest.json`, which records the framework and add-on versions,
-  API versions, archive names, and archive SHA-256 hashes.
+  API versions, archive names, and archive SHA-256 hashes. Its `full` entry
+  records the bundled archive's framework version, filename, and checksum;
+  the bundled add-on versions are listed in `addons`.
+
+The full bundle is the default installation: extract its contents beside
+`Farever.exe` with the game closed. The separate framework and add-on ZIPs
+support selecting individual add-ons.
 
 The framework release version and add-on release versions are independent of
 the WIT add-on API version. The current public API is `1.0.0`; the framework

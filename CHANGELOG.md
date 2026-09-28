@@ -15,6 +15,8 @@
 - Ship Minimap `0.1.1` with its custom player marker artwork.
 - Package the native runtime without the unfinished standalone manager and
   include manual installation instructions with the add-on folder layout.
+- Offer a `-full.zip` with the runtime and all four add-ons ready to extract
+  into the game folder.
 
 Full-map targeting and the lower arrow placement were validated in-game on
 Farever beta Steam profile `25531577`. The WIT add-on API remains `1.0.0`.

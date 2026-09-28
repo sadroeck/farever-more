@@ -32,16 +32,17 @@ supported yet; Linux support is planned for a future release.
 
 ## How to install
 
-Download the framework and add-ons from the
+Download the **`-full.zip`** bundle (framework and all four add-ons) from the
 [latest release](https://github.com/sadroeck/farever-more/releases/latest).
 
-1. Close Farever and extract the **framework ZIP contents** into the folder
-   containing `Farever.exe`.
-2. Create `farever-addons/addons/<id>/` for each add-on (`dyno`, `gps`, `minimap`,
-   or `poi-database`) and extract its ZIP contents there. Each folder must
-   contain `addon.json` and `addon.wasm` directly, plus any bundled notices.
-3. For **Minimap**, install **POI Database** too.
-4. Start Farever to load the add-ons.
+1. Close Farever and extract the **full ZIP contents** into the folder containing
+   `Farever.exe`. The add-on folders are already arranged correctly.
+2. Start Farever to load the add-ons.
+
+For a custom selection, use the framework ZIP and extract each chosen add-on
+ZIP into `farever-addons/addons/<id>/` (`dyno`, `gps`, `minimap`, or
+`poi-database`). Each folder must contain `addon.json` and `addon.wasm` directly,
+plus bundled notices. **Minimap requires POI Database**.
 
 When updating, merge the existing folders to preserve add-ons and settings.
 

@@ -36,6 +36,7 @@ $nativeRoot = Join-Path $repoRoot "target\$profile"
 $addonOutput = Join-Path $repoRoot "target\release-addon-dev"
 $frameworkRoot = Join-Path $outputRoot "framework"
 $addonsRoot = Join-Path $outputRoot "addons"
+$fullRoot = Join-Path $outputRoot "full"
 
 function Assert-File {
     param([Parameter(Mandatory)][string]$Path)
@@ -104,6 +105,39 @@ function Get-ReleaseNotes {
         throw "Release notes require CHANGELOG.md version $Version and README.md installation instructions"
     }
     return $releaseSection.Value.Trim() + "`n`n" + $installSection.Value.Trim() + "`n"
+}
+
+function New-FullBundle {
+    param(
+        [Parameter(Mandatory)][string]$FrameworkRoot,
+        [Parameter(Mandatory)][string]$AddonsRoot,
+        [Parameter(Mandatory)][string[]]$AddonIds,
+        [Parameter(Mandatory)][string]$BundleRoot,
+        [Parameter(Mandatory)][string]$Destination
+    )
+
+    if (Test-Path -LiteralPath $BundleRoot) {
+        throw "Full bundle directory already exists: $BundleRoot"
+    }
+    if (Test-Path -LiteralPath (Join-Path $FrameworkRoot "farever-more-manager.exe")) {
+        throw "The unfinished manager cannot be included in the full bundle"
+    }
+    New-Item -ItemType Directory -Path $BundleRoot | Out-Null
+    Get-ChildItem -LiteralPath $FrameworkRoot -Force | Copy-Item -Destination $BundleRoot -Recurse
+    $bundleAddons = Join-Path $BundleRoot "farever-addons\addons"
+    New-Item -ItemType Directory -Force -Path $bundleAddons | Out-Null
+    foreach ($id in $AddonIds) {
+        $source = Join-Path $AddonsRoot $id
+        Assert-File (Join-Path $source "addon.json")
+        Assert-File (Join-Path $source "addon.wasm")
+        Copy-Item -LiteralPath $source -Destination $bundleAddons -Recurse
+        Assert-File (Join-Path $bundleAddons "$id\addon.json")
+        Assert-File (Join-Path $bundleAddons "$id\addon.wasm")
+    }
+    Assert-File (Join-Path $BundleRoot "dinput8.dll")
+    Assert-File (Join-Path $BundleRoot "farever-addons\host.dll")
+    Assert-File (Join-Path $BundleRoot "farever-addons\runtime.json")
+    New-Zip -SourceDirectory $BundleRoot -Destination $Destination
 }
 
 Push-Location $repoRoot
@@ -196,6 +230,10 @@ try {
         }
     }
 
+    $fullArchive = Join-Path $outputRoot "farever-more-framework-v$version-windows-x86_64-full.zip"
+    New-FullBundle -FrameworkRoot $frameworkRoot -AddonsRoot $addonsRoot `
+        -AddonIds @($addonRecords.Keys) -BundleRoot $fullRoot -Destination $fullArchive
+
     $releaseManifest = [ordered]@{
         framework = [ordered]@{
             version = $version
@@ -203,6 +241,11 @@ try {
             sha256 = (Get-FileHash -LiteralPath $frameworkArchive -Algorithm SHA256).Hash.ToLowerInvariant()
         }
         addons = $addonRecords
+        full = [ordered]@{
+            version = $version
+            archive = [System.IO.Path]::GetFileName($fullArchive)
+            sha256 = (Get-FileHash -LiteralPath $fullArchive -Algorithm SHA256).Hash.ToLowerInvariant()
+        }
     }
     Write-JsonFile -Path (Join-Path $outputRoot "release-manifest.json") -Value $releaseManifest
     Write-Output "Release packages written to $outputRoot"
