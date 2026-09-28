@@ -69,9 +69,11 @@ canvas as ordinary filled triangles, so this experiment does not add a host
 mesh or GPU API. No independent projected edge lines are drawn; face lighting
 and occlusion provide the depth cues. There is no panel fill or box outline.
 
-The surface uses the viewport's top-center anchor with a 52 logical-point top
-margin, placing the arrow below the centered area-name banner without a
-resolution-dependent horizontal offset. The target name is centered
+The surface uses the viewport's top-center anchor with a 106 logical-point top
+margin. This lowers it by 54 logical points from the previous default, roughly
+5% of a 1,080-point-high viewport, placing the arrow farther below the centered
+area-name banner without a resolution-dependent horizontal offset. The target
+name is centered
 immediately below the arrow, with the horizontal ground distance centered on
 the next line. Distances below 10
 meters retain one decimal place and longer distances use whole meters; the
@@ -97,8 +99,8 @@ reference components unless `-SkipReferenceAddon` is passed.
 
 Waypoint direction still needs an in-game check because the camera and player
 heading may use different zero directions.
-Full-map target selection was confirmed in user beta testing on Steam profile
-`25531577`.
+Full-map target selection and the lower default arrow placement were confirmed
+in user beta testing on Steam profile `25531577`.
 
 ## Support
 
