@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.2.0 — Full-map GPS fixes
+
+- Capture full-map world coordinates and beta activity-marker selections for
+  Farever More GPS, preserving the game's native HUD selector and map dragging.
+- Synchronize the generated SDK bindings with the playable-world documentation.
+- Ship GPS `0.1.1`: full-map clicks honor "Arrows from the map", explicit `/gps`
+  commands keep working, and the default arrow sits 54 logical points lower.
+
+Full-map targeting and the lower arrow placement were validated in-game on
+Farever beta Steam profile `25531577`. The WIT add-on API remains `1.0.0`.
+
 ## 0.1.0 — Initial public source release
 
 Farever More 0.1.0 is an experimental Windows x86-64 add-on host for the Steam
