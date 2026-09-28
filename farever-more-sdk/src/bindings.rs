@@ -409,7 +409,7 @@ pub mod farever {
             pub struct SessionState {
                 /// The same host process session ID returned by observation().
                 pub process_session: u64,
-                /// Whether the player is currently in a loaded game world.
+                /// Whether the player is in a playable game world after loading finishes.
                 pub in_world: bool,
             }
             impl ::core::fmt::Debug for SessionState {
