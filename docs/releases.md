@@ -10,7 +10,7 @@ Clippy, native builds, and release packages.
 
 ## Release assets
 
-A tag such as `v0.2.0` starts the Windows release workflow. The tag version
+A tag such as `v0.2.1` starts the Windows release workflow. The tag version
 must match the framework runtime version in `farever-more-host/Cargo.toml`.
 The workflow publishes:
 
@@ -34,13 +34,13 @@ support selecting individual add-ons.
 
 The framework release version and add-on release versions are independent of
 the WIT add-on API version. The current public API is `1.0.0`; the framework
-release is `0.2.0`, while each add-on keeps the version in its source
+release is `0.2.1`, while each add-on keeps the version in its source
 `addon.json`.
 
 To reproduce the release package locally on Windows:
 
 ```powershell
-.\scripts\package-release.ps1 -Version 0.2.0 -OutputRoot dist\release-local
+.\scripts\package-release.ps1 -Version 0.2.1 -OutputRoot dist\release-local
 ```
 
 The output directory must not already exist. The command builds the native

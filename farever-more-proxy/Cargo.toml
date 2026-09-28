@@ -2,7 +2,7 @@
 name = "farever-more-proxy"
 # Independent from the workspace version: the runtime (host + proxy) ships on
 # its own cadence, and installers stamp this version into runtime.json.
-version = "0.2.0"
+version = "0.2.1"
 edition.workspace = true
 license.workspace = true
 build = "build.rs"

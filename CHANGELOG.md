@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.2.1 — Bundled installation
+
+- Ship a `-full.zip` with the framework and all four add-ons already arranged
+  for installation beside `Farever.exe`.
+- Exclude the unfinished standalone manager from builds and release packages.
+- Include concise installation instructions in the README and release notes,
+  with the custom add-on folder layout and Minimap's POI Database dependency.
+
+Bundled add-ons: Dyno, GPS, and Minimap `0.1.1`; POI Database `1.3.0`.
+The WIT add-on API is `1.0.0`.
+
 ## 0.2.0 — Full-map GPS fixes
 
 - Expose `in-world` only after loading reaches the playable state and clear
