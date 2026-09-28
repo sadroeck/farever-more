@@ -1,7 +1,7 @@
 {
   "manifest-version": 1,
   "id": "minimap",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "name": "Minimap",
   "description": "World minimap with POI markers.",
   "tags": ["map", "overlay", "poi"],

@@ -2,11 +2,17 @@
 
 ## 0.2.0 — Full-map GPS fixes
 
+- Expose `in-world` only after loading reaches the playable state and clear
+  overlays on logout.
+- Attribute native chat output to the sending add-on.
 - Capture full-map world coordinates and beta activity-marker selections for
   Farever More GPS, preserving the game's native HUD selector and map dragging.
 - Synchronize the generated SDK bindings with the playable-world documentation.
 - Ship GPS `0.1.1`: full-map clicks honor "Arrows from the map", explicit `/gps`
   commands keep working, and the default arrow sits 54 logical points lower.
+- Ship Dyno `0.1.1` with `/dyno` clear, reset, and visibility commands while
+  preserving the `/dps` aliases.
+- Ship Minimap `0.1.1` with its custom player marker artwork.
 
 Full-map targeting and the lower arrow placement were validated in-game on
 Farever beta Steam profile `25531577`. The WIT add-on API remains `1.0.0`.
