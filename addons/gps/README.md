@@ -19,14 +19,20 @@ policy remains a later step.
 
 ## Map clicks
 
-Everything arrives on the add-on's `gps` topic, and the sender decides how it is
-treated. The host forwards the player's own `/gps` commands, which always apply.
-Any other add-on may publish a waypoint request with the same syntax as a
+Clicking open space on Farever's full map sets a GPS waypoint at the game's
+converted world coordinates. On beta `25531577`, clicking an activity marker
+also sets a waypoint when Farever opens its built-in HUD selector. The host
+preserves the native selector and map dragging behavior; drags do not set GPS
+waypoints. Full-map clicks arrive on `farever.map-click@1` from `farever.host`,
+with one `x y` waypoint and the default name "Waypoint".
+
+The host forwards the player's own `/gps` commands on `gps`, which always apply.
+Other add-ons may publish a waypoint request on `gps` with the same syntax as a
 waypoint sequence (`x y "name"`); the minimap publishes one when a POI marker is
-pressed. Peer requests are gated by this add-on's own `map-clicks` setting
+pressed. Full-map clicks and peer requests are gated by this add-on's `map-clicks` setting
 (config page "GPS", default on), so the choice belongs to the add-on whose UI is
 affected rather than to the sender, and a peer cannot pass itself off as the
-player's command. With the setting off, `/gps` commands keep working and peer
+player's command. With the setting off, `/gps` commands keep working and map
 requests are answered with a chat line naming the setting instead of being
 dropped in silence. A click is also reported when the arrow is hidden: the
 waypoint is set, and the player is told to run `/gps show`. Requests take the
@@ -91,6 +97,8 @@ reference components unless `-SkipReferenceAddon` is passed.
 
 Waypoint direction still needs an in-game check because the camera and player
 heading may use different zero directions.
+Full-map target selection was confirmed in user beta testing on Steam profile
+`25531577`.
 
 ## Support
 

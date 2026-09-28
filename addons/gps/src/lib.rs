@@ -10,10 +10,13 @@ use std::f32::consts::{PI, TAU};
 /// are told apart by their source, so the player's `map-clicks` setting gates
 /// peer requests without weakening commands.
 const GPS_TOPIC: &str = "gps";
+/// Native full-map observations use their own topic so the map-click setting
+/// also gates host-originated clicks without disabling explicit /gps commands.
+const MAP_CLICK_TOPIC: &str = "farever.map-click@1";
 /// Whether a marker press elsewhere opens an arrow here.
 const MAP_CLICKS: Setting<bool> = Setting::boolean("map-clicks", true)
     .label("Arrows from the map")
-    .description("Open an arrow to a marker clicked on the minimap.");
+    .description("Open an arrow to a target clicked on the full map or minimap.");
 const HOST_MESSAGE_SOURCE_ID: &str = "farever.host";
 const DEFAULT_TARGET_NAME: &str = "Waypoint";
 const RENDER_INTERVAL: Duration = Duration::from_millis(50);
@@ -56,6 +59,10 @@ impl Addon for WayfinderArrow {
             .bus()
             .subscribe(GPS_TOPIC)
             .map_err(|error| format!("failed to subscribe to /gps commands: {error:?}"))?;
+        context
+            .bus()
+            .subscribe(MAP_CLICK_TOPIC)
+            .map_err(|error| format!("failed to subscribe to full-map clicks: {error:?}"))?;
         context.assets().register_font(
             "noto-sans-regular",
             &[TextStyle::Body, TextStyle::Small],
@@ -160,7 +167,7 @@ enum GpsCommand {
 
 struct WayfinderState {
     visible: bool,
-    /// Honors waypoint requests published by other add-ons.
+    /// Honors native full-map clicks and waypoint requests from other add-ons.
     map_clicks: bool,
     process_session: Option<u64>,
     targets: VecDeque<WaypointTarget>,
@@ -209,20 +216,32 @@ impl WayfinderState {
         let mut warnings = Vec::new();
 
         for message in messages {
-            if message.topic != GPS_TOPIC {
+            let from_host = message.source_addon_id == HOST_MESSAGE_SOURCE_ID;
+            let native_click = message.topic == MAP_CLICK_TOPIC;
+            if message.topic != GPS_TOPIC && !native_click {
                 continue;
             }
-            // The host only ever forwards the player's own commands. Any other
-            // source is asking on its own behalf, and the player's map-click
-            // setting decides whether that is welcome.
-            let from_host = message.source_addon_id == HOST_MESSAGE_SOURCE_ID;
-            if !from_host && !self.map_clicks {
+            // Only the host can report native clicks. The host also forwards
+            // explicit /gps commands, which bypass the map-click preference.
+            if native_click && !from_host {
+                continue;
+            }
+            let map_request = native_click || !from_host;
+            if map_request && !self.map_clicks {
                 warnings
                     .push("Ignored a map click: Arrows from the map is switched off".to_owned());
                 continue;
             }
 
             match parse_gps_command(&message.payload)
+                .and_then(|command| {
+                    if native_click
+                        && !matches!(&command, GpsCommand::SetSequence(points) if points.len() == 1)
+                    {
+                        return Err("a full-map click must contain one waypoint".to_owned());
+                    }
+                    Ok(command)
+                })
                 .and_then(|command| self.apply_command(snapshot, command))
             {
                 Ok(()) => {
@@ -230,7 +249,7 @@ impl WayfinderState {
                     // A click asks for an arrow the player can see, so a hidden
                     // surface is worth saying out loud instead of silently
                     // keeping the marker off the screen.
-                    if !from_host && !self.visible {
+                    if map_request && !self.visible {
                         warnings.push(
                             "Waypoint set while the arrow is hidden; run `/gps show` to display it"
                                 .to_owned(),
@@ -239,7 +258,7 @@ impl WayfinderState {
                 }
                 Err(error) => warnings.push(format!(
                     "Ignored {}: {error}",
-                    if from_host {
+                    if !map_request {
                         "/gps command"
                     } else {
                         "waypoint request"
@@ -1118,6 +1137,69 @@ mod tests {
             disabled.targets.front().map(|target| target.name.as_str()),
             Some("Obelisk")
         );
+    }
+
+    #[test]
+    fn full_map_clicks_set_a_waypoint_and_honor_the_setting() {
+        let snapshot = snapshot_at(0.0, 0.0, 12.0);
+        let request = || message(MAP_CLICK_TOPIC, HOST_MESSAGE_SOURCE_ID, b"120 -45");
+        let mut state = WayfinderState::default();
+        let (handled, warnings) = state.apply_messages(&snapshot, vec![request()]);
+        assert!(handled, "{warnings:?}");
+        assert_target(&state, [120.0, -45.0, 12.0], DEFAULT_TARGET_NAME);
+
+        state.map_clicks = false;
+        let (handled, warnings) = state.apply_messages(&snapshot, vec![request()]);
+        assert!(!handled);
+        assert!(warnings[0].contains("Arrows from the map"));
+        assert_target(&state, [120.0, -45.0, 12.0], DEFAULT_TARGET_NAME);
+        let (handled, warnings) = state.apply_messages(
+            &snapshot,
+            vec![message(GPS_TOPIC, HOST_MESSAGE_SOURCE_ID, b"30 40 Command")],
+        );
+        assert!(handled, "{warnings:?}");
+        assert_target(&state, [30.0, 40.0, 12.0], "Command");
+    }
+
+    #[test]
+    fn full_map_clicks_require_the_host_and_one_finite_waypoint() {
+        let snapshot = snapshot_at(0.0, 0.0, 0.0);
+        let mut state = WayfinderState::default();
+        let (handled, warnings) = state.apply_messages(
+            &snapshot,
+            vec![message(MAP_CLICK_TOPIC, "minimap", b"10 20")],
+        );
+        assert!(!handled);
+        assert!(warnings.is_empty());
+        assert!(state.targets.is_empty());
+        for payload in [b"hide".as_slice(), b"next", b"10 20, 30 40", b"NaN 20"] {
+            let (handled, warnings) = state.apply_messages(
+                &snapshot,
+                vec![message(MAP_CLICK_TOPIC, HOST_MESSAGE_SOURCE_ID, payload)],
+            );
+            assert!(!handled, "{payload:?}");
+            assert_eq!(warnings.len(), 1);
+            assert!(state.targets.is_empty());
+            assert!(state.visible);
+        }
+    }
+
+    #[test]
+    fn full_map_clicks_report_hidden_arrows_and_out_of_world_requests() {
+        let mut snapshot = snapshot_at(0.0, 0.0, 0.0);
+        let request = || message(MAP_CLICK_TOPIC, HOST_MESSAGE_SOURCE_ID, b"120 -45");
+        let mut state = WayfinderState {
+            visible: false,
+            ..WayfinderState::default()
+        };
+        let (handled, warnings) = state.apply_messages(&snapshot, vec![request()]);
+        assert!(handled);
+        assert!(warnings[0].contains("/gps show"));
+        assert!(!state.visible);
+        snapshot.session.in_world = false;
+        let (handled, warnings) = state.apply_messages(&snapshot, vec![request()]);
+        assert!(!handled);
+        assert!(warnings[0].contains("in the world"));
     }
 
     #[test]
