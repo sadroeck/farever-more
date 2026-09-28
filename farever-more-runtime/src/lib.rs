@@ -22,6 +22,7 @@ mod inventory_hooks;
 mod kill_hooks;
 mod lifecycle_hooks;
 mod loot_hooks;
+mod map_clicks;
 mod memory;
 mod overlay;
 mod party_hooks;
@@ -253,6 +254,7 @@ pub fn run(config: RuntimeConfig) {
     let mut poller = state::Poller::new(config.target);
     let mut damage = damage::DamageCapture::new(&config.addon_root);
     let mut slash_commands = slash_commands::SlashCommandCapture::new();
+    let mut map_clicks = map_clicks::MapClickCapture::new();
     let mut chat_output_diagnostics = chat_output::ChatOutputDiagnostics::new();
     if in_process {
         let armed = damage.arm();
@@ -264,6 +266,9 @@ pub fn run(config: RuntimeConfig) {
         }
         for event in slash_commands.take_diagnostics() {
             diagnostics.info(&format!("chat {event}"));
+        }
+        for event in map_clicks.take_diagnostics() {
+            diagnostics.info(&event);
         }
         for event in chat_output_diagnostics.take_diagnostics() {
             diagnostics.info(&format!("chat {event}"));
@@ -786,6 +791,24 @@ pub fn run(config: RuntimeConfig) {
         }
         for event in slash_commands.take_diagnostics() {
             diagnostics.info(&format!("chat {event}"));
+        }
+        // Native map clicks are observations, not explicit slash commands.
+        // Discard them if the player has left the world before delivery.
+        let clicks = map_clicks.drain();
+        if latest_snapshot.session.in_world {
+            if let Some(plugins) = &mut plugins {
+                for click in clicks {
+                    if let Err(error) = plugins.broadcast_host_message(
+                        map_clicks::MAP_CLICK_TOPIC.to_owned(),
+                        click.payload(),
+                    ) {
+                        diagnostics.warn(&format!("map click rejected: {error}"));
+                    }
+                }
+            }
+        }
+        for event in map_clicks.take_diagnostics() {
+            diagnostics.info(&event);
         }
         for event in chat_output_diagnostics.take_diagnostics() {
             diagnostics.info(&format!("chat {event}"));

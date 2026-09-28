@@ -116,6 +116,18 @@ Combat tracking observes changes to the local Hero's `set_isInCombat` field
 and keeps polling as a fallback. It can infer a combat start from the first
 outgoing hit.
 
+Full-map navigation captures `ui.win.MapWindow.onClickWorld` and, on beta
+`25531577`, `popupActivityMenu`. The former is a receiver-bound function field:
+the host resolves its default implementation through the validated HashLink
+binding table and checks both the stored field and implementation signatures.
+Activity clicks copy the marker's validated `worldPos` before opening the native
+selector. Both hooks forward the original callback once and enqueue finite
+horizontal coordinates for the runtime to publish on `farever.map-click@1`.
+The GPS add-on owns the waypoint and its "Arrows from the map" preference.
+Map dragging and the native HUD selector keep their game behavior. See the
+[message protocol](message-bus.md) and [GPS add-on](../addons/gps/README.md).
+Native full-map target selection has been confirmed in user beta testing.
+
 ## Hooking rules
 
 Hooks are enabled only after the host checks the expected Windows x64 calling

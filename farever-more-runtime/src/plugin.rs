@@ -4076,6 +4076,64 @@ mod tests {
 
     #[test]
     #[ignore = "set FAREVER_ADDON_SMOKE_DIR to a built add-ons directory"]
+    fn built_full_map_click_opens_gps_and_honors_its_preference() {
+        let directory = std::env::var_os("FAREVER_ADDON_SMOKE_DIR")
+            .map(PathBuf::from)
+            .expect("FAREVER_ADDON_SMOKE_DIR");
+        let config = TempConfigRoot::new();
+        let mut snapshot = live_snapshot();
+        snapshot.ui.open_windows = vec!["ui.win.MapWindow".to_owned()];
+        let mut plugins = Plugins::load(&directory, &config.0, &snapshot);
+        assert_eq!(plugins.len(), 4, "{:?}", plugins.take_diagnostics());
+        let has_arrow = |frame: &api::UiFrame| {
+            frame
+                .surfaces
+                .iter()
+                .any(|surface| surface.id.contains("wayfinder-arrow"))
+        };
+        assert!(!has_arrow(&plugins.dispatch(&snapshot, None, &[])));
+
+        let preference = |checked| api::RoutedUiEvent {
+            owner: "gps".to_owned(),
+            event: api::UiEvent::CheckboxChanged {
+                node_id: "map-clicks".to_owned(),
+                checked,
+            },
+        };
+        plugins.dispatch(&snapshot, None, &[preference(false)]);
+        assert_eq!(
+            plugins.broadcast_host_message(
+                crate::map_clicks::MAP_CLICK_TOPIC.to_owned(),
+                b"120 -45".to_vec()
+            ),
+            Ok(1)
+        );
+        assert!(!has_arrow(&plugins.dispatch(&snapshot, None, &[])));
+
+        plugins.dispatch(&snapshot, None, &[preference(true)]);
+        assert_eq!(
+            plugins.broadcast_host_message(
+                crate::map_clicks::MAP_CLICK_TOPIC.to_owned(),
+                b"120 -45".to_vec()
+            ),
+            Ok(1)
+        );
+        assert!(has_arrow(&plugins.dispatch(&snapshot, None, &[])));
+
+        // Explicit commands still bypass the map-click preference.
+        plugins.dispatch(&snapshot, None, &[preference(false)]);
+        plugins
+            .broadcast_host_message("gps".to_owned(), b"hide".to_vec())
+            .unwrap();
+        assert!(!has_arrow(&plugins.dispatch(&snapshot, None, &[])));
+        plugins
+            .broadcast_host_message("gps".to_owned(), b"show".to_vec())
+            .unwrap();
+        assert!(has_arrow(&plugins.dispatch(&snapshot, None, &[])));
+    }
+
+    #[test]
+    #[ignore = "set FAREVER_ADDON_SMOKE_DIR to a built add-ons directory"]
     fn built_minimap_marker_press_opens_the_gps_arrow() {
         // Drives the whole marker-click path through the host boundary: the
         // minimap records its markers, a canvas press publishes a waypoint
@@ -4438,6 +4496,7 @@ mod tests {
     fn unavailable_domains_never_carry_values() {
         let mut source = live_snapshot();
         source.session.in_world = false;
+        source.session.loading_state = None;
         source.player = api::StateSnapshot::unavailable(3, api::UnavailableReason::NotInWorld);
         source.party = api::StateSnapshot::unavailable(7, api::UnavailableReason::Unsupported);
         source.camera = api::StateSnapshot::unavailable(6, api::UnavailableReason::NotInWorld);

@@ -53,6 +53,17 @@ that source ID; a reply copies it and directly targets the original
 with the reserved source ID `farever.host`, no correlation ID, and broadcast
 targeting. That pseudo-source cannot receive direct replies.
 
+Native full-map clicks use the same reserved source on `farever.map-click@1`.
+The payload is UTF-8 text containing one finite horizontal world-coordinate
+pair, `x y`, with no correlation ID. The host captures the game's converted
+coordinates from `MapWindow.onClickWorld`; beta `25531577` activity-marker
+clicks are captured from `popupActivityMenu` before its native HUD selector
+opens. The 64-record native queue holds copied coordinates only. Delivery is
+discarded outside the world, and no click is retained for a future subscriber.
+GPS accepts this topic only from `farever.host` and applies its "Arrows from
+the map" preference to these observations. Explicit host `/gps` commands on
+`gps` bypass that preference.
+
 ## Topic and payload rules
 
 Topics contain 1 through 128 ASCII bytes. They start with a lowercase letter,

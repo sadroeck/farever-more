@@ -29,13 +29,20 @@ const HL_TYPE_UNION: usize = 0x08;
 const HL_FUN_ARGS: usize = 0;
 const HL_FUN_RETURN: usize = 0x08;
 const HL_FUN_ARG_COUNT: usize = 0x10;
+const HL_RUNTIME_FIELD_COUNT: usize = 0x08;
 const HL_RUNTIME_METHOD_COUNT: usize = 0x14;
+const HL_RUNTIME_BINDING_COUNT: usize = 0x18;
 const HL_RUNTIME_METHODS: usize = 0x20;
+const HL_RUNTIME_FIELD_OFFSETS: usize = 0x28;
+const HL_RUNTIME_BINDINGS: usize = 0x30;
 const HL_RUNTIME_PARENT: usize = 0x38;
 const HL_RUNTIME_LOOKUP_COUNT: usize = 0x60;
 const HL_RUNTIME_LOOKUP: usize = 0x68;
 const HL_LOOKUP_TYPE: usize = 0;
 const HL_LOOKUP_FIELD_INDEX: usize = 0x0C;
+const HL_BINDING_SIZE: usize = 0x18;
+const HL_BINDING_TYPE: usize = 0x08;
+const HL_BINDING_FIELD: usize = 0x10;
 
 type HlGetObjProto = unsafe extern "C" fn(*mut c_void) -> *mut c_void;
 type HlHashUtf8 = unsafe extern "C" fn(*const std::ffi::c_char) -> i32;
@@ -500,6 +507,90 @@ impl HashLinkRuntime {
         concrete_type: usize,
         spec: &HashLinkMethodSpec,
     ) -> Result<ValidatedHashLinkMethod, String> {
+        let (original_runtime, member) = self.resolve_member(hl, concrete_type, spec)?;
+        let field_index = hl
+            .memory
+            .i32(member + HL_LOOKUP_FIELD_INDEX)
+            .ok_or_else(|| "could not read HashLink member index".to_owned())?;
+        if field_index >= 0 {
+            return Err(format!(
+                "HashLink member {} resolved to a data field",
+                spec.name.to_string_lossy()
+            ));
+        }
+        let method_index = usize::try_from(-i64::from(field_index) - 1)
+            .map_err(|_| "invalid HashLink method index".to_owned())?;
+        let argument_types = validate_signature(hl, member, spec)?;
+        let method_count =
+            hl.memory
+                .i32(original_runtime + HL_RUNTIME_METHOD_COUNT)
+                .filter(|count| (0..=65_536).contains(count))
+                .ok_or_else(|| "invalid HashLink method count".to_owned())? as usize;
+        if method_index >= method_count {
+            return Err(format!(
+                "HashLink method index {method_index} is outside table size {method_count}"
+            ));
+        }
+        let methods = hl
+            .memory
+            .u64(original_runtime + HL_RUNTIME_METHODS)
+            .ok_or_else(|| "could not read HashLink method table".to_owned())?;
+        let target = hl
+            .memory
+            .u64(
+                methods
+                    .checked_add(method_index * size_of::<usize>())
+                    .ok_or_else(|| "HashLink method slot overflow".to_owned())?,
+            )
+            .ok_or_else(|| "could not read HashLink method target".to_owned())?;
+        executable_method(target, spec, argument_types)
+    }
+
+    /// Resolves the default receiver-bound implementation of a function field.
+    /// Unlike ordinary methods, these entries live in the runtime binding table.
+    pub(crate) fn resolve_bound_method(
+        &self,
+        hl: &HashLink<'_>,
+        concrete_type: usize,
+        spec: &HashLinkMethodSpec,
+    ) -> Result<ValidatedHashLinkMethod, String> {
+        let (runtime, member) = self.resolve_member(hl, concrete_type, spec)?;
+        let receiver = spec.arguments.first().copied();
+        if receiver != Some(HashLinkTypeSpec::Object(spec.lookup_type)) {
+            return Err("bound HashLink method must declare its receiver first".to_owned());
+        }
+        // The stored field signature excludes the bound receiver, while the
+        // implementation's signature includes it. Validate both before hooking.
+        let field_spec = HashLinkMethodSpec {
+            arguments: &spec.arguments[1..],
+            ..*spec
+        };
+        validate_signature(hl, member, &field_spec)?;
+        let offset = hl
+            .memory
+            .i32(member + HL_LOOKUP_FIELD_INDEX)
+            .filter(|offset| *offset >= size_of::<usize>() as i32)
+            .ok_or_else(|| "bound HashLink member is not an object field".to_owned())?;
+        let binding = resolve_binding(hl, runtime, offset)?;
+        let function_type = hl
+            .memory
+            .u64(binding + HL_BINDING_TYPE)
+            .filter(|address| *address >= 0x1_0000)
+            .ok_or_else(|| "HashLink field has no receiver-bound implementation".to_owned())?;
+        let argument_types = validate_function_signature(hl, function_type, spec)?;
+        let target = hl
+            .memory
+            .u64(binding)
+            .ok_or_else(|| "could not read HashLink bound method target".to_owned())?;
+        executable_method(target, spec, argument_types)
+    }
+
+    fn resolve_member(
+        &self,
+        hl: &HashLink<'_>,
+        concrete_type: usize,
+        spec: &HashLinkMethodSpec,
+    ) -> Result<(usize, usize), String> {
         if !cfg!(all(target_arch = "x86_64", target_os = "windows")) {
             return Err("direct HashLink hooks currently require Windows x86_64".to_owned());
         }
@@ -556,52 +647,66 @@ impl HashLinkRuntime {
                 spec.name.to_string_lossy()
             ));
         }
-        let field_index = hl
-            .memory
-            .i32(member + HL_LOOKUP_FIELD_INDEX)
-            .ok_or_else(|| "could not read HashLink member index".to_owned())?;
-        if field_index >= 0 {
-            return Err(format!(
-                "HashLink member {} resolved to a data field",
-                spec.name.to_string_lossy()
-            ));
-        }
-        let method_index = usize::try_from(-i64::from(field_index) - 1)
-            .map_err(|_| "invalid HashLink method index".to_owned())?;
-        let argument_types = validate_signature(hl, member, spec)?;
-
-        let method_count = usize::try_from(
-            hl.memory
-                .i32(original_runtime + HL_RUNTIME_METHOD_COUNT)
-                .ok_or_else(|| "could not read HashLink method count".to_owned())?,
-        )
-        .map_err(|_| "negative HashLink method count".to_owned())?;
-        if method_index >= method_count || method_count > 65_536 {
-            return Err(format!(
-                "HashLink method index {method_index} is outside table size {method_count}"
-            ));
-        }
-        let methods = hl
-            .memory
-            .u64(original_runtime + HL_RUNTIME_METHODS)
-            .ok_or_else(|| "could not read HashLink method table".to_owned())?;
-        let target = hl
-            .memory
-            .u64(
-                methods
-                    .checked_add(method_index * size_of::<usize>())
-                    .ok_or_else(|| "HashLink method slot overflow".to_owned())?,
-            )
-            .ok_or_else(|| "could not read HashLink method target".to_owned())?;
-        if target < 0x1_0000 || !is_executable_address(target) {
-            return Err("HashLink method target is not committed executable memory".to_owned());
-        }
-        Ok(ValidatedHashLinkMethod {
-            target,
-            name: spec.name,
-            argument_types,
-        })
+        Ok((original_runtime, member))
     }
+}
+
+fn executable_method(
+    target: usize,
+    spec: &HashLinkMethodSpec,
+    argument_types: Vec<usize>,
+) -> Result<ValidatedHashLinkMethod, String> {
+    if target < 0x1_0000 || !is_executable_address(target) {
+        return Err("HashLink method target is not committed executable memory".to_owned());
+    }
+    Ok(ValidatedHashLinkMethod {
+        target,
+        name: spec.name,
+        argument_types,
+    })
+}
+
+fn resolve_binding(hl: &HashLink<'_>, runtime: usize, offset: i32) -> Result<usize, String> {
+    let count = |field| {
+        hl.memory
+            .i32(runtime + field)
+            .filter(|count| (0..=65_536).contains(count))
+            .ok_or_else(|| "invalid HashLink binding table count".to_owned())
+    };
+    let field_count = count(HL_RUNTIME_FIELD_COUNT)?;
+    let binding_count = count(HL_RUNTIME_BINDING_COUNT)?;
+    let field_offsets = hl
+        .memory
+        .u64(runtime + HL_RUNTIME_FIELD_OFFSETS)
+        .filter(|address| *address >= 0x1_0000)
+        .ok_or_else(|| "could not read HashLink field offset table".to_owned())?;
+    let bindings = hl
+        .memory
+        .u64(runtime + HL_RUNTIME_BINDINGS)
+        .filter(|address| *address >= 0x1_0000)
+        .ok_or_else(|| "could not read HashLink binding table".to_owned())?;
+    let mut found = None;
+    for index in 0..binding_count as usize {
+        let binding = bindings
+            .checked_add(index * HL_BINDING_SIZE)
+            .ok_or_else(|| "HashLink binding table overflow".to_owned())?;
+        let field = hl
+            .memory
+            .i32(binding + HL_BINDING_FIELD)
+            .filter(|field| (0..field_count).contains(field))
+            .ok_or_else(|| "invalid HashLink bound field index".to_owned())?;
+        let slot = field_offsets
+            .checked_add(field as usize * size_of::<i32>())
+            .ok_or_else(|| "HashLink field offset table overflow".to_owned())?;
+        let field_offset = hl
+            .memory
+            .i32(slot)
+            .ok_or_else(|| "could not read HashLink bound field offset".to_owned())?;
+        if field_offset == offset && found.replace(binding).is_some() {
+            return Err("duplicate HashLink field bindings".to_owned());
+        }
+    }
+    found.ok_or_else(|| "HashLink field has no default binding".to_owned())
 }
 
 fn validate_signature(
@@ -613,6 +718,14 @@ fn validate_signature(
         .memory
         .u64(member + HL_LOOKUP_TYPE)
         .ok_or_else(|| "could not read HashLink method type".to_owned())?;
+    validate_function_signature(hl, function_type, spec)
+}
+
+fn validate_function_signature(
+    hl: &HashLink<'_>,
+    function_type: usize,
+    spec: &HashLinkMethodSpec,
+) -> Result<Vec<usize>, String> {
     validate_type(
         hl,
         function_type,
@@ -1129,6 +1242,110 @@ mod tests {
                 .unwrap_err()
                 .contains("argument count mismatch")
         );
+    }
+
+    #[test]
+    fn bound_fields_resolve_by_storage_offset_and_reject_invalid_tables() {
+        let mut runtime = Box::new([0_u8; 0x70]);
+        let offsets = [8_i32, 24, 16];
+        let mut bindings = Box::new([0_u8; HL_BINDING_SIZE * 2]);
+        write_i32(bindings.as_mut(), HL_BINDING_FIELD, 0);
+        write_i32(bindings.as_mut(), HL_BINDING_SIZE + HL_BINDING_FIELD, 2);
+        write_i32(runtime.as_mut(), HL_RUNTIME_FIELD_COUNT, 3);
+        write_i32(runtime.as_mut(), HL_RUNTIME_BINDING_COUNT, 2);
+        write_usize(
+            runtime.as_mut(),
+            HL_RUNTIME_FIELD_OFFSETS,
+            offsets.as_ptr() as usize,
+        );
+        write_usize(
+            runtime.as_mut(),
+            HL_RUNTIME_BINDINGS,
+            bindings.as_ptr() as usize,
+        );
+        let memory = ProcessMemory::current();
+        let hl = HashLink::new(&memory);
+        let runtime_address = runtime.as_ptr() as usize;
+        assert_eq!(
+            resolve_binding(&hl, runtime_address, 16),
+            Ok(bindings.as_ptr() as usize + HL_BINDING_SIZE)
+        );
+        assert!(resolve_binding(&hl, runtime_address, 24)
+            .unwrap_err()
+            .contains("no default binding"));
+
+        write_i32(bindings.as_mut(), HL_BINDING_SIZE + HL_BINDING_FIELD, 0);
+        assert!(resolve_binding(&hl, runtime_address, 8)
+            .unwrap_err()
+            .contains("duplicate"));
+        write_i32(bindings.as_mut(), HL_BINDING_SIZE + HL_BINDING_FIELD, 3);
+        assert!(resolve_binding(&hl, runtime_address, 8)
+            .unwrap_err()
+            .contains("bound field index"));
+        write_i32(runtime.as_mut(), HL_RUNTIME_BINDING_COUNT, -1);
+        assert!(resolve_binding(&hl, runtime_address, 8)
+            .unwrap_err()
+            .contains("table count"));
+    }
+
+    #[test]
+    fn bound_function_signature_includes_the_receiver_and_checks_the_return_type() {
+        let receiver = FakeObjectType::new("ui.win.MapWindow");
+        let wrong_receiver = FakeObjectType::new("ui.win.MapPinPicker");
+        let mut scalar = Box::new([0_u8; 0x20]);
+        write_i32(scalar.as_mut(), HL_TYPE_KIND, HashLinkKind::F64 as i32);
+        let mut result = Box::new([0_u8; 0x20]);
+        write_i32(result.as_mut(), HL_TYPE_KIND, HashLinkKind::Void as i32);
+        let mut arguments = Box::new([
+            receiver.address(),
+            scalar.as_ptr() as usize,
+            scalar.as_ptr() as usize,
+        ]);
+        let mut function = Box::new([0_u8; 0x20]);
+        write_usize(function.as_mut(), HL_FUN_ARGS, arguments.as_ptr() as usize);
+        write_usize(function.as_mut(), HL_FUN_RETURN, result.as_ptr() as usize);
+        write_i32(function.as_mut(), HL_FUN_ARG_COUNT, 3);
+        let mut function_type = Box::new([0_u8; 0x20]);
+        write_i32(
+            function_type.as_mut(),
+            HL_TYPE_KIND,
+            HashLinkKind::Function as i32,
+        );
+        write_usize(
+            function_type.as_mut(),
+            HL_TYPE_UNION,
+            function.as_ptr() as usize,
+        );
+        let spec = HashLinkMethodSpec {
+            lookup_type: "ui.win.MapWindow",
+            name: c"onClickWorld",
+            arguments: &[
+                HashLinkTypeSpec::Object("ui.win.MapWindow"),
+                HashLinkTypeSpec::Kind(HashLinkKind::F64),
+                HashLinkTypeSpec::Kind(HashLinkKind::F64),
+            ],
+            result: HashLinkTypeSpec::Kind(HashLinkKind::Void),
+        };
+        let memory = ProcessMemory::current();
+        let hl = HashLink::new(&memory);
+        let address = function_type.as_ptr() as usize;
+        assert_eq!(
+            validate_function_signature(&hl, address, &spec).unwrap(),
+            arguments.as_slice()
+        );
+        arguments[0] = wrong_receiver.address();
+        assert!(validate_function_signature(&hl, address, &spec)
+            .unwrap_err()
+            .contains("argument 0 mismatch"));
+        arguments[0] = receiver.address();
+        write_i32(result.as_mut(), HL_TYPE_KIND, HashLinkKind::F64 as i32);
+        assert!(validate_function_signature(&hl, address, &spec)
+            .unwrap_err()
+            .contains("return type mismatch"));
+        write_i32(function.as_mut(), HL_FUN_ARG_COUNT, 2);
+        assert!(validate_function_signature(&hl, address, &spec)
+            .unwrap_err()
+            .contains("argument count mismatch"));
     }
 
     #[test]
