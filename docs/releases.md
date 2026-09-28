@@ -5,6 +5,8 @@ pull requests targeting `main`. The check covers both Rust workspaces, the
 WIT/SDK synchronization and facade boundary, formatting, tests, strict Clippy,
 the native framework release build, reference component packaging, and the
 ignored runtime host-boundary smoke tests.
+The standalone manager is under development and excluded from CI tests,
+Clippy, native builds, and release packages.
 
 ## Release assets
 
@@ -13,7 +15,7 @@ must match the framework runtime version in `farever-more-host/Cargo.toml`.
 The workflow publishes:
 
 - `farever-more-framework-v<version>-windows-x86_64.zip`, containing the
-  manager, native proxy and host binaries, the direct-install runtime layout,
+  native proxy and host binaries, the direct-install runtime layout,
   and the framework notices;
 - one `farever-more-addon-<id>-v<addon-version>.zip` per maintained reference
   add-on, containing `addon.wasm`, its stamped `addon.json`, and any add-on
@@ -33,5 +35,11 @@ To reproduce the release package locally on Windows:
 ```
 
 The output directory must not already exist. The command builds the native
-manager, proxy, and host, builds and componentizes all maintained add-ons, and
-stamps each packed manifest from the component bytes.
+proxy and host, builds and componentizes all maintained add-ons, and stamps
+each packed manifest from the component bytes.
+
+The pack step also writes `release-notes.md` from the tagged version's
+`CHANGELOG.md` entry and the root `README.md` installation section. The release
+workflow uses it as the GitHub release body, so every release shows the manual
+installation steps, exact add-on folder layout, and Minimap's POI Database
+dependency. The framework archive includes that same README.

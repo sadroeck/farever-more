@@ -18,13 +18,13 @@ commands with the add-ons manifest.
 ## Build and check changes
 
 From the repository root, run the usual checks. Root test and Clippy commands
-exclude the vendored `hlbc` crates because their upstream fixtures are not
-included here.
+exclude the standalone manager while it is under development and the vendored
+`hlbc` crates because their upstream fixtures are not included here.
 
 ~~~powershell
 cargo fmt --all --check
-cargo test --workspace --exclude hlbc --exclude hlbc-derive
-cargo clippy --workspace --all-targets --no-deps --exclude farever-api-inspector --exclude hlbc --exclude hlbc-derive -- -D warnings -A clippy::too_many_arguments -A clippy::large_enum_variant -A clippy::type_complexity -A clippy::items_after_test_module -A clippy::redundant_closure
+cargo test --workspace --exclude farever-more-manager --exclude hlbc --exclude hlbc-derive
+cargo clippy --workspace --all-targets --no-deps --exclude farever-more-manager --exclude farever-api-inspector --exclude hlbc --exclude hlbc-derive -- -D warnings -A clippy::too_many_arguments -A clippy::large_enum_variant -A clippy::type_complexity -A clippy::items_after_test_module -A clippy::redundant_closure
 .\scripts\sync-addon-sdk.ps1 -Check
 .\scripts\check-addon-sdk-boundary.ps1
 .\scripts\build-wasm-addons.ps1

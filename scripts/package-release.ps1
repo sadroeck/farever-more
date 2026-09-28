@@ -84,6 +84,28 @@ function New-Zip {
     Assert-File $Destination
 }
 
+function Get-ReleaseNotes {
+    param(
+        [Parameter(Mandatory)][string]$RepoRoot,
+        [Parameter(Mandatory)][string]$Version
+    )
+
+    $changelog = [System.IO.File]::ReadAllText((Join-Path $RepoRoot "CHANGELOG.md"))
+    $releaseSection = [regex]::Match(
+        $changelog,
+        '(?ms)^## ' + [regex]::Escape($Version) + '(?:[ \t][^\r\n]*)?\r?\n.*?(?=^## |\z)'
+    )
+    $readme = [System.IO.File]::ReadAllText((Join-Path $RepoRoot "README.md"))
+    $installSection = [regex]::Match(
+        $readme,
+        '(?ms)^## How to install\r?\n.*?(?=^## |\z)'
+    )
+    if (-not $releaseSection.Success -or -not $installSection.Success) {
+        throw "Release notes require CHANGELOG.md version $Version and README.md installation instructions"
+    }
+    return $releaseSection.Value.Trim() + "`n`n" + $installSection.Value.Trim() + "`n"
+}
+
 Push-Location $repoRoot
 try {
     & (Join-Path $PSScriptRoot "check-addon-sdk-boundary.ps1")
@@ -95,8 +117,10 @@ try {
         throw "Release tag $version does not match the framework runtime version $runtimeVersion"
     }
 
+    $releaseNotes = Get-ReleaseNotes -RepoRoot $repoRoot -Version $version
+
     $cargo = Get-Command cargo -ErrorAction Stop
-    & $cargo.Source build --release -p farever-more-manager -p farever-more-proxy -p farever-more-host
+    & $cargo.Source build --release -p farever-more-proxy -p farever-more-host
     if ($LASTEXITCODE -ne 0) {
         throw "Framework release build failed with exit code $LASTEXITCODE"
     }
@@ -113,7 +137,6 @@ try {
     New-Item -ItemType Directory -Force -Path $frameworkAddonRoot | Out-Null
 
     $nativeFiles = @(
-        @{ Source = Join-Path $nativeRoot "farever-more-manager.exe"; Destination = Join-Path $frameworkRoot "farever-more-manager.exe" },
         @{ Source = Join-Path $nativeRoot "farever_more_proxy.dll"; Destination = Join-Path $frameworkRoot "farever_more_proxy.dll" },
         @{ Source = Join-Path $nativeRoot "farever_more_host.dll"; Destination = Join-Path $frameworkRoot "farever_more_host.dll" },
         @{ Source = Join-Path $nativeRoot "farever_more_proxy.dll"; Destination = Join-Path $frameworkRoot "dinput8.dll" },
@@ -132,6 +155,11 @@ try {
     Copy-Item -LiteralPath (Join-Path $repoRoot "CHANGELOG.md") -Destination (Join-Path $frameworkRoot "CHANGELOG.md")
     Copy-Item -LiteralPath (Join-Path $repoRoot "LICENSE-MIT") -Destination (Join-Path $frameworkRoot "LICENSE-MIT")
     Copy-Item -LiteralPath (Join-Path $repoRoot "THIRD_PARTY_NOTICES.md") -Destination (Join-Path $frameworkRoot "THIRD_PARTY_NOTICES.md")
+    [System.IO.File]::WriteAllText(
+        (Join-Path $outputRoot "release-notes.md"),
+        $releaseNotes,
+        [System.Text.UTF8Encoding]::new($false)
+    )
 
     $frameworkArchive = Join-Path $outputRoot "farever-more-framework-v$version-windows-x86_64.zip"
     New-Zip -SourceDirectory $frameworkRoot -Destination $frameworkArchive

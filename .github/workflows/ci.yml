@@ -53,16 +53,16 @@ jobs:
         run: cargo fmt --manifest-path addons\Cargo.toml --all --check
 
       - name: Test framework workspace
-        run: cargo test --workspace --exclude hlbc --exclude hlbc-derive
+        run: cargo test --workspace --exclude farever-more-manager --exclude hlbc --exclude hlbc-derive
 
       - name: Test add-on workspace
         run: cargo test --manifest-path addons\Cargo.toml --workspace --all-targets
 
       - name: Lint framework workspace
-        run: cargo clippy --workspace --all-targets --no-deps --exclude farever-api-inspector --exclude hlbc --exclude hlbc-derive -- -D warnings -A clippy::too_many_arguments -A clippy::large_enum_variant -A clippy::type_complexity -A clippy::items_after_test_module -A clippy::redundant_closure
+        run: cargo clippy --workspace --all-targets --no-deps --exclude farever-more-manager --exclude farever-api-inspector --exclude hlbc --exclude hlbc-derive -- -D warnings -A clippy::too_many_arguments -A clippy::large_enum_variant -A clippy::type_complexity -A clippy::items_after_test_module -A clippy::redundant_closure
 
       - name: Build framework workspace
-        run: cargo build --workspace --release --exclude hlbc --exclude hlbc-derive
+        run: cargo build --workspace --release --exclude farever-more-manager --exclude hlbc --exclude hlbc-derive
 
       - name: Build and package reference components
         shell: pwsh
