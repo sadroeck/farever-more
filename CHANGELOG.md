@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.3
+
+- Support version 25632706 of farever
+- Check bytecode signatures before loading add-ons on unknown game versions
+  with the reviewed native executable and HashLink runtime; known fingerprints
+  keep the fast path.
+- Show the specific compatibility mismatch when loading is refused.
+
 ## 0.2.2
 
 - Support version 25628371 of farever
