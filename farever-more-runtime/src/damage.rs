@@ -118,6 +118,12 @@ static HERO_POINTER: AtomicUsize = AtomicUsize::new(0);
 static LOCKED_HERO_POINTER: AtomicUsize = AtomicUsize::new(0);
 static LOCKED_PLAYER_POINTER: AtomicUsize = AtomicUsize::new(0);
 static CAPTURE_STATUS: AtomicUsize = AtomicUsize::new(0);
+static CAPTURE_ERROR: OnceLock<String> = OnceLock::new();
+
+fn fail_capture(error: String) {
+    let _ = CAPTURE_ERROR.set(error);
+    CAPTURE_STATUS.store(3, Ordering::Release);
+}
 static TYPE_QUEUE_DROPS: AtomicU64 = AtomicU64::new(0);
 static TYPE_TABLE_DROPS: AtomicU64 = AtomicU64::new(0);
 static HERO_DROPS: AtomicU64 = AtomicU64::new(0);
@@ -820,6 +826,15 @@ impl DamageCapture {
             .then(|| LOCKED_HERO_POINTER.load(Ordering::Acquire) != 0)
     }
 
+    /// A terminal observer failure cannot produce the injected readiness
+    /// signal. Report it to the runtime instead of waiting forever.
+    pub(crate) fn startup_error(&self) -> Option<&str> {
+        self.attempted
+            .then(|| CAPTURE_ERROR.get())
+            .flatten()
+            .map(String::as_str)
+    }
+
     fn start(&mut self) {
         let use_polling = self.root.join(USE_POLLING_FLAG).exists();
         USE_POLLING.store(use_polling, Ordering::Release);
@@ -829,6 +844,7 @@ impl DamageCapture {
         {
             Some(path) => path,
             None => {
+                fail_capture("Could not resolve the game directory.".to_owned());
                 self.diagnostics
                     .push("capture could not resolve the game directory".to_owned());
                 return;
@@ -845,6 +861,7 @@ impl DamageCapture {
             Err(error) => {
                 self.diagnostics
                     .push(format!("capture unsupported: {error}"));
+                fail_capture("This game build is not supported by Farever More. Update Farever More for the installed game release. The host log contains the detected game-file hashes.".to_owned());
                 return;
             }
         };
@@ -863,8 +880,8 @@ impl DamageCapture {
         self.worker = thread::Builder::new()
             .name("farever-hashlink-observer".to_owned())
             .spawn(move || {
-                if wait_for_libhl_and_install(&stop).is_err() {
-                    CAPTURE_STATUS.store(3, Ordering::Release);
+                if let Err(error) = wait_for_libhl_and_install(&stop) {
+                    fail_capture(error);
                     return;
                 }
                 CAPTURE_STATUS.store(1, Ordering::Release);
@@ -873,7 +890,7 @@ impl DamageCapture {
             .ok();
         if self.worker.is_none() {
             ACTIVE.store(false, Ordering::Release);
-            CAPTURE_STATUS.store(3, Ordering::Release);
+            fail_capture("The game observer worker failed to start.".to_owned());
             self.diagnostics
                 .push("capture observer worker failed to start".to_owned());
         }
@@ -1313,7 +1330,7 @@ fn queue_display(display: usize) {
 
 fn decode_worker(stop: Arc<AtomicBool>, game_build: GameBuildProfile) {
     let Some(memory) = ProcessMemory::open(std::process::id()) else {
-        CAPTURE_STATUS.store(3, Ordering::Release);
+        fail_capture("The game observer could not open process memory.".to_owned());
         return;
     };
     let mut pending = VecDeque::new();
@@ -1480,7 +1497,9 @@ fn decode_worker(stop: Arc<AtomicBool>, game_build: GameBuildProfile) {
         }
         if consecutive_failures >= 64 {
             ACTIVE.store(false, Ordering::Release);
-            CAPTURE_STATUS.store(3, Ordering::Release);
+            fail_capture(
+                "The game observer stopped after repeated invalid game-memory reads.".to_owned(),
+            );
             break;
         }
         thread::sleep(Duration::from_millis(50));

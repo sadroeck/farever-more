@@ -85,8 +85,11 @@ Compilation happens before teardown:
 - Adding a component compiles it in the background and activates it at the next
   safe point.
 
-The manager currently exposes active, compiling, and disabled state internally
-and through diagnostics. A user-facing enable/disable and manager UI remains a
+The manager exposes active, compiling, and disabled state internally
+and through diagnostics. The startup panel closes when compilation and activation
+reach terminal states, including disabled components. New disabled-component
+errors also appear in a native dialog with the host-log path, once per unchanged
+failure. A user-facing enable/disable and manager UI remains a
 separate product slice.
 
 ## Tradeoffs

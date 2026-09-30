@@ -273,6 +273,11 @@ pub fn run(config: RuntimeConfig) {
         for event in chat_output_diagnostics.take_diagnostics() {
             diagnostics.info(&format!("chat {event}"));
         }
+        if let Some(error) = damage.startup_error() {
+            diagnostics.error(&format!("add-on loading failed: {error}"));
+            show_loading_error(error, &config.addon_root);
+            return;
+        }
     }
     let mut skill_images = game_directory.and_then(|directory| {
         let game = match GameInstall::open(directory) {
@@ -312,7 +317,8 @@ pub fn run(config: RuntimeConfig) {
         diagnostics.log(level, &format!("overlay {event}"));
     }
     let mut sequence = 0_u64;
-    let mut entered_world = false;
+    let mut loading_status = AddonLoadingStatus::default();
+    let mut runtime_failure = None;
     let mut previous_combat_state = None::<Option<bool>>;
     let mut previous_spatial_state = None::<(u8, u8, u8, u8)>;
     let mut previous_party_provider_state = None::<String>;
@@ -336,6 +342,11 @@ pub fn run(config: RuntimeConfig) {
     let mut next_poll = Instant::now();
 
     loop {
+        if let Some(error) = damage.startup_error() {
+            diagnostics.error(&format!("add-on loading failed: {error}"));
+            runtime_failure = Some(error.to_owned());
+            break;
+        }
         let mut batch_for_plugins = None;
         let mut manual_logout = false;
         let poll_started = Instant::now();
@@ -694,10 +705,6 @@ pub fn run(config: RuntimeConfig) {
             } else if awaiting_world_after_logout && !world_is_loaded(&raw) {
                 saw_world_exit_after_logout = true;
             }
-            if !awaiting_world_after_logout {
-                entered_world |= world_is_loaded(&raw);
-            }
-
             if raw.adapter_status == ADAPTER_LIVE
                 && plugins.is_none()
                 && !manual_logout
@@ -727,7 +734,6 @@ pub fn run(config: RuntimeConfig) {
                 plugins = Some(loaded);
                 awaiting_world_after_logout = false;
                 saw_world_exit_after_logout = false;
-                entered_world |= world_is_loaded(&raw);
             }
 
             // The capture counters describe steady state, not a change: they are
@@ -841,7 +847,7 @@ pub fn run(config: RuntimeConfig) {
             renderer_images = Arc::new(combine_images(&game_images, &addon_images));
             manager_resource_revision = None;
             plugin_resource_revision = plugin_resource_revision.saturating_add(1);
-            entered_world = false;
+            loading_status = AddonLoadingStatus::default();
         }
         let addon_frame_available = latest_raw.adapter_status != ADAPTER_WAITING_TO_SCAN
             && latest_raw.adapter_status != ADAPTER_SEARCHING;
@@ -888,12 +894,19 @@ pub fn run(config: RuntimeConfig) {
             }
         }
 
+        if let Some(plugins) = &plugins {
+            if let Some(error) = loading_status.update(&plugins.statuses()) {
+                diagnostics.error(&format!("add-on loading failed: {error}"));
+                show_loading_error(&error, &config.addon_root);
+            }
+        }
+
         // A manual logout ends the add-on session. Publish an empty frame for
         // the menu instead of replacing the cleared add-on UI with the startup
         // status surface.
         if awaiting_world_after_logout {
             ui_frame = UiFrame::default();
-        } else if !entered_world {
+        } else if !loading_status.finished {
             append_runtime_status(&mut ui_frame, &displayed_addons);
         }
         // One CPU sample every ten seconds is a health signal, not a fact about
@@ -952,6 +965,91 @@ pub fn run(config: RuntimeConfig) {
         }
     }
     diagnostics.info(&format!("runtime stopped after {sequence} polls"));
+    // Close both overlay windows before presenting a terminal startup error.
+    drop(overlay);
+    if let Some(error) = runtime_failure {
+        show_loading_error(&error, &config.addon_root);
+    }
+}
+
+#[derive(Default)]
+struct AddonLoadingStatus {
+    finished: bool,
+    reported_errors: std::collections::BTreeMap<PathBuf, String>,
+}
+
+impl AddonLoadingStatus {
+    fn update(&mut self, statuses: &[addon_manager::ManagedAddonStatus]) -> Option<String> {
+        use addon_manager::ManagedAddonState;
+        // Initial compilation/activation is asynchronous. A failed component
+        // is terminal too; it must not leave the loading panel visible.
+        if statuses
+            .iter()
+            .any(|status| status.state == ManagedAddonState::Compiling)
+        {
+            return None;
+        }
+        self.finished = true;
+        let errors = statuses
+            .iter()
+            .filter(|status| status.state == ManagedAddonState::Disabled)
+            .map(|status| {
+                (
+                    status.path.clone(),
+                    status
+                        .error
+                        .clone()
+                        .unwrap_or_else(|| "Unknown add-on error".to_owned()),
+                )
+            })
+            .collect::<std::collections::BTreeMap<_, _>>();
+        let new_errors = errors
+            .iter()
+            .filter(|(path, error)| self.reported_errors.get(*path) != Some(*error))
+            .map(|(path, error)| format!("{}: {error}", path.display()))
+            .collect::<Vec<_>>();
+        self.reported_errors = errors;
+        (!new_errors.is_empty()).then(|| new_errors.join("\n\n"))
+    }
+}
+
+fn show_loading_error(error: &str, addon_root: &std::path::Path) {
+    // A collection of component errors can be long. Keep the dialog readable;
+    // the log retains every complete reason.
+    let detail = error.chars().take(1200).collect::<String>();
+    let truncated = if detail.len() < error.len() {
+        "\n… See the host log for the full errors."
+    } else {
+        ""
+    };
+    let message = format!(
+        "Farever More could not load one or more add-ons.\n\n{detail}{truncated}\n\nDetails: {}",
+        addon_root.join("logs/host.log").display()
+    );
+    // The error must be visible even when game-state discovery or overlay
+    // creation failed. Keep the native dialog off the game and runtime workers.
+    #[cfg(windows)]
+    let _ = thread::Builder::new()
+        .name("farever-loading-error".to_owned())
+        .spawn(move || {
+            use windows_sys::Win32::UI::WindowsAndMessaging::{MessageBoxW, MB_ICONERROR, MB_OK};
+            let message = message.encode_utf16().chain(Some(0)).collect::<Vec<_>>();
+            let title = "Farever More — add-on loading failed"
+                .encode_utf16()
+                .chain(Some(0))
+                .collect::<Vec<_>>();
+            // SAFETY: the terminated UTF-16 buffers live until MessageBoxW returns.
+            unsafe {
+                MessageBoxW(
+                    std::ptr::null_mut(),
+                    message.as_ptr(),
+                    title.as_ptr(),
+                    MB_OK | MB_ICONERROR,
+                );
+            }
+        });
+    #[cfg(not(windows))]
+    eprintln!("{message}");
 }
 
 fn combine_images(game: &[ImageAsset], addon: &[ImageAsset]) -> Vec<ImageAsset> {
@@ -1352,6 +1450,9 @@ mod tests {
         assert!(manager.statuses().iter().any(|status| {
             status.path == component && status.state == addon_manager::ManagedAddonState::Compiling
         }));
+        let mut loading = AddonLoadingStatus::default();
+        assert!(loading.update(&manager.statuses()).is_none());
+        assert!(!loading.finished);
 
         let deadline = Instant::now() + Duration::from_secs(5);
         while Instant::now() < deadline
@@ -1369,6 +1470,12 @@ mod tests {
                 && status.state == addon_manager::ManagedAddonState::Disabled
                 && status.error.is_some()
         }));
+        let error = loading
+            .update(&manager.statuses())
+            .expect("visible load error");
+        assert!(error.contains("broken.wasm"));
+        assert!(loading.finished, "failure closes the loading panel");
+        assert!(loading.update(&manager.statuses()).is_none(), "report once");
     }
 
     #[test]
@@ -1383,6 +1490,44 @@ mod tests {
 
         assert!(frame.surfaces.is_empty());
         assert!(frame.config_menus.is_empty());
+        let mut loading = AddonLoadingStatus::default();
+        assert!(loading.update(&manager.statuses()).is_none());
+        assert!(loading.finished);
+    }
+
+    #[test]
+    fn loading_finishes_after_activation_and_reports_new_failures_once() {
+        use addon_manager::{ManagedAddonState, ManagedAddonStatus};
+        let mut loading = AddonLoadingStatus::default();
+        let mut status = ManagedAddonStatus {
+            path: PathBuf::from("test.wasm"),
+            info: plugin::AddonInfo {
+                name: "test".to_owned(),
+                version: None,
+            },
+            state: ManagedAddonState::Active,
+            error: None,
+        };
+        assert!(loading.update(&[status.clone()]).is_none());
+        assert!(loading.finished);
+        status.state = ManagedAddonState::Disabled;
+        status.error = Some("activation failed".to_owned());
+        assert!(loading
+            .update(&[status.clone()])
+            .unwrap()
+            .contains("activation failed"));
+        assert!(loading.update(&[status.clone()]).is_none());
+        status.error = Some("different failure".to_owned());
+        assert!(loading
+            .update(&[status.clone()])
+            .unwrap()
+            .contains("different failure"));
+        status.state = ManagedAddonState::Active;
+        status.error = None;
+        assert!(loading.update(&[status.clone()]).is_none());
+        status.state = ManagedAddonState::Disabled;
+        status.error = Some("activation failed".to_owned());
+        assert!(loading.update(&[status]).is_some());
     }
 
     #[test]
@@ -1396,7 +1541,7 @@ mod tests {
     }
 
     #[test]
-    fn startup_status_ends_only_for_live_in_world_state() {
+    fn world_reentry_requires_live_in_world_state() {
         let in_world_but_not_live = FasSnapshotV0 {
             in_world: 1,
             ..FasSnapshotV0::default()

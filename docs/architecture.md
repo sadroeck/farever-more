@@ -179,8 +179,17 @@ debug level. Add-on `log()` messages use the same file and level policy.
 `FAREVER_LOG_LEVEL` accepts `error`, `warn`, `info`, or `debug` and defaults to
 `info`. The log rotates at 8 MB through `host.log.1` to `host.log.3`.
 
-During startup, a small host panel shows the runtime version and loaded
-add-ons. Manual logout clears the overlay frame and hides both overlay windows
+During startup, a small host panel shows the runtime version and discovered
+add-ons. It disappears when initial compilation and activation finish,
+including when components fail or no components are installed. Failed components
+produce a native error dialog with the retained reason and host-log path;
+unchanged failures are reported once. A new failure after recovery is reported
+again. Successful add-ons keep running when another component fails.
+An unsupported build or terminal game-observer failure ends the runtime,
+closes its overlay windows, and shows a native error dialog instead of waiting
+forever for a readiness signal that cannot arrive. Dialogs run on a separate
+thread and do not block the game or add-on callbacks.
+Manual logout clears the overlay frame and hides both overlay windows
 at the main menu. They reappear when the next character world is entered.
 The damage meter appears while Farever is usable and active, and scales with
 the game window.
