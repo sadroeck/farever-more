@@ -74,16 +74,16 @@ The reference meter remains included unless `-SkipReferenceAddon` is used.
 
 ## Supported game builds
 
-Hooks are enabled only for these exact combinations of game-file hashes:
+These exact combinations of game-file hashes use the startup fast path:
 
 | Steam profile | `Farever.exe` SHA-256 | `hlboot.dat` SHA-256 | `libhl.dll` SHA-256 |
 | --- | --- | --- | --- |
 | Stable `25257040` | `96F5DFEEF6F1D3E1AA0810BE333CF23965E42C0C0328CFDBD02F2693913C28EB` | `7D0C189415AD6832B11DA0FAFDA29EAAA2A41F93330C4489942820B495E1DF89` | `0D67CA75C73F93306158D67BD2B61763C539F3155375403CD52D8F16DB7F73ED` |
 | Beta `25531577` | `186440648F9906C2E64955F9A7B2508D9C6842F90ABEE749187191A822CAEF36` | `42A7EE2E85ED9166510BDC7DF2BFDDB8ECEBCD10917A3FDEA94A8BC4F381E5ED` | `0F6FB5D60D42039BE36D1426098A73127388A892AB1E59D2C81DD33AC9C279FB` |
 | Stable `25628371` | `186440648F9906C2E64955F9A7B2508D9C6842F90ABEE749187191A822CAEF36` | `8BB2CE5180018EBFFE0C3F357C77B86BF5EBCECD06AA65B97A69367F2F806E49` | `0F6FB5D60D42039BE36D1426098A73127388A892AB1E59D2C81DD33AC9C279FB` |
+| Stable `25632706` | `186440648F9906C2E64955F9A7B2508D9C6842F90ABEE749187191A822CAEF36` | `D48F5F511A8257832EF470FCBA82A0A7F5DB402CE8EABD11CAF42BBBA21E4280` | `0F6FB5D60D42039BE36D1426098A73127388A892AB1E59D2C81DD33AC9C279FB` |
 
-A partial match is not enough. To support another release, all three file
-hashes must match and the host's game interfaces must be reviewed. Stable
+All three hashes must match to skip bytecode inspection. Stable
 `25257040` and beta `25531577` have different chat, combat, and inventory interfaces, so the host
 selects the matching build before enabling hooks. The beta build compiles and
 matches the inspected metadata, but beta behavior and live capture still need
@@ -96,10 +96,50 @@ fields are resolved through live metadata, not fixed gameplay offsets. The
 executable and HashLink runtime hashes are unchanged. This review establishes
 offline compatibility; live behavior on this release still needs in-game QA.
 
+Stable `25632706` retains the same native pair and host ABI. Its full metadata
+diff against `25628371` changes NPC icon records and unhooked methods including
+`GameApp.playCutscene`, `ent.Hero.getStandingObelisk`,
+`st.Player.doStartObeliskSequence`, and two MapWindow marker helpers. Required
+hook and callback signatures, field schemas, enum payloads, and the playable
+loading-state pattern are unchanged. A fresh local launch verified the exact
+profile, four active add-ons with none disabled, playable loading state `10`,
+and both map-click hooks active. Broader gameplay and unknown-release live QA
+remain outstanding; the unknown-build contract path was tested offline against
+the same installed bytecode with its exact profile omitted.
+
+An unknown `hlboot.dat` is also accepted when `Farever.exe` and `libhl.dll`
+still match the reviewed native pair from stable `25632706`, and runtime
+inspection verifies the embedded bytecode contract from that release. Changed
+native files require a separately reviewed profile: bytecode signatures cannot
+establish the native HashLink memory layout or executable ABI.
+
+Before installing even the allocator hook or loading any add-on, the worker
+uses the inspector's parser to check required types and inheritance, host-read
+field types, method receiver/argument/return signatures, bound callbacks, and
+ordered enum constructors and payloads. Function bodies, numeric metadata
+indexes, and unrelated members may change. One explicit behavior check also
+requires `GameApp.finishedLoading` to call `set_loadingState(10)` on its receiver
+with the inspected constant/call pattern. A signature check does not prove all
+gameplay semantics; live hook targets, calling conventions, and memory layouts
+are still checked as each provider is installed.
+
+The contract is embedded in
+`farever-more-runtime/assets/game-compatibility-25632706.json`. Generate it from
+a reviewed full inspector snapshot with
+`scripts/generate-game-compatibility.ps1 -Snapshot <snapshot.json>`; use `-Check`
+to detect stale coverage after changing the host. The generator conservatively
+selects host-used field and callback names on referenced classes, then includes
+declaring ancestors and referenced field, argument, and enum-payload types.
+Review this projection together with new readers and hooks; dynamically built
+metadata names need explicit coverage. The startup log distinguishes
+`verification=fingerprint` from `verification=bytecode-signatures` and names the
+reviewed baseline. Failed inspection refuses startup with the mismatch reason,
+closes the loading overlay, and uses the native loading-error dialog.
+
 ## How the host reads game state
 
-Before installing hooks, the host checks the exact hashes of `Farever.exe`,
-`hlboot.dat`, and `libhl.dll`; unknown builds are rejected. It then waits until
+Before installing hooks, the host checks the game-file fingerprints and, for
+unknown bytecode, the compatibility contract described above. It then waits until
 the local Hero is fully constructed and its player reference is valid before
 resolving the game state needed by add-ons.
 
@@ -125,7 +165,8 @@ and keeps polling as a fallback. It can infer a combat start from the first
 outgoing hit.
 
 Full-map navigation captures `ui.win.MapWindow.onClickWorld` and, on beta
-`25531577` and stable `25628371`, `popupActivityMenu`. The former is a receiver-bound function field:
+`25531577`, stable `25628371` / `25632706`, and signature-compatible bytecode,
+`popupActivityMenu`. The former is a receiver-bound function field:
 the host resolves its default implementation through the validated HashLink
 binding table and checks both the stored field and implementation signatures.
 Activity clicks copy the marker's validated `worldPos` before opening the native
@@ -146,7 +187,7 @@ must keep the object rooted until the worker is done with it. MinHook owns the
 machine-code patches and their cleanup.
 
 The host does not modify `hlboot.dat` or replace HashLink's standard library.
-It inspects bytecode metadata offline, then checks the live layout before
+It inspects bytecode metadata offline or during unknown-build startup, then checks the live layout before
 enabling a reader or hook.
 
 Player, camera, target positions, and party details are still polled. Hook-backed
@@ -196,7 +237,8 @@ the game window.
 
 ## Current limits
 
-- Hooks are enabled only for the exact profiles above. New-release behavior and
+- Hooks require an exact profile or a compatible bytecode contract with the
+  reviewed native executable/runtime pair. New-release behavior and
   live capture still need more in-game QA. Sampled state remains available as a
   fallback.
 - Outgoing damage is the only combat event currently exposed to add-ons. Other

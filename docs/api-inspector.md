@@ -31,7 +31,8 @@ The parser uses an MIT-licensed `hlbc` fork at commit
 `c1a56ee322561b7bc256c2592ab683d5e07696fd`. It reads HashLink bytecode versions
 4 through 6 and rejects unknown newer versions. Reading a bytecode version
 does not mean the installed HashLink runtime can execute it; the host still
-supports only the game profiles listed in the [architecture guide](architecture.md).
+requires the reviewed native runtime and game compatibility checks listed in
+the [architecture guide](architecture.md#supported-game-builds).
 The upstream parser changes are documented in [Gui-Yom/hlbc#14](https://github.com/Gui-Yom/hlbc/pull/14).
 
 ## Extract a release
@@ -49,6 +50,9 @@ Snapshot arrays and IDs are deterministic. The extraction timestamp and raw
 type, global, function, field, and prototype indexes remain in the JSON for
 diagnostics. Fields are emitted once on their declaring type rather than copied
 onto every descendant; follow `super_type` to reconstruct a flattened view.
+The anonymous built-in string object is reported as `String` when its exact
+`bytes: bytes` and `length: i32` schema is present. Older snapshots reported it
+as `<none>`; re-extract both inputs before comparing across this naming change.
 
 By default, the export includes types used by the current host and reference
 add-ons. It keeps their inheritance chains without expanding every referenced
@@ -91,3 +95,15 @@ while reporting changes to names, inheritance, fields and their types, method
 and binding signatures, enum variants, global type counts, and module/native
 callables. Raw indexes remain available in the snapshots for manual
 investigation.
+
+## Runtime compatibility contract
+
+The runtime uses this crate's `verify_bytecode_contract` library entry point for
+unknown game bytecode, before installing hooks or loading components. It uses
+the same parser and signature rendering as the CLI. Required fields, methods,
+bindings, inheritance, and enum payloads are compared with an embedded reviewed
+projection; unrelated additions and raw index changes are accepted. This check
+also verifies the host's playable-state constant/call pattern. Native file
+fingerprints and live ABI/layout validation remain required. See the
+[architecture guide](architecture.md#supported-game-builds) for regeneration
+and failure behavior.

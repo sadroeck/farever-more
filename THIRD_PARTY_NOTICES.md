@@ -9,7 +9,7 @@ dependency's license.
 
 ## Vendored hlbc crates
 
-The API inspector vendors the MIT-licensed hlbc and hlbc-derive 0.8.0 crates from [Gui-Yom/hlbc](https://github.com/Gui-Yom/hlbc). Guillaume Anthouard's copyright and license are retained in the [vendored LICENSE file](farever-api-inspector/vendor/hlbc/LICENSE).
+The API inspector and runtime compatibility check use the MIT-licensed hlbc and hlbc-derive 0.8.0 crates from [Gui-Yom/hlbc](https://github.com/Gui-Yom/hlbc). Guillaume Anthouard's copyright and license are retained in the [vendored LICENSE file](farever-api-inspector/vendor/hlbc/LICENSE). Framework release archives also include this license as `HLBC-LICENSE-MIT`.
 
 ## Design reference
 

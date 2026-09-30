@@ -1786,6 +1786,7 @@ dependencies = [
  "crossbeam-queue",
  "egui 0.33.3",
  "egui_extras",
+ "farever-api-inspector",
  "farever-db",
  "farever-more-api",
  "farever-more-manifest",

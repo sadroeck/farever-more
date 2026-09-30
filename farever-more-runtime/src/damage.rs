@@ -851,9 +851,9 @@ impl DamageCapture {
             }
         };
         let game_build = match game_build::verify_installed(&game_directory) {
-            Ok((profile, hashes)) => {
+            Ok((profile, verification)) => {
                 self.diagnostics.push(format!(
-                    "capture build verified profile={} hashes={hashes}",
+                    "capture build verified profile={} {verification}",
                     profile.name()
                 ));
                 profile
@@ -861,7 +861,9 @@ impl DamageCapture {
             Err(error) => {
                 self.diagnostics
                     .push(format!("capture unsupported: {error}"));
-                fail_capture("This game build is not supported by Farever More. Update Farever More for the installed game release. The host log contains the detected game-file hashes.".to_owned());
+                fail_capture(format!(
+                    "Farever More could not verify compatibility with this game build. {error}"
+                ));
                 return;
             }
         };

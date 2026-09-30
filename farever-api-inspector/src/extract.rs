@@ -180,7 +180,7 @@ fn optional_file(path: PathBuf) -> Option<PathBuf> {
     path.is_file().then_some(path)
 }
 
-fn validate_hlboot_header(path: &Path) -> Result<(), ExtractError> {
+pub(crate) fn validate_hlboot_header(path: &Path) -> Result<(), ExtractError> {
     let mut file = File::open(path).map_err(|source| ExtractError::Io {
         path: path.to_owned(),
         source,
@@ -226,9 +226,27 @@ impl SignatureIndex {
 }
 
 fn extract_types(code: &Bytecode, signatures: &SignatureIndex) -> Vec<TypeDefinition> {
+    extract_types_matching(code, signatures, None)
+}
+
+fn extract_types_matching(
+    code: &Bytecode,
+    signatures: &SignatureIndex,
+    names: Option<&HashSet<&str>>,
+) -> Vec<TypeDefinition> {
     code.types
         .iter()
         .enumerate()
+        .filter(|(_, ty)| {
+            names.is_none_or(|names| {
+                let name = match ty {
+                    Type::Obj(object) | Type::Struct(object) => object_name(code, object),
+                    Type::Enum { name, .. } | Type::Abstract { name } => string_at(code, *name),
+                    _ => return false,
+                };
+                names.contains(name.as_str())
+            })
+        })
         .filter_map(|(type_index, ty)| match ty {
             Type::Obj(object) => Some(extract_object(
                 code,
@@ -483,7 +501,7 @@ fn extract_object(
     object: &TypeObj,
     kind: TypeKind,
 ) -> TypeDefinition {
-    let name = string_at(code, object.name);
+    let name = object_name(code, object);
     let kind_name = match kind {
         TypeKind::Object => "object",
         TypeKind::Struct => "struct",
@@ -669,6 +687,10 @@ fn format_type_ref(code: &Bytecode, type_ref: RefType) -> String {
     format_type_ref_inner(code, type_ref, &mut HashSet::new(), 0)
 }
 
+pub(crate) fn compatibility_types(code: &Bytecode, names: &HashSet<&str>) -> Vec<TypeDefinition> {
+    extract_types_matching(code, &SignatureIndex::new(code), Some(names))
+}
+
 fn format_type_ref_inner(
     code: &Bytecode,
     type_ref: RefType,
@@ -694,7 +716,7 @@ fn format_type_ref_inner(
         Some(Type::Type) => "type".to_owned(),
         Some(Type::DynObj) => "dynamic-object".to_owned(),
         Some(Type::Guid) => "guid".to_owned(),
-        Some(Type::Obj(object)) | Some(Type::Struct(object)) => string_at(code, object.name),
+        Some(Type::Obj(object)) | Some(Type::Struct(object)) => object_name(code, object),
         Some(Type::Abstract { name }) => string_at(code, *name),
         Some(Type::Enum { name, .. }) => string_at(code, *name),
         Some(Type::Ref(inner)) => format!(
@@ -751,6 +773,27 @@ fn format_function_type(
 
 fn string_at(code: &Bytecode, string_ref: RefString) -> String {
     code.get(string_ref).to_string()
+}
+
+fn object_name(code: &Bytecode, object: &TypeObj) -> String {
+    // HashLink's built-in string object has no bytecode name. Recognize the
+    // same exact bytes/length shape as the live reader, never any anonymous obj.
+    if object.name.is_null()
+        && object.super_.is_none()
+        && object.own_fields.len() == 2
+        && object.own_fields.iter().any(|field| {
+            string_at(code, field.name) == "bytes"
+                && matches!(code.types.get(field.t.0), Some(Type::Bytes))
+        })
+        && object.own_fields.iter().any(|field| {
+            string_at(code, field.name) == "length"
+                && matches!(code.types.get(field.t.0), Some(Type::I32))
+        })
+    {
+        "String".to_owned()
+    } else {
+        string_at(code, object.name)
+    }
 }
 
 fn summarize(
@@ -852,7 +895,7 @@ fn vdf_value(contents: &str, key: &str) -> Option<String> {
 
 #[cfg(test)]
 mod tests {
-    use super::{select_types, vdf_value};
+    use super::{object_name, select_types, vdf_value};
     use crate::model::{ExtractionSelection, FieldDefinition, TypeDefinition, TypeKind};
 
     #[test]
@@ -860,6 +903,39 @@ mod tests {
         let input = "\"AppState\"\n{\n  \"buildid\"  \"25257040\"\n}";
         assert_eq!(vdf_value(input, "buildid").as_deref(), Some("25257040"));
         assert_eq!(vdf_value(input, "missing"), None);
+    }
+
+    #[test]
+    fn native_string_name_requires_exact_anonymous_bytes_length_schema() {
+        use hlbc::types::{ObjField, RefGlobal, RefString, RefType, Type, TypeObj};
+        let mut code = hlbc::Bytecode::default();
+        code.strings
+            .extend(["<none>".into(), "bytes".into(), "length".into()]);
+        code.types.extend([Type::Bytes, Type::I32]);
+        let mut object = TypeObj {
+            name: RefString(0),
+            super_: None,
+            global: RefGlobal(0),
+            own_fields: vec![
+                ObjField {
+                    name: RefString(1),
+                    t: RefType(0),
+                },
+                ObjField {
+                    name: RefString(2),
+                    t: RefType(1),
+                },
+            ],
+            protos: vec![],
+            bindings: Default::default(),
+            fields: vec![],
+        };
+        assert_eq!(object_name(&code, &object), "String");
+        code.types[1] = Type::F64;
+        assert_eq!(object_name(&code, &object), "<none>");
+        code.types[1] = Type::I32;
+        object.super_ = Some(RefType(1));
+        assert_eq!(object_name(&code, &object), "<none>");
     }
 
     #[test]

@@ -1,0 +1,1653 @@
+{
+  "schema_version": 1,
+  "baseline_sha256": "D48F5F511A8257832EF470FCBA82A0A7F5DB402CE8EABD11CAF42BBBA21E4280",
+  "types": [
+    {
+      "name": "App",
+      "kind": "object",
+      "super_type": "hxd.App",
+      "fields": {
+        "baseUI": "ui.BaseUI"
+      },
+      "methods": {
+        "dispose": {
+          "arguments": [
+            "App"
+          ],
+          "return_type": "void"
+        }
+      },
+      "bindings": {},
+      "variants": []
+    },
+    {
+      "name": "client.BaseCamera",
+      "kind": "object",
+      "super_type": "h3d.scene.Object",
+      "fields": {
+        "curDirection": "f64",
+        "enabled": "bool"
+      },
+      "methods": {},
+      "bindings": {},
+      "variants": []
+    },
+    {
+      "name": "client.GameCamera",
+      "kind": "object",
+      "super_type": "client.BaseCamera",
+      "fields": {},
+      "methods": {},
+      "bindings": {},
+      "variants": []
+    },
+    {
+      "name": "ent.Entity",
+      "kind": "object",
+      "super_type": "st.State",
+      "fields": {
+        "posx": "f64",
+        "posy": "f64",
+        "posz": "f64",
+        "rotationZ": "f64",
+        "started": "bool"
+      },
+      "methods": {
+        "networkSetBitCond": {
+          "arguments": [
+            "ent.Entity",
+            "i32"
+          ],
+          "return_type": "void"
+        }
+      },
+      "bindings": {},
+      "variants": []
+    },
+    {
+      "name": "ent.GameObject",
+      "kind": "object",
+      "super_type": "ent.Entity",
+      "fields": {
+        "skills": "hl.types.ArrayObj",
+        "statuses": "hxbit.ArrayProxyData"
+      },
+      "methods": {
+        "addStacks": {
+          "arguments": [
+            "ent.GameObject",
+            "st.skill.Status",
+            "i32",
+            "st.skill.BaseSkill",
+            "nullable<f64>"
+          ],
+          "return_type": "i32"
+        },
+        "doUseSkill": {
+          "arguments": [
+            "ent.GameObject",
+            "st.skill.Skill",
+            "st.skill.SkillTarget",
+            "st.Item"
+          ],
+          "return_type": "void"
+        },
+        "networkSetBitCond": {
+          "arguments": [
+            "ent.GameObject",
+            "i32"
+          ],
+          "return_type": "void"
+        },
+        "set_statuses": {
+          "arguments": [
+            "ent.GameObject",
+            "hxbit.ArrayProxyData"
+          ],
+          "return_type": "hxbit.ArrayProxyData"
+        }
+      },
+      "bindings": {},
+      "variants": []
+    },
+    {
+      "name": "ent.Hero",
+      "kind": "object",
+      "super_type": "ent.Unit",
+      "fields": {
+        "autoTarget": "i64",
+        "loadout": "st.Loadout",
+        "lockedTarget": "i64",
+        "name": "String",
+        "player": "st.Player",
+        "weaponInHand": "st.item.Weapon"
+      },
+      "methods": {
+        "doUseSkill": {
+          "arguments": [
+            "ent.Hero",
+            "st.skill.Skill",
+            "st.skill.SkillTarget",
+            "st.Item"
+          ],
+          "return_type": "void"
+        },
+        "networkSetBitCond": {
+          "arguments": [
+            "ent.Hero",
+            "i32"
+          ],
+          "return_type": "void"
+        },
+        "onEquip": {
+          "arguments": [
+            "ent.Hero",
+            "st.Item",
+            "String"
+          ],
+          "return_type": "void"
+        },
+        "set_autoTarget": {
+          "arguments": [
+            "ent.Hero",
+            "i64"
+          ],
+          "return_type": "i64"
+        },
+        "set_lockedTarget": {
+          "arguments": [
+            "ent.Hero",
+            "i64"
+          ],
+          "return_type": "i64"
+        },
+        "updateWeaponInHand": {
+          "arguments": [
+            "ent.Hero",
+            "st.item.Weapon"
+          ],
+          "return_type": "void"
+        }
+      },
+      "bindings": {},
+      "variants": []
+    },
+    {
+      "name": "ent.Unit",
+      "kind": "object",
+      "super_type": "ent.GameObject",
+      "fields": {
+        "body": "world.Body",
+        "isInCombat": "bool",
+        "kind": "String",
+        "target": "i64"
+      },
+      "methods": {
+        "networkSetBitCond": {
+          "arguments": [
+            "ent.Unit",
+            "i32"
+          ],
+          "return_type": "void"
+        },
+        "onInflictDamage": {
+          "arguments": [
+            "ent.Unit",
+            "st.skill.DamageResult"
+          ],
+          "return_type": "void"
+        },
+        "rpcDisplayHeal__impl": {
+          "arguments": [
+            "ent.Unit",
+            "st.skill.DamageResult"
+          ],
+          "return_type": "void"
+        },
+        "set_isInCombat": {
+          "arguments": [
+            "ent.Unit",
+            "bool"
+          ],
+          "return_type": "bool"
+        },
+        "set_target": {
+          "arguments": [
+            "ent.Unit",
+            "i64"
+          ],
+          "return_type": "i64"
+        }
+      },
+      "bindings": {},
+      "variants": []
+    },
+    {
+      "name": "GameApp",
+      "kind": "object",
+      "super_type": "App",
+      "fields": {
+        "gameCamera": "client.GameCamera",
+        "hero": "ent.Hero",
+        "layer": "st.GameLayer",
+        "loadingState": "i32",
+        "me": "st.Player",
+        "world": "world.World"
+      },
+      "methods": {
+        "disconnect": {
+          "arguments": [
+            "GameApp"
+          ],
+          "return_type": "void"
+        },
+        "dispose": {
+          "arguments": [
+            "GameApp"
+          ],
+          "return_type": "void"
+        },
+        "finishedLoading": {
+          "arguments": [
+            "GameApp"
+          ],
+          "return_type": "void"
+        },
+        "loadLevel": {
+          "arguments": [
+            "GameApp",
+            "String",
+            "ref<bool>"
+          ],
+          "return_type": "void"
+        },
+        "set_loadingState": {
+          "arguments": [
+            "GameApp",
+            "i32"
+          ],
+          "return_type": "i32"
+        },
+        "syncPlayer": {
+          "arguments": [
+            "GameApp",
+            "st.Player"
+          ],
+          "return_type": "void"
+        }
+      },
+      "bindings": {},
+      "variants": []
+    },
+    {
+      "name": "h2d.Drawable",
+      "kind": "object",
+      "super_type": "h2d.Object",
+      "fields": {},
+      "methods": {},
+      "bindings": {},
+      "variants": []
+    },
+    {
+      "name": "h2d.Flow",
+      "kind": "object",
+      "super_type": "h2d.Object",
+      "fields": {
+        "calculatedHeight": "f64",
+        "calculatedWidth": "f64",
+        "debug": "nullable<bool>",
+        "layout": "h2d.FlowLayout"
+      },
+      "methods": {},
+      "bindings": {},
+      "variants": []
+    },
+    {
+      "name": "h2d.FlowLayout",
+      "kind": "enum",
+      "super_type": null,
+      "fields": {},
+      "methods": {},
+      "bindings": {},
+      "variants": [
+        {
+          "name": "Horizontal",
+          "parameters": []
+        },
+        {
+          "name": "Vertical",
+          "parameters": []
+        },
+        {
+          "name": "Stack",
+          "parameters": []
+        }
+      ]
+    },
+    {
+      "name": "h2d.HtmlText",
+      "kind": "object",
+      "super_type": "h2d.Text",
+      "fields": {},
+      "methods": {},
+      "bindings": {},
+      "variants": []
+    },
+    {
+      "name": "h2d.Layers",
+      "kind": "object",
+      "super_type": "h2d.Object",
+      "fields": {},
+      "methods": {},
+      "bindings": {},
+      "variants": []
+    },
+    {
+      "name": "h2d.Object",
+      "kind": "object",
+      "super_type": null,
+      "fields": {
+        "absX": "f64",
+        "absY": "f64",
+        "matA": "f64",
+        "matB": "f64",
+        "matC": "f64",
+        "matD": "f64",
+        "name": "String",
+        "parent": "h2d.Object",
+        "visible": "bool",
+        "x": "f64",
+        "y": "f64"
+      },
+      "methods": {},
+      "bindings": {},
+      "variants": []
+    },
+    {
+      "name": "h2d.Scene",
+      "kind": "object",
+      "super_type": "h2d.Layers",
+      "fields": {
+        "offsetX": "f64",
+        "offsetY": "f64",
+        "viewportScaleX": "f64",
+        "viewportScaleY": "f64"
+      },
+      "methods": {
+        "dispose": {
+          "arguments": [
+            "h2d.Scene"
+          ],
+          "return_type": "void"
+        }
+      },
+      "bindings": {},
+      "variants": []
+    },
+    {
+      "name": "h2d.Text",
+      "kind": "object",
+      "super_type": "h2d.Drawable",
+      "fields": {
+        "text": "String"
+      },
+      "methods": {},
+      "bindings": {},
+      "variants": []
+    },
+    {
+      "name": "h3d.Engine",
+      "kind": "object",
+      "super_type": null,
+      "fields": {
+        "debug": "bool"
+      },
+      "methods": {
+        "dispose": {
+          "arguments": [
+            "h3d.Engine"
+          ],
+          "return_type": "void"
+        }
+      },
+      "bindings": {},
+      "variants": []
+    },
+    {
+      "name": "h3d.scene.Object",
+      "kind": "object",
+      "super_type": null,
+      "fields": {
+        "name": "String",
+        "parent": "h3d.scene.Object",
+        "x": "f64",
+        "y": "f64",
+        "z": "f64"
+      },
+      "methods": {},
+      "bindings": {},
+      "variants": []
+    },
+    {
+      "name": "h3d.VectorImpl",
+      "kind": "object",
+      "super_type": null,
+      "fields": {
+        "x": "f64",
+        "y": "f64",
+        "z": "f64"
+      },
+      "methods": {},
+      "bindings": {},
+      "variants": []
+    },
+    {
+      "name": "hl.types.ArrayAccess",
+      "kind": "object",
+      "super_type": null,
+      "fields": {},
+      "methods": {},
+      "bindings": {},
+      "variants": []
+    },
+    {
+      "name": "hl.types.ArrayBase",
+      "kind": "object",
+      "super_type": "hl.types.ArrayAccess",
+      "fields": {
+        "length": "i32"
+      },
+      "methods": {},
+      "bindings": {},
+      "variants": []
+    },
+    {
+      "name": "hl.types.ArrayDyn",
+      "kind": "object",
+      "super_type": "hl.types.ArrayAccess",
+      "fields": {
+        "array": "hl.types.ArrayBase"
+      },
+      "methods": {},
+      "bindings": {},
+      "variants": []
+    },
+    {
+      "name": "hl.types.ArrayObj",
+      "kind": "object",
+      "super_type": "hl.types.ArrayBase",
+      "fields": {
+        "array": "array"
+      },
+      "methods": {},
+      "bindings": {},
+      "variants": []
+    },
+    {
+      "name": "hxbit.ArrayProxyData",
+      "kind": "object",
+      "super_type": "hxbit.BaseProxy",
+      "fields": {
+        "array": "hl.types.ArrayDyn"
+      },
+      "methods": {},
+      "bindings": {},
+      "variants": []
+    },
+    {
+      "name": "hxbit.BaseProxy",
+      "kind": "object",
+      "super_type": null,
+      "fields": {},
+      "methods": {
+        "networkSetBitCond": {
+          "arguments": [
+            "hxbit.BaseProxy",
+            "i32"
+          ],
+          "return_type": "void"
+        }
+      },
+      "bindings": {},
+      "variants": []
+    },
+    {
+      "name": "hxd.App",
+      "kind": "object",
+      "super_type": null,
+      "fields": {
+        "engine": "h3d.Engine"
+      },
+      "methods": {
+        "dispose": {
+          "arguments": [
+            "hxd.App"
+          ],
+          "return_type": "void"
+        }
+      },
+      "bindings": {},
+      "variants": []
+    },
+    {
+      "name": "MapActivity",
+      "kind": "enum",
+      "super_type": null,
+      "fields": {},
+      "methods": {},
+      "bindings": {},
+      "variants": [
+        {
+          "name": "Activity",
+          "parameters": [
+            "String"
+          ]
+        },
+        {
+          "name": "NpcGoal",
+          "parameters": [
+            "String",
+            "String"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "st.Activity",
+      "kind": "object",
+      "super_type": "ent.Entity",
+      "fields": {
+        "kind": "String"
+      },
+      "methods": {
+        "networkSetBitCond": {
+          "arguments": [
+            "st.Activity",
+            "i32"
+          ],
+          "return_type": "void"
+        }
+      },
+      "bindings": {},
+      "variants": []
+    },
+    {
+      "name": "st.activity.Ascension",
+      "kind": "object",
+      "super_type": "st.Activity",
+      "fields": {},
+      "methods": {
+        "networkSetBitCond": {
+          "arguments": [
+            "st.activity.Ascension",
+            "i32"
+          ],
+          "return_type": "void"
+        }
+      },
+      "bindings": {},
+      "variants": []
+    },
+    {
+      "name": "st.activity.Dungeon",
+      "kind": "object",
+      "super_type": "st.activity.DungeonBase",
+      "fields": {},
+      "methods": {
+        "networkSetBitCond": {
+          "arguments": [
+            "st.activity.Dungeon",
+            "i32"
+          ],
+          "return_type": "void"
+        }
+      },
+      "bindings": {},
+      "variants": []
+    },
+    {
+      "name": "st.activity.DungeonBase",
+      "kind": "object",
+      "super_type": "st.Activity",
+      "fields": {},
+      "methods": {},
+      "bindings": {},
+      "variants": []
+    },
+    {
+      "name": "st.activity.MountRush",
+      "kind": "object",
+      "super_type": "st.Activity",
+      "fields": {},
+      "methods": {
+        "networkSetBitCond": {
+          "arguments": [
+            "st.activity.MountRush",
+            "i32"
+          ],
+          "return_type": "void"
+        }
+      },
+      "bindings": {},
+      "variants": []
+    },
+    {
+      "name": "st.activity.Rift",
+      "kind": "object",
+      "super_type": "st.activity.DungeonBase",
+      "fields": {},
+      "methods": {},
+      "bindings": {},
+      "variants": []
+    },
+    {
+      "name": "st.ActivityContext",
+      "kind": "object",
+      "super_type": "st.WorldContext",
+      "fields": {
+        "activity": "st.Activity",
+        "players": "hxbit.ArrayProxyData"
+      },
+      "methods": {
+        "networkSetBitCond": {
+          "arguments": [
+            "st.ActivityContext",
+            "i32"
+          ],
+          "return_type": "void"
+        }
+      },
+      "bindings": {},
+      "variants": []
+    },
+    {
+      "name": "st.BaseState",
+      "kind": "object",
+      "super_type": null,
+      "fields": {
+        "ownerPlayer": "st.Player"
+      },
+      "methods": {
+        "networkSetBitCond": {
+          "arguments": [
+            "st.BaseState",
+            "i32"
+          ],
+          "return_type": "void"
+        }
+      },
+      "bindings": {},
+      "variants": []
+    },
+    {
+      "name": "st.Channel",
+      "kind": "enum",
+      "super_type": null,
+      "fields": {},
+      "methods": {},
+      "bindings": {},
+      "variants": [
+        {
+          "name": "Local",
+          "parameters": [
+            "virtual{x:f64,y:f64,z:f64}"
+          ]
+        },
+        {
+          "name": "All",
+          "parameters": []
+        },
+        {
+          "name": "AllSystem",
+          "parameters": []
+        },
+        {
+          "name": "Player",
+          "parameters": [
+            "String",
+            "String"
+          ]
+        },
+        {
+          "name": "Group",
+          "parameters": []
+        },
+        {
+          "name": "System",
+          "parameters": [
+            "String"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "st.DBBaseState",
+      "kind": "object",
+      "super_type": "st.BaseState",
+      "fields": {},
+      "methods": {},
+      "bindings": {},
+      "variants": []
+    },
+    {
+      "name": "st.DBState",
+      "kind": "object",
+      "super_type": "st.DBBaseState",
+      "fields": {},
+      "methods": {
+        "networkSetBitCond": {
+          "arguments": [
+            "st.DBState",
+            "i32"
+          ],
+          "return_type": "void"
+        }
+      },
+      "bindings": {},
+      "variants": []
+    },
+    {
+      "name": "st.DisconnectReason",
+      "kind": "enum",
+      "super_type": null,
+      "fields": {},
+      "methods": {},
+      "bindings": {},
+      "variants": [
+        {
+          "name": "ManualExit",
+          "parameters": []
+        },
+        {
+          "name": "Kick",
+          "parameters": []
+        },
+        {
+          "name": "Timeout",
+          "parameters": []
+        },
+        {
+          "name": "SwitchingServer",
+          "parameters": [
+            "String"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "st.GameLayer",
+      "kind": "object",
+      "super_type": "st.State",
+      "fields": {
+        "config": "virtual{activityID:String,difficulty:nullable<i32>,mapId:String}",
+        "debug": "st.LayerDebugHelper",
+        "mainActivity": "st.Activity",
+        "players": "hxbit.ArrayProxyData",
+        "world": "world.World"
+      },
+      "methods": {
+        "dispose": {
+          "arguments": [
+            "st.GameLayer"
+          ],
+          "return_type": "void"
+        },
+        "networkSetBitCond": {
+          "arguments": [
+            "st.GameLayer",
+            "i32"
+          ],
+          "return_type": "void"
+        },
+        "set_mainActivity": {
+          "arguments": [
+            "st.GameLayer",
+            "st.Activity"
+          ],
+          "return_type": "st.Activity"
+        }
+      },
+      "bindings": {},
+      "variants": []
+    },
+    {
+      "name": "st.Group",
+      "kind": "object",
+      "super_type": "st.State",
+      "fields": {
+        "groupId": "i64",
+        "players": "hxbit.ArrayProxyData"
+      },
+      "methods": {
+        "networkSetBitCond": {
+          "arguments": [
+            "st.Group",
+            "i32"
+          ],
+          "return_type": "void"
+        }
+      },
+      "bindings": {},
+      "variants": []
+    },
+    {
+      "name": "st.Inventory",
+      "kind": "object",
+      "super_type": "st.DBBaseState",
+      "fields": {
+        "owner": "ent.Unit",
+        "stacks": "hl.types.ArrayObj"
+      },
+      "methods": {
+        "doSetStackCount": {
+          "arguments": [
+            "st.Inventory",
+            "i32",
+            "i32"
+          ],
+          "return_type": "void"
+        },
+        "networkSetBitCond": {
+          "arguments": [
+            "st.Inventory",
+            "i32"
+          ],
+          "return_type": "void"
+        },
+        "set_content": {
+          "arguments": [
+            "st.Inventory",
+            "hl.types.ArrayObj"
+          ],
+          "return_type": "hl.types.ArrayObj"
+        },
+        "setIndex__impl": {
+          "arguments": [
+            "st.Inventory",
+            "i32",
+            "st.Item",
+            "ref<i32>"
+          ],
+          "return_type": "void"
+        }
+      },
+      "bindings": {},
+      "variants": []
+    },
+    {
+      "name": "st.Item",
+      "kind": "object",
+      "super_type": "st.DBBaseState",
+      "fields": {
+        "kind": "String"
+      },
+      "methods": {
+        "networkSetBitCond": {
+          "arguments": [
+            "st.Item",
+            "i32"
+          ],
+          "return_type": "void"
+        }
+      },
+      "bindings": {},
+      "variants": []
+    },
+    {
+      "name": "st.item.Gear",
+      "kind": "object",
+      "super_type": "st.Item",
+      "fields": {
+        "level": "i32"
+      },
+      "methods": {
+        "networkSetBitCond": {
+          "arguments": [
+            "st.item.Gear",
+            "i32"
+          ],
+          "return_type": "void"
+        }
+      },
+      "bindings": {},
+      "variants": []
+    },
+    {
+      "name": "st.item.Weapon",
+      "kind": "object",
+      "super_type": "st.item.Gear",
+      "fields": {},
+      "methods": {
+        "networkSetBitCond": {
+          "arguments": [
+            "st.item.Weapon",
+            "i32"
+          ],
+          "return_type": "void"
+        }
+      },
+      "bindings": {},
+      "variants": []
+    },
+    {
+      "name": "st.LayerDebugHelper",
+      "kind": "object",
+      "super_type": "st.State",
+      "fields": {},
+      "methods": {},
+      "bindings": {},
+      "variants": []
+    },
+    {
+      "name": "st.Loadout",
+      "kind": "object",
+      "super_type": "st.DBBaseState",
+      "fields": {
+        "inventory": "st.Inventory",
+        "owner": "ent.Hero"
+      },
+      "methods": {
+        "networkSetBitCond": {
+          "arguments": [
+            "st.Loadout",
+            "i32"
+          ],
+          "return_type": "void"
+        }
+      },
+      "bindings": {},
+      "variants": []
+    },
+    {
+      "name": "st.Player",
+      "kind": "object",
+      "super_type": "st.State",
+      "fields": {
+        "activityCtx": "hxbit.ArrayProxyData",
+        "group": "st.Group",
+        "hero": "ent.Hero",
+        "heroData": "st.player.HeroData",
+        "isMe": "bool",
+        "name": "String",
+        "uid": "String"
+      },
+      "methods": {
+        "disconnect": {
+          "arguments": [
+            "st.Player",
+            "st.DisconnectReason",
+            "fn()->void",
+            "ref<bool>"
+          ],
+          "return_type": "void"
+        },
+        "networkSetBitCond": {
+          "arguments": [
+            "st.Player",
+            "i32"
+          ],
+          "return_type": "void"
+        },
+        "notify": {
+          "arguments": [
+            "st.Player",
+            "String",
+            "dynamic"
+          ],
+          "return_type": "void"
+        },
+        "notifyItemLooted__impl": {
+          "arguments": [
+            "st.Player",
+            "String"
+          ],
+          "return_type": "void"
+        },
+        "notifyUnitKilled__impl": {
+          "arguments": [
+            "st.Player",
+            "String"
+          ],
+          "return_type": "void"
+        },
+        "set_group": {
+          "arguments": [
+            "st.Player",
+            "st.Group"
+          ],
+          "return_type": "st.Group"
+        },
+        "set_hero": {
+          "arguments": [
+            "st.Player",
+            "ent.Hero"
+          ],
+          "return_type": "ent.Hero"
+        }
+      },
+      "bindings": {},
+      "variants": []
+    },
+    {
+      "name": "st.player.HeroData",
+      "kind": "object",
+      "super_type": "st.DBState",
+      "fields": {
+        "hero": "ent.Hero",
+        "inventory": "hl.types.ArrayObj",
+        "kind": "String",
+        "level": "i32",
+        "name": "String",
+        "version": "i32"
+      },
+      "methods": {
+        "networkSetBitCond": {
+          "arguments": [
+            "st.player.HeroData",
+            "i32"
+          ],
+          "return_type": "void"
+        }
+      },
+      "bindings": {},
+      "variants": []
+    },
+    {
+      "name": "st.skill.BaseSkill",
+      "kind": "object",
+      "super_type": "st.State",
+      "fields": {
+        "config": "virtual{instant:nullable<bool>}",
+        "kind": "String",
+        "owner": "ent.GameObject",
+        "runningCtx": "st.skill.SkillContext"
+      },
+      "methods": {
+        "networkSetBitCond": {
+          "arguments": [
+            "st.skill.BaseSkill",
+            "i32"
+          ],
+          "return_type": "void"
+        },
+        "rpcStop__impl": {
+          "arguments": [
+            "st.skill.BaseSkill",
+            "st.skill.SkillStopReason"
+          ],
+          "return_type": "void"
+        }
+      },
+      "bindings": {},
+      "variants": []
+    },
+    {
+      "name": "st.skill.BaseSkillAccess",
+      "kind": "object",
+      "super_type": null,
+      "fields": {
+        "skill": "st.skill.BaseSkill"
+      },
+      "methods": {},
+      "bindings": {},
+      "variants": []
+    },
+    {
+      "name": "st.skill.BaseSkillContext",
+      "kind": "object",
+      "super_type": "st.skill.BaseSkillAccess",
+      "fields": {},
+      "methods": {},
+      "bindings": {},
+      "variants": []
+    },
+    {
+      "name": "st.skill.DamageResult",
+      "kind": "object",
+      "super_type": "st.skill.BaseSkillAccess",
+      "fields": {
+        "_amount": "f64",
+        "_block": "f64",
+        "_critical": "bool",
+        "_hitCount": "i32",
+        "_kill": "bool",
+        "serverSource": "ent.GameObject",
+        "target": "ent.GameObject",
+        "weakSource": "i64"
+      },
+      "methods": {},
+      "bindings": {},
+      "variants": []
+    },
+    {
+      "name": "st.skill.Skill",
+      "kind": "object",
+      "super_type": "st.skill.BaseSkill",
+      "fields": {
+        "charges": "f64",
+        "cooldownDuration": "f64"
+      },
+      "methods": {
+        "networkSetBitCond": {
+          "arguments": [
+            "st.skill.Skill",
+            "i32"
+          ],
+          "return_type": "void"
+        },
+        "onTriggerCD": {
+          "arguments": [
+            "st.skill.Skill"
+          ],
+          "return_type": "void"
+        },
+        "set_charges": {
+          "arguments": [
+            "st.skill.Skill",
+            "f64"
+          ],
+          "return_type": "f64"
+        }
+      },
+      "bindings": {},
+      "variants": []
+    },
+    {
+      "name": "st.skill.SkillContext",
+      "kind": "object",
+      "super_type": "st.skill.BaseSkillContext",
+      "fields": {},
+      "methods": {},
+      "bindings": {},
+      "variants": []
+    },
+    {
+      "name": "st.skill.SkillStopReason",
+      "kind": "enum",
+      "super_type": null,
+      "fields": {},
+      "methods": {},
+      "bindings": {},
+      "variants": [
+        {
+          "name": "End",
+          "parameters": []
+        },
+        {
+          "name": "ForceEnd",
+          "parameters": []
+        },
+        {
+          "name": "Cancel",
+          "parameters": []
+        },
+        {
+          "name": "Interrupt",
+          "parameters": []
+        },
+        {
+          "name": "Start",
+          "parameters": []
+        },
+        {
+          "name": "Death",
+          "parameters": []
+        },
+        {
+          "name": "Consume",
+          "parameters": []
+        }
+      ]
+    },
+    {
+      "name": "st.skill.SkillTarget",
+      "kind": "enum",
+      "super_type": null,
+      "fields": {},
+      "methods": {},
+      "bindings": {},
+      "variants": [
+        {
+          "name": "Target",
+          "parameters": [
+            "ent.GameObject"
+          ]
+        },
+        {
+          "name": "Point",
+          "parameters": [
+            "virtual{x:f64,y:f64,z:f64}"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "st.skill.Status",
+      "kind": "object",
+      "super_type": "st.skill.BaseSkill",
+      "fields": {
+        "instigator": "ent.GameObject",
+        "instigatorSkill": "st.skill.BaseSkill",
+        "shieldAmount": "f64",
+        "stacks": "i32"
+      },
+      "methods": {
+        "networkSetBitCond": {
+          "arguments": [
+            "st.skill.Status",
+            "i32"
+          ],
+          "return_type": "void"
+        },
+        "set_shieldAmount": {
+          "arguments": [
+            "st.skill.Status",
+            "f64"
+          ],
+          "return_type": "f64"
+        },
+        "set_stacks": {
+          "arguments": [
+            "st.skill.Status",
+            "i32"
+          ],
+          "return_type": "i32"
+        }
+      },
+      "bindings": {},
+      "variants": []
+    },
+    {
+      "name": "st.State",
+      "kind": "object",
+      "super_type": "st.BaseState",
+      "fields": {
+        "layer": "st.GameLayer",
+        "parent": "st.State"
+      },
+      "methods": {
+        "networkSetBitCond": {
+          "arguments": [
+            "st.State",
+            "i32"
+          ],
+          "return_type": "void"
+        }
+      },
+      "bindings": {},
+      "variants": []
+    },
+    {
+      "name": "st.WorldContext",
+      "kind": "object",
+      "super_type": "st.State",
+      "fields": {},
+      "methods": {
+        "networkSetBitCond": {
+          "arguments": [
+            "st.WorldContext",
+            "i32"
+          ],
+          "return_type": "void"
+        }
+      },
+      "bindings": {},
+      "variants": []
+    },
+    {
+      "name": "String",
+      "kind": "object",
+      "super_type": null,
+      "fields": {
+        "bytes": "bytes",
+        "length": "i32"
+      },
+      "methods": {},
+      "bindings": {},
+      "variants": []
+    },
+    {
+      "name": "ui.BaseElement",
+      "kind": "object",
+      "super_type": "h2d.Flow",
+      "fields": {},
+      "methods": {},
+      "bindings": {},
+      "variants": []
+    },
+    {
+      "name": "ui.BaseUI",
+      "kind": "object",
+      "super_type": null,
+      "fields": {
+        "root": "ui.BaseUIRoot",
+        "windows": "hl.types.ArrayObj"
+      },
+      "methods": {
+        "displayWindow": {
+          "arguments": [
+            "ui.BaseUI",
+            "ui.win.BaseWindow",
+            "ui.UIElement"
+          ],
+          "return_type": "void"
+        },
+        "dispose": {
+          "arguments": [
+            "ui.BaseUI"
+          ],
+          "return_type": "void"
+        },
+        "removeWindow": {
+          "arguments": [
+            "ui.BaseUI",
+            "ui.win.BaseWindow"
+          ],
+          "return_type": "void"
+        }
+      },
+      "bindings": {},
+      "variants": []
+    },
+    {
+      "name": "ui.BaseUIRoot",
+      "kind": "object",
+      "super_type": "h2d.Flow",
+      "fields": {},
+      "methods": {},
+      "bindings": {},
+      "variants": []
+    },
+    {
+      "name": "ui.comp.DamageDisplay",
+      "kind": "object",
+      "super_type": "ui.comp.UnitEffectDisplay",
+      "fields": {
+        "counter": "ui.comp.FmtText",
+        "dmg": "st.skill.DamageResult"
+      },
+      "methods": {},
+      "bindings": {},
+      "variants": []
+    },
+    {
+      "name": "ui.comp.FmtText",
+      "kind": "object",
+      "super_type": "h2d.HtmlText",
+      "fields": {},
+      "methods": {},
+      "bindings": {},
+      "variants": []
+    },
+    {
+      "name": "ui.comp.UnitEffectDisplay",
+      "kind": "object",
+      "super_type": "ui.UIElement",
+      "fields": {},
+      "methods": {},
+      "bindings": {},
+      "variants": []
+    },
+    {
+      "name": "ui.comp.WindowHeader",
+      "kind": "object",
+      "super_type": "ui.BaseElement",
+      "fields": {
+        "icon": "virtual{desc:String,gfx:virtual{file:String,height:nullable<i32>,size:i32,width:nullable<i32>,x:i32,y:i32},group:i32,id:String,name:String,props:virtual{cursor:virtual{hoverAmplitude:nullable<f64>,hoverFreq:nullable<f64>,offsetX:nullable<i32>,offsetY:nullable<i32>,position:nullable<i32>},dialogVerb:virtual{notSpoken:nullable<bool>},filterOption:String,hud:nullable<i32>,keybind:String,sound:String,windowBanner:virtual{colorDark:i32,colorLight:i32,desc:String,illustration:virtual{file:String,height:nullable<i32>,size:i32,width:nullable<i32>,x:i32,y:i32},liner:bool,title:String},worldFx:String}}"
+      },
+      "methods": {},
+      "bindings": {},
+      "variants": []
+    },
+    {
+      "name": "ui.GameUI",
+      "kind": "object",
+      "super_type": "ui.BaseUI",
+      "fields": {},
+      "methods": {
+        "dispose": {
+          "arguments": [
+            "ui.GameUI"
+          ],
+          "return_type": "void"
+        }
+      },
+      "bindings": {},
+      "variants": []
+    },
+    {
+      "name": "ui.hud.ChatBox",
+      "kind": "object",
+      "super_type": "ui.UIElement",
+      "fields": {},
+      "methods": {
+        "chatError": {
+          "arguments": [
+            "ui.hud.ChatBox",
+            "String"
+          ],
+          "return_type": "void"
+        },
+        "hasFocus": {
+          "arguments": [
+            "ui.hud.ChatBox"
+          ],
+          "return_type": "bool"
+        },
+        "processMessage": {
+          "arguments": [
+            "ui.hud.ChatBox",
+            "String"
+          ],
+          "return_type": "void"
+        },
+        "receiveMessage": {
+          "arguments": [
+            "ui.hud.ChatBox",
+            "virtual{args:dynamic,channel:st.Channel,localStamp:nullable<f64>,localTextId:String,notify:String,sender:virtual{name:String,uid:String},text:String}"
+          ],
+          "return_type": "void"
+        }
+      },
+      "bindings": {},
+      "variants": []
+    },
+    {
+      "name": "ui.UIElement",
+      "kind": "object",
+      "super_type": "ui.BaseElement",
+      "fields": {},
+      "methods": {
+        "dispose": {
+          "arguments": [
+            "ui.UIElement"
+          ],
+          "return_type": "void"
+        }
+      },
+      "bindings": {},
+      "variants": []
+    },
+    {
+      "name": "ui.win.BaseWindow",
+      "kind": "object",
+      "super_type": "ui.UIElement",
+      "fields": {},
+      "methods": {},
+      "bindings": {},
+      "variants": []
+    },
+    {
+      "name": "ui.win.CharacterUI",
+      "kind": "object",
+      "super_type": "ui.win.TitleWindow",
+      "fields": {},
+      "methods": {},
+      "bindings": {},
+      "variants": []
+    },
+    {
+      "name": "ui.win.EscapeMenu",
+      "kind": "object",
+      "super_type": "ui.win.TitleWindow",
+      "fields": {},
+      "methods": {},
+      "bindings": {},
+      "variants": []
+    },
+    {
+      "name": "ui.win.InventoryUI",
+      "kind": "object",
+      "super_type": "ui.win.TitleWindow",
+      "fields": {},
+      "methods": {},
+      "bindings": {},
+      "variants": []
+    },
+    {
+      "name": "ui.win.LoadingScreen",
+      "kind": "object",
+      "super_type": "ui.win.BaseWindow",
+      "fields": {},
+      "methods": {},
+      "bindings": {},
+      "variants": []
+    },
+    {
+      "name": "ui.win.map.ActivityMarker",
+      "kind": "object",
+      "super_type": "ui.win.map.IconMarker",
+      "fields": {
+        "activity": "MapActivity"
+      },
+      "methods": {},
+      "bindings": {},
+      "variants": []
+    },
+    {
+      "name": "ui.win.map.IconMarker",
+      "kind": "object",
+      "super_type": "ui.win.map.MapMarker",
+      "fields": {},
+      "methods": {},
+      "bindings": {},
+      "variants": []
+    },
+    {
+      "name": "ui.win.map.MapMarker",
+      "kind": "object",
+      "super_type": "ui.UIElement",
+      "fields": {
+        "worldPos": "h3d.VectorImpl"
+      },
+      "methods": {},
+      "bindings": {},
+      "variants": []
+    },
+    {
+      "name": "ui.win.MapPinPicker",
+      "kind": "object",
+      "super_type": "ui.win.PopupWindow",
+      "fields": {},
+      "methods": {},
+      "bindings": {},
+      "variants": []
+    },
+    {
+      "name": "ui.win.MapWindow",
+      "kind": "object",
+      "super_type": "ui.win.TitleWindow",
+      "fields": {
+        "markers": "hl.types.ArrayObj",
+        "onClickWorld": "fn(f64,f64)->void"
+      },
+      "methods": {
+        "popupActivityMenu": {
+          "arguments": [
+            "ui.win.MapWindow",
+            "ui.win.map.ActivityMarker"
+          ],
+          "return_type": "void"
+        }
+      },
+      "bindings": {
+        "onClickWorld": {
+          "arguments": [
+            "ui.win.MapWindow",
+            "f64",
+            "f64"
+          ],
+          "return_type": "void"
+        }
+      },
+      "variants": []
+    },
+    {
+      "name": "ui.win.PopupWindow",
+      "kind": "object",
+      "super_type": "ui.win.TitleWindow",
+      "fields": {},
+      "methods": {},
+      "bindings": {},
+      "variants": []
+    },
+    {
+      "name": "ui.win.TitleWindow",
+      "kind": "object",
+      "super_type": "ui.win.BaseWindow",
+      "fields": {
+        "header": "ui.comp.WindowHeader",
+        "icon": "virtual{desc:String,gfx:virtual{file:String,height:nullable<i32>,size:i32,width:nullable<i32>,x:i32,y:i32},group:i32,id:String,name:String,props:virtual{cursor:virtual{hoverAmplitude:nullable<f64>,hoverFreq:nullable<f64>,offsetX:nullable<i32>,offsetY:nullable<i32>,position:nullable<i32>},dialogVerb:virtual{notSpoken:nullable<bool>},filterOption:String,hud:nullable<i32>,keybind:String,sound:String,windowBanner:virtual{colorDark:i32,colorLight:i32,desc:String,illustration:virtual{file:String,height:nullable<i32>,size:i32,width:nullable<i32>,x:i32,y:i32},liner:bool,title:String},worldFx:String}}"
+      },
+      "methods": {},
+      "bindings": {},
+      "variants": []
+    },
+    {
+      "name": "world.Body",
+      "kind": "object",
+      "super_type": null,
+      "fields": {},
+      "methods": {},
+      "bindings": {},
+      "variants": []
+    },
+    {
+      "name": "world.World",
+      "kind": "object",
+      "super_type": "h3d.scene.Object",
+      "fields": {
+        "debug": "world.WorldDebug",
+        "level": "String"
+      },
+      "methods": {
+        "dispose": {
+          "arguments": [
+            "world.World"
+          ],
+          "return_type": "void"
+        },
+        "loadLevel": {
+          "arguments": [
+            "world.World",
+            "String"
+          ],
+          "return_type": "void"
+        }
+      },
+      "bindings": {},
+      "variants": []
+    },
+    {
+      "name": "world.WorldDebug",
+      "kind": "object",
+      "super_type": "h3d.scene.Object",
+      "fields": {
+        "world": "world.World"
+      },
+      "methods": {},
+      "bindings": {},
+      "variants": []
+    }
+  ]
+}

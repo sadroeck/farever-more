@@ -189,6 +189,7 @@ try {
     Copy-Item -LiteralPath (Join-Path $repoRoot "CHANGELOG.md") -Destination (Join-Path $frameworkRoot "CHANGELOG.md")
     Copy-Item -LiteralPath (Join-Path $repoRoot "LICENSE-MIT") -Destination (Join-Path $frameworkRoot "LICENSE-MIT")
     Copy-Item -LiteralPath (Join-Path $repoRoot "THIRD_PARTY_NOTICES.md") -Destination (Join-Path $frameworkRoot "THIRD_PARTY_NOTICES.md")
+    Copy-Item -LiteralPath (Join-Path $repoRoot "farever-api-inspector\vendor\hlbc\LICENSE") -Destination (Join-Path $frameworkRoot "HLBC-LICENSE-MIT")
     [System.IO.File]::WriteAllText(
         (Join-Path $outputRoot "release-notes.md"),
         $releaseNotes,
