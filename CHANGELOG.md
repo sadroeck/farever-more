@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.2
+
+- Support version 25628371 of farever
+
 ## 0.2.1 — Bundled installation
 
 - Ship a `-full.zip` with the framework and all four add-ons already arranged
