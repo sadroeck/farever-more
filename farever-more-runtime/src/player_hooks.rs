@@ -272,13 +272,13 @@ fn resolve_hooks(
         .ok_or_else(|| "validated syncPlayer signature omitted Player".to_owned())?;
     let set_hero = runtime.resolve_method(hl, player_type, &SET_HERO)?;
     let disconnect = runtime.resolve_method(hl, game_app_type, &DISCONNECT)?;
-    let player_disconnect_spec = if profile.is_beta() {
+    let player_disconnect_spec = if profile.uses_beta_abi() {
         &PLAYER_DISCONNECT_BETA
     } else {
         &PLAYER_DISCONNECT_STABLE
     };
     let player_disconnect = runtime.resolve_method(hl, player_type, player_disconnect_spec)?;
-    let disconnect_reason_type = if profile.is_beta() {
+    let disconnect_reason_type = if profile.uses_beta_abi() {
         let reason_type = player_disconnect
             .argument_type(1)
             .ok_or_else(|| "validated beta Player.disconnect omitted its reason".to_owned())?;
@@ -379,7 +379,7 @@ fn install_hooks(hooks: &ResolvedHooks) -> Result<(), String> {
             return Err(error);
         }
     };
-    let player_detour = if hooks.profile.is_beta() {
+    let player_detour = if hooks.profile.uses_beta_abi() {
         hook_player_disconnect_beta as *mut c_void
     } else {
         hook_player_disconnect_stable as *mut c_void

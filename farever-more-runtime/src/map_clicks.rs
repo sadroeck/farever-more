@@ -246,7 +246,7 @@ pub(crate) fn try_install_hooks(hl: &HashLink<'_>, build: GameBuildProfile) {
         },
         hook_world_click as *mut c_void,
     );
-    if !build.is_beta() {
+    if !build.uses_beta_abi() {
         ACTIVITY_HOOK.status.store(2, Ordering::Release);
         return;
     }

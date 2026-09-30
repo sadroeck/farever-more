@@ -238,7 +238,7 @@ fn resolve_layout(
     game_build: GameBuildProfile,
 ) -> Result<HealLayout, String> {
     let hero = validate_object(hl, hero_type, &HERO_SCHEMA)?;
-    let result_schema = if game_build.is_beta() {
+    let result_schema = if game_build.uses_beta_abi() {
         &RESULT_SCHEMA_BETA
     } else {
         &RESULT_SCHEMA_STABLE

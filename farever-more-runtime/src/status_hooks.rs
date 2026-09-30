@@ -212,7 +212,7 @@ fn resolve_hooks(
         .ok_or_else(|| "ent.Hero does not inherit ent.GameObject".to_owned())?;
     let runtime = HashLinkRuntime::loaded().ok_or_else(|| "libhl.dll is not loaded".to_owned())?;
     let registry = runtime.resolve_method(hl, game_object_type, &SET_STATUSES)?;
-    let dirty_spec = if profile.is_beta() {
+    let dirty_spec = if profile.uses_beta_abi() {
         &STATUS_DIRTY_BETA
     } else {
         &STATUS_DIRTY

@@ -169,7 +169,7 @@ fn resolve_hooks(
         .field_type_address("group")
         .ok_or_else(|| "validated Player layout omitted group".to_owned())?;
     let runtime = HashLinkRuntime::loaded().ok_or_else(|| "libhl.dll is not loaded".to_owned())?;
-    let (group_dirty_spec, layer_dirty_spec) = if profile.is_beta() {
+    let (group_dirty_spec, layer_dirty_spec) = if profile.uses_beta_abi() {
         (&GROUP_DIRTY_BETA, &LAYER_DIRTY_BETA)
     } else {
         (&GROUP_DIRTY, &LAYER_DIRTY)

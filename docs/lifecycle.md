@@ -34,7 +34,7 @@ The guest `game.session().in-world` becomes true only after the game's final
 loading state is observed for the current world. A world object and player
 position may be available earlier while the loading screen is still visible.
 The host continues capturing those early observations internally; add-ons use
-`in-world` to decide when to show world UI. On the two exact supported builds,
+`in-world` to decide when to show world UI. On the exact supported builds,
 the final loading state is `10`.
 
 Each component exports six functions:

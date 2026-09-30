@@ -80,13 +80,21 @@ Hooks are enabled only for these exact combinations of game-file hashes:
 | --- | --- | --- | --- |
 | Stable `25257040` | `96F5DFEEF6F1D3E1AA0810BE333CF23965E42C0C0328CFDBD02F2693913C28EB` | `7D0C189415AD6832B11DA0FAFDA29EAAA2A41F93330C4489942820B495E1DF89` | `0D67CA75C73F93306158D67BD2B61763C539F3155375403CD52D8F16DB7F73ED` |
 | Beta `25531577` | `186440648F9906C2E64955F9A7B2508D9C6842F90ABEE749187191A822CAEF36` | `42A7EE2E85ED9166510BDC7DF2BFDDB8ECEBCD10917A3FDEA94A8BC4F381E5ED` | `0F6FB5D60D42039BE36D1426098A73127388A892AB1E59D2C81DD33AC9C279FB` |
+| Stable `25628371` | `186440648F9906C2E64955F9A7B2508D9C6842F90ABEE749187191A822CAEF36` | `8BB2CE5180018EBFFE0C3F357C77B86BF5EBCECD06AA65B97A69367F2F806E49` | `0F6FB5D60D42039BE36D1426098A73127388A892AB1E59D2C81DD33AC9C279FB` |
 
 A partial match is not enough. To support another release, all three file
-hashes must match and the host's game interfaces must be reviewed. Stable and
-beta builds have different chat, combat, and inventory interfaces, so the host
+hashes must match and the host's game interfaces must be reviewed. Stable
+`25257040` and beta `25531577` have different chat, combat, and inventory interfaces, so the host
 selects the matching build before enabling hooks. The beta build compiles and
 matches the inspected metadata, but beta behavior and live capture still need
 more in-game QA.
+
+Stable `25628371` retains the ABI introduced by beta `25531577`. Its full
+offline metadata inventory was compared against that beta: the host's hook
+entry-point signatures are unchanged. Added Player, Skill, and ActivityMarker
+fields are resolved through live metadata, not fixed gameplay offsets. The
+executable and HashLink runtime hashes are unchanged. This review establishes
+offline compatibility; live behavior on this release still needs in-game QA.
 
 ## How the host reads game state
 
@@ -117,7 +125,7 @@ and keeps polling as a fallback. It can infer a combat start from the first
 outgoing hit.
 
 Full-map navigation captures `ui.win.MapWindow.onClickWorld` and, on beta
-`25531577`, `popupActivityMenu`. The former is a receiver-bound function field:
+`25531577` and stable `25628371`, `popupActivityMenu`. The former is a receiver-bound function field:
 the host resolves its default implementation through the validated HashLink
 binding table and checks both the stored field and implementation signatures.
 Activity clicks copy the marker's validated `worldPos` before opening the native
@@ -179,7 +187,7 @@ the game window.
 
 ## Current limits
 
-- Hooks are enabled only for the two exact profiles above. Beta behavior and
+- Hooks are enabled only for the exact profiles above. New-release behavior and
   live capture still need more in-game QA. Sampled state remains available as a
   fallback.
 - Outgoing damage is the only combat event currently exposed to add-ons. Other

@@ -56,8 +56,8 @@ targeting. That pseudo-source cannot receive direct replies.
 Native full-map clicks use the same reserved source on `farever.map-click@1`.
 The payload is UTF-8 text containing one finite horizontal world-coordinate
 pair, `x y`, with no correlation ID. The host captures the game's converted
-coordinates from `MapWindow.onClickWorld`; beta `25531577` activity-marker
-clicks are captured from `popupActivityMenu` before its native HUD selector
+coordinates from `MapWindow.onClickWorld`; on beta `25531577` and stable
+`25628371`, activity-marker clicks are captured from `popupActivityMenu` before its native HUD selector
 opens. The 64-record native queue holds copied coordinates only. Delivery is
 discarded outside the world, and no click is retained for a future subscriber.
 GPS accepts this topic only from `farever.host` and applies its "Arrows from

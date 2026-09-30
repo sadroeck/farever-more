@@ -33,7 +33,7 @@ drop in the host log.
 
 ## Game integration
 
-The runtime supports Steam build `25257040` and beta build `25531577`. It
+The runtime supports Steam builds `25257040`, `25628371`, and beta `25531577`. It
 checks their game-file hashes and selects the matching chat format. Other
 builds are unsupported.
 

@@ -208,7 +208,7 @@ fn resolve_hooks(
         .field_type_address("inventory")
         .ok_or_else(|| "validated Loadout layout omitted inventory type".to_owned())?;
     let inventory = validate_object(hl, inventory_type, &INVENTORY_SCHEMA)?;
-    let content_spec = if profile.is_beta() {
+    let content_spec = if profile.uses_beta_abi() {
         &SET_CONTENT_BETA
     } else {
         &SET_CONTENT

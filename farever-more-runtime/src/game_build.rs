@@ -3,13 +3,14 @@
 use crate::hashlink::{verify_build, BuildFileSpec, HashLinkBuildSpec};
 use std::path::Path;
 
-/// Final `GameApp.loadingState` shared by the two exact supported builds.
+/// Final `GameApp.loadingState` shared by the exact supported builds.
 pub(crate) const GAME_APP_LOADING_STATE_PLAYABLE: i32 = 10;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) enum GameBuildProfile {
     Stable25257040,
     Beta25531577,
+    Stable25628371,
 }
 
 impl GameBuildProfile {
@@ -17,11 +18,13 @@ impl GameBuildProfile {
         match self {
             Self::Stable25257040 => "steam-25257040",
             Self::Beta25531577 => "steam-25531577-beta",
+            Self::Stable25628371 => "steam-25628371",
         }
     }
 
-    pub(crate) const fn is_beta(self) -> bool {
-        matches!(self, Self::Beta25531577)
+    /// ABI introduced by beta 25531577 and retained by stable 25628371.
+    pub(crate) const fn uses_beta_abi(self) -> bool {
+        matches!(self, Self::Beta25531577 | Self::Stable25628371)
     }
 
     /// `DamageResult` inherits this member from `BaseSkillAccess`. The beta
@@ -29,7 +32,7 @@ impl GameBuildProfile {
     pub(crate) const fn base_skill_access_field(self) -> &'static str {
         match self {
             Self::Stable25257040 => "baseSkill",
-            Self::Beta25531577 => "skill",
+            Self::Beta25531577 | Self::Stable25628371 => "skill",
         }
     }
 }
@@ -73,9 +76,24 @@ const BETA: HashLinkBuildSpec = HashLinkBuildSpec {
     files: BETA_FILES,
 };
 
+// Reviewed against the 25531577 full metadata inventory. Gameplay offsets
+// remain resolved by name and every hook still validates its live signature.
+const STABLE_25628371: HashLinkBuildSpec = HashLinkBuildSpec {
+    profile: "steam-25628371",
+    files: &[
+        BETA_FILES[0],
+        BuildFileSpec {
+            name: "hlboot.dat",
+            sha256: "8BB2CE5180018EBFFE0C3F357C77B86BF5EBCECD06AA65B97A69367F2F806E49",
+        },
+        BETA_FILES[2],
+    ],
+};
+
 pub(crate) fn verify_installed(directory: &Path) -> Result<(GameBuildProfile, String), String> {
     let mut errors = Vec::new();
     for (profile, spec) in [
+        (GameBuildProfile::Stable25628371, &STABLE_25628371),
         (GameBuildProfile::Stable25257040, &STABLE),
         (GameBuildProfile::Beta25531577, &BETA),
     ] {
@@ -104,5 +122,12 @@ mod tests {
             GameBuildProfile::Beta25531577.base_skill_access_field(),
             "skill"
         );
+        assert_eq!(
+            GameBuildProfile::Stable25628371.base_skill_access_field(),
+            "skill"
+        );
+        assert!(GameBuildProfile::Stable25628371.uses_beta_abi());
+        assert!(GameBuildProfile::Beta25531577.uses_beta_abi());
+        assert!(!GameBuildProfile::Stable25257040.uses_beta_abi());
     }
 }

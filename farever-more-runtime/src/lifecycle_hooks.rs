@@ -241,7 +241,7 @@ fn resolve_hooks(
     let set_loading = runtime.resolve_method(hl, game_app_type, &SET_LOADING)?;
     let load_level = runtime.resolve_method(hl, game_app_type, &LOAD_LEVEL)?;
     let finished_loading = runtime.resolve_method(hl, game_app_type, &FINISHED_LOADING)?;
-    let dispose_spec = if profile.is_beta() {
+    let dispose_spec = if profile.uses_beta_abi() {
         &DISPOSE_BETA
     } else {
         &DISPOSE

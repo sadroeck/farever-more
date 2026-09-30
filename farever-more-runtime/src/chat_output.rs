@@ -409,7 +409,7 @@ fn resolve_dispatch(
     let message_type = receive_message
         .argument_type(1)
         .ok_or_else(|| "validated receiveMessage signature omitted virtual argument".to_owned())?;
-    let message_schema = if profile.is_beta() {
+    let message_schema = if profile.uses_beta_abi() {
         &CHAT_MESSAGE_SCHEMA_BETA
     } else {
         &CHAT_MESSAGE_SCHEMA_STABLE
@@ -427,7 +427,7 @@ fn resolve_dispatch(
 
     let hash_utf8: HlHashUtf8 = function_pointer(runtime.export(c"hl_hash_utf8")?);
     let hash = |name: &std::ffi::CStr| unsafe { hash_utf8(name.as_ptr()) };
-    let local_position = if profile.is_beta() {
+    let local_position = if profile.uses_beta_abi() {
         let (name, payload_size, parameters) = hl
             .enum_constructor_layout(channel_type, 0)
             .ok_or_else(|| "could not read beta st.Channel.Local constructor layout".to_owned())?;
@@ -464,7 +464,7 @@ fn resolve_dispatch(
         }
     };
 
-    let sender = if profile.is_beta() {
+    let sender = if profile.uses_beta_abi() {
         let sender_type = message
             .field_type_address("sender")
             .ok_or_else(|| "validated beta chat message omitted sender".to_owned())?;
@@ -491,7 +491,7 @@ fn resolve_dispatch(
         None
     };
 
-    let null_field_names: &[(&std::ffi::CStr, &str)] = if profile.is_beta() {
+    let null_field_names: &[(&std::ffi::CStr, &str)] = if profile.uses_beta_abi() {
         &[
             (c"args", "args"),
             (c"localStamp", "localStamp"),
