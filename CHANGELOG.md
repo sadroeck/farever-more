@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.2.4 — Startup metadata and Farever compatibility
+
+- Recognize Farever Steam build `25658350` by its reviewed executable,
+  bytecode, and HashLink runtime fingerprints.
+- Read metadata names up to their terminator within page boundaries, preventing
+  valid names near an unreadable page from being rejected during startup.
+- Report the failing stage when a complete game-object shape cannot be read.
+
+The protected-page regression and installed-bytecode checks pass. A live launch
+recognized the exact profile and loaded all four add-ons with none disabled.
+Repeated cold starts remain necessary to verify the intermittent startup stall.
+The WIT add-on API remains `1.0.0`; bundled add-on versions are unchanged.
+
 ## 0.2.3
 
 - Support version 25632706 of farever
