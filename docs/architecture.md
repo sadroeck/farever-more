@@ -82,6 +82,7 @@ These exact combinations of game-file hashes use the startup fast path:
 | Beta `25531577` | `186440648F9906C2E64955F9A7B2508D9C6842F90ABEE749187191A822CAEF36` | `42A7EE2E85ED9166510BDC7DF2BFDDB8ECEBCD10917A3FDEA94A8BC4F381E5ED` | `0F6FB5D60D42039BE36D1426098A73127388A892AB1E59D2C81DD33AC9C279FB` |
 | Stable `25628371` | `186440648F9906C2E64955F9A7B2508D9C6842F90ABEE749187191A822CAEF36` | `8BB2CE5180018EBFFE0C3F357C77B86BF5EBCECD06AA65B97A69367F2F806E49` | `0F6FB5D60D42039BE36D1426098A73127388A892AB1E59D2C81DD33AC9C279FB` |
 | Stable `25632706` | `186440648F9906C2E64955F9A7B2508D9C6842F90ABEE749187191A822CAEF36` | `D48F5F511A8257832EF470FCBA82A0A7F5DB402CE8EABD11CAF42BBBA21E4280` | `0F6FB5D60D42039BE36D1426098A73127388A892AB1E59D2C81DD33AC9C279FB` |
+| Stable `25658350` | `186440648F9906C2E64955F9A7B2508D9C6842F90ABEE749187191A822CAEF36` | `617F602066C762869D5C15A01C83714664B0026868F0D24B129BBCC850DA88D8` | `0F6FB5D60D42039BE36D1426098A73127388A892AB1E59D2C81DD33AC9C279FB` |
 
 All three hashes must match to skip bytecode inspection. Stable
 `25257040` and beta `25531577` have different chat, combat, and inventory interfaces, so the host
@@ -113,6 +114,18 @@ inspection verifies the embedded bytecode contract from that release. Changed
 native files require a separately reviewed profile: bytecode signatures cannot
 establish the native HashLink memory layout or executable ABI.
 
+Stable `25658350` retains that native pair and passes the required bytecode
+contract, including playable loading state `10`. A full metadata comparison
+against `25632706` found unchanged Player/Hero fields used by readiness and
+unchanged map capture signatures and fields. Additions include a combat-stat
+record member, skill-script callbacks, and rendering helpers outside the host's
+readers. The metadata-name reader's protected-page regression passes. A live
+launch recognized the exact fingerprint, activated the Player hooks, locked
+the local Hero, reached loading state `10`, and loaded all four add-ons with
+none disabled. This confirms recovery after a launch stalled before Hero
+readiness; repeated cold starts remain necessary to establish that the
+intermittent stall is fixed.
+
 Before installing even the allocator hook or loading any add-on, the worker
 uses the inspector's parser to check required types and inheritance, host-read
 field types, method receiver/argument/return signatures, bound callbacks, and
@@ -142,6 +155,11 @@ Before installing hooks, the host checks the game-file fingerprints and, for
 unknown bytecode, the compatibility contract described above. It then waits until
 the local Hero is fully constructed and its player reference is valid before
 resolving the game state needed by add-ons.
+
+Metadata names are read in small chunks within Windows page boundaries, with
+a 512-byte limit and a required UTF-16 terminator. Complete object-shape errors
+identify the failed stage (descriptor, name, runtime count/size, or offsets),
+so a read failure is distinguishable from a rejected field schema.
 
 The live-capture path hooks HashLink's allocator and forwards observations to a
 fixed-size queue. It does not change game objects, but installing the hook
