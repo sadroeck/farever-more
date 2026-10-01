@@ -229,9 +229,12 @@ pub(crate) fn validate_object(
     type_address: usize,
     spec: &HashLinkObjectSpec,
 ) -> Result<ValidatedHashLinkObject, String> {
-    let shape = hl
-        .object_shape_for_type(type_address)
-        .ok_or_else(|| format!("could not read the complete {} object shape", spec.name))?;
+    let shape = hl.object_shape_for_type(type_address).map_err(|error| {
+        format!(
+            "could not read the complete {} object shape: {error}",
+            spec.name
+        )
+    })?;
     validate_object_shape(type_address, &shape, spec)
 }
 

@@ -19,6 +19,10 @@ const HOBJ: i32 = 11;
 const HVIRTUAL: i32 = 15;
 const HENUM: i32 = 18;
 const HSTRUCT: i32 = 21;
+const METADATA_NAME_MAX_BYTES: usize = 512;
+const METADATA_NAME_READ_CHUNK: usize = 64;
+// The profiled Windows x86-64 HashLink runtime uses 4 KiB memory pages.
+const WINDOWS_PAGE_BYTES: usize = 4096;
 // These are 64-bit HashLink runtime-metadata offsets (`hl_type_obj` and field
 // descriptors), not Farever gameplay-object offsets. Gameplay fields are
 // resolved by name through this metadata so they can move between builds.
@@ -1368,17 +1372,29 @@ impl<'a> HashLink<'a> {
         Some((name, size, parameters))
     }
     fn read_utf16z(&self, address: usize) -> Option<String> {
-        let bytes = self.memory.read(address, 512)?;
-        let end = (0..bytes.len().saturating_sub(1))
-            .step_by(2)
-            .find(|index| bytes[*index] == 0 && bytes[*index + 1] == 0)
-            .unwrap_or(bytes.len() & !1);
-        let (pairs, _) = bytes[..end].as_chunks::<2>();
-        let words = pairs
-            .iter()
-            .map(|pair| u16::from_le_bytes([pair[0], pair[1]]))
-            .collect::<Vec<_>>();
-        String::from_utf16(&words).ok()
+        // Do not require bytes beyond the terminator to be readable. Metadata
+        // names can end at the boundary of a committed Windows page.
+        if !is_pointer(address) || !address.is_multiple_of(2) {
+            return None;
+        }
+        let mut words = Vec::new();
+        let mut consumed = 0;
+        while consumed < METADATA_NAME_MAX_BYTES {
+            let current = address.checked_add(consumed)?;
+            let count = (WINDOWS_PAGE_BYTES - current % WINDOWS_PAGE_BYTES)
+                .min(METADATA_NAME_READ_CHUNK)
+                .min(METADATA_NAME_MAX_BYTES - consumed);
+            let bytes = self.memory.read(current, count)?;
+            for pair in bytes.as_chunks::<2>().0 {
+                let word = u16::from_le_bytes(*pair);
+                if word == 0 {
+                    return String::from_utf16(&words).ok();
+                }
+                words.push(word);
+            }
+            consumed += count;
+        }
+        None
     }
 
     pub(crate) fn string(&self, object: usize) -> Option<String> {
@@ -1426,106 +1442,117 @@ impl<'a> HashLink<'a> {
     pub(crate) fn object_shape_for_type(
         &self,
         concrete_type: usize,
-    ) -> Option<HashLinkObjectShape> {
-        let kind = self.memory.i32(concrete_type)?;
-        if !matches!(kind, HOBJ | HSTRUCT) {
-            return None;
-        }
-        let name = self.type_name(concrete_type)?;
-        let mut levels = Vec::new();
-        let mut current = concrete_type;
-        let mut seen = Vec::new();
+    ) -> Result<HashLinkObjectShape, String> {
+        let mut stage = "object kind/name";
+        let shape = (|| {
+            let kind = self.memory.i32(concrete_type)?;
+            if !matches!(kind, HOBJ | HSTRUCT) {
+                return None;
+            }
+            let name = self.type_name(concrete_type)?;
+            let mut levels = Vec::new();
+            let mut current = concrete_type;
+            let mut seen = Vec::new();
 
-        while is_pointer(current) && !seen.contains(&current) && levels.len() < 32 {
-            seen.push(current);
-            if !matches!(self.memory.i32(current)?, HOBJ | HSTRUCT) {
-                return None;
-            }
-            let object_type = self.memory.u64(current + TYPE_OBJECT)?;
-            let count = usize::try_from(self.memory.i32(object_type)?).ok()?;
-            if count >= 4096 {
-                return None;
-            }
-            let fields = self.memory.u64(object_type + TYPE_OBJECT_FIELDS)?;
-            let mut own = Vec::with_capacity(count);
-            for index in 0..count {
-                let descriptor = fields.checked_add(index.checked_mul(FIELD_STRIDE)?)?;
-                let name_address = self.memory.u64(descriptor)?;
-                let field_type = self.memory.u64(descriptor + FIELD_TYPE)?;
-                if !is_pointer(field_type) {
+            while is_pointer(current) && !seen.contains(&current) && levels.len() < 32 {
+                stage = "inheritance descriptor";
+                seen.push(current);
+                if !matches!(self.memory.i32(current)?, HOBJ | HSTRUCT) {
                     return None;
                 }
-                own.push((self.read_utf16z(name_address)?, field_type));
+                let object_type = self.memory.u64(current + TYPE_OBJECT)?;
+                let count = usize::try_from(self.memory.i32(object_type)?).ok()?;
+                if count >= 4096 {
+                    return None;
+                }
+                let fields = self.memory.u64(object_type + TYPE_OBJECT_FIELDS)?;
+                let mut own = Vec::with_capacity(count);
+                for index in 0..count {
+                    stage = "field descriptor/name";
+                    let descriptor = fields.checked_add(index.checked_mul(FIELD_STRIDE)?)?;
+                    let name_address = self.memory.u64(descriptor)?;
+                    let field_type = self.memory.u64(descriptor + FIELD_TYPE)?;
+                    if !is_pointer(field_type) {
+                        return None;
+                    }
+                    own.push((self.read_utf16z(name_address)?, field_type));
+                }
+                levels.push(own);
+                current = self
+                    .memory
+                    .u64(object_type + TYPE_OBJECT_SUPER)
+                    .unwrap_or(0);
             }
-            levels.push(own);
-            current = self
-                .memory
-                .u64(object_type + TYPE_OBJECT_SUPER)
-                .unwrap_or(0);
-        }
 
-        if is_pointer(current) {
-            return None;
-        }
-        let descriptors = levels.into_iter().rev().flatten().collect::<Vec<_>>();
-        let object_type = self.memory.u64(concrete_type + TYPE_OBJECT)?;
-        let runtime = self.memory.u64(object_type + TYPE_OBJECT_RUNTIME)?;
-        let count = usize::try_from(self.memory.i32(runtime + RUNTIME_OBJECT_FIELD_COUNT)?).ok()?;
-        let size = usize::try_from(self.memory.i32(runtime + RUNTIME_OBJECT_SIZE)?).ok()?;
-        if count != descriptors.len()
-            || count >= 4096
-            || !(size_of::<usize>()..1 << 20).contains(&size)
-        {
-            return None;
-        }
-        let offsets_address = self.memory.u64(runtime + RUNTIME_OBJECT_FIELD_OFFSETS)?;
-        let offsets = if count == 0 {
-            Vec::new()
-        } else {
-            if !is_pointer(offsets_address) {
+            if is_pointer(current) {
+                stage = "inheritance cycle/depth";
                 return None;
             }
-            let bytes = self.memory.read(offsets_address, count.checked_mul(4)?)?;
-            let (chunks, remainder) = bytes.as_chunks::<4>();
-            if !remainder.is_empty() {
+            let descriptors = levels.into_iter().rev().flatten().collect::<Vec<_>>();
+            stage = "runtime field count/size";
+            let object_type = self.memory.u64(concrete_type + TYPE_OBJECT)?;
+            let runtime = self.memory.u64(object_type + TYPE_OBJECT_RUNTIME)?;
+            let count =
+                usize::try_from(self.memory.i32(runtime + RUNTIME_OBJECT_FIELD_COUNT)?).ok()?;
+            let size = usize::try_from(self.memory.i32(runtime + RUNTIME_OBJECT_SIZE)?).ok()?;
+            if count != descriptors.len()
+                || count >= 4096
+                || !(size_of::<usize>()..1 << 20).contains(&size)
+            {
                 return None;
             }
-            chunks
+            let offsets_address = self.memory.u64(runtime + RUNTIME_OBJECT_FIELD_OFFSETS)?;
+            stage = "runtime field offsets";
+            let offsets = if count == 0 {
+                Vec::new()
+            } else {
+                if !is_pointer(offsets_address) {
+                    return None;
+                }
+                let bytes = self.memory.read(offsets_address, count.checked_mul(4)?)?;
+                let (chunks, remainder) = bytes.as_chunks::<4>();
+                if !remainder.is_empty() {
+                    return None;
+                }
+                chunks
+                    .iter()
+                    .map(|part| usize::try_from(i32::from_le_bytes(*part)).ok())
+                    .collect::<Option<Vec<_>>>()?
+            };
+            if offsets
                 .iter()
-                .map(|part| usize::try_from(i32::from_le_bytes(*part)).ok())
-                .collect::<Option<Vec<_>>>()?
-        };
-        if offsets
-            .iter()
-            .any(|offset| *offset < size_of::<usize>() || *offset >= size)
-            || offsets.windows(2).any(|pair| pair[0] >= pair[1])
-        {
-            return None;
-        }
-
-        let mut fields = Vec::with_capacity(count);
-        for ((field_name, field_type), offset) in descriptors.into_iter().zip(offsets) {
-            let field_kind = self.memory.i32(field_type)?;
-            let object_type_name = matches!(field_kind, HOBJ | HSTRUCT)
-                .then(|| self.type_name(field_type))
-                .flatten();
-            if matches!(field_kind, HOBJ | HSTRUCT) && object_type_name.is_none() {
+                .any(|offset| *offset < size_of::<usize>() || *offset >= size)
+                || offsets.windows(2).any(|pair| pair[0] >= pair[1])
+            {
                 return None;
             }
-            fields.push(HashLinkFieldShape {
-                name: field_name,
-                offset,
-                kind: field_kind,
-                type_address: field_type,
-                object_type_name,
-            });
-        }
-        Some(HashLinkObjectShape {
-            name,
-            kind,
-            size,
-            fields,
-        })
+
+            let mut fields = Vec::with_capacity(count);
+            for ((field_name, field_type), offset) in descriptors.into_iter().zip(offsets) {
+                stage = "field kind/object type name";
+                let field_kind = self.memory.i32(field_type)?;
+                let object_type_name = matches!(field_kind, HOBJ | HSTRUCT)
+                    .then(|| self.type_name(field_type))
+                    .flatten();
+                if matches!(field_kind, HOBJ | HSTRUCT) && object_type_name.is_none() {
+                    return None;
+                }
+                fields.push(HashLinkFieldShape {
+                    name: field_name,
+                    offset,
+                    kind: field_kind,
+                    type_address: field_type,
+                    object_type_name,
+                });
+            }
+            Some(HashLinkObjectShape {
+                name,
+                kind,
+                size,
+                fields,
+            })
+        })();
+        shape.ok_or_else(|| format!("object shape unavailable or invalid at {stage}"))
     }
 
     pub(crate) fn field_offset_for_type(
@@ -2159,6 +2186,54 @@ mod tests {
     use super::*;
 
     #[test]
+    fn metadata_names_stop_before_an_unreadable_page_and_require_a_terminator() {
+        use windows_sys::Win32::System::Memory::{
+            VirtualAlloc, VirtualFree, VirtualProtect, MEM_RELEASE, MEM_RESERVE, PAGE_NOACCESS,
+            PAGE_READWRITE,
+        };
+
+        struct Pages(*mut std::ffi::c_void);
+        impl Drop for Pages {
+            fn drop(&mut self) {
+                unsafe { VirtualFree(self.0, 0, MEM_RELEASE) };
+            }
+        }
+        let pages = Pages(unsafe {
+            VirtualAlloc(
+                std::ptr::null(),
+                8192,
+                windows_sys::Win32::System::Memory::MEM_COMMIT | MEM_RESERVE,
+                PAGE_READWRITE,
+            )
+        });
+        assert!(!pages.0.is_null());
+        let mut old_protection = 0;
+        assert_ne!(
+            unsafe {
+                VirtualProtect(
+                    pages.0.cast::<u8>().add(4096).cast(),
+                    4096,
+                    PAGE_NOACCESS,
+                    &mut old_protection,
+                )
+            },
+            0
+        );
+        let bytes = utf16z("st.Player");
+        let name = pages.0 as usize + 4096 - bytes.len();
+        unsafe { std::ptr::copy_nonoverlapping(bytes.as_ptr(), name as *mut u8, bytes.len()) };
+        let memory = ProcessMemory::current();
+        let hl = HashLink::new(&memory);
+        assert!(memory.read(name, 512).is_none());
+        assert_eq!(hl.read_utf16z(name).as_deref(), Some("st.Player"));
+        unsafe { *(pages.0.cast::<u8>().add(4094).cast::<u16>()) = b'x' as u16 };
+        assert!(hl.read_utf16z(name).is_none());
+        let unterminated = [b'x' as u16; 256];
+        assert!(hl.read_utf16z(unterminated.as_ptr() as usize).is_none());
+        assert!(hl.read_utf16z(0).is_none());
+    }
+
+    #[test]
     fn window_root_tracker_requests_only_replacement_or_reacquisition() {
         let mut roots = WindowRootTracker::default();
 
@@ -2547,6 +2622,11 @@ mod tests {
         );
         assert_eq!(shape.fields[1].kind, 6);
         assert_eq!(shape.fields[2].kind, 7);
+        write_i32(runtime.as_mut(), RUNTIME_OBJECT_FIELD_COUNT, 2);
+        assert!(HashLink::new(&memory)
+            .object_shape_for_type(result_type.as_ptr() as usize)
+            .unwrap_err()
+            .contains("runtime field count/size"));
     }
 
     #[test]

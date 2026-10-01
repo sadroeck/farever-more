@@ -12,6 +12,7 @@ pub(crate) enum GameBuildProfile {
     Beta25531577,
     Stable25628371,
     Stable25632706,
+    Stable25658350,
     Compatible25632706,
 }
 
@@ -22,6 +23,7 @@ impl GameBuildProfile {
             Self::Beta25531577 => "steam-25531577-beta",
             Self::Stable25628371 => "steam-25628371",
             Self::Stable25632706 => "steam-25632706",
+            Self::Stable25658350 => "steam-25658350",
             Self::Compatible25632706 => "bytecode-compatible-with-steam-25632706",
         }
     }
@@ -33,6 +35,7 @@ impl GameBuildProfile {
             Self::Beta25531577
                 | Self::Stable25628371
                 | Self::Stable25632706
+                | Self::Stable25658350
                 | Self::Compatible25632706
         )
     }
@@ -45,6 +48,7 @@ impl GameBuildProfile {
             Self::Beta25531577
             | Self::Stable25628371
             | Self::Stable25632706
+            | Self::Stable25658350
             | Self::Compatible25632706 => "skill",
         }
     }
@@ -122,6 +126,20 @@ const CURRENT_NATIVE: HashLinkBuildSpec = HashLinkBuildSpec {
     files: &[BETA_FILES[0], BETA_FILES[2]],
 };
 
+// Full metadata review and the embedded contract retain the host ABI. Player,
+// Hero and map schemas are unchanged; live startup remains independently gated.
+const STABLE_25658350: HashLinkBuildSpec = HashLinkBuildSpec {
+    profile: "steam-25658350",
+    files: &[
+        BETA_FILES[0],
+        BuildFileSpec {
+            name: "hlboot.dat",
+            sha256: "617F602066C762869D5C15A01C83714664B0026868F0D24B129BBCC850DA88D8",
+        },
+        BETA_FILES[2],
+    ],
+};
+
 pub(crate) fn verify_installed(directory: &Path) -> Result<(GameBuildProfile, String), String> {
     verify_with(directory, |path| {
         let contract: farever_api_inspector::CompatibilityContract =
@@ -145,6 +163,7 @@ fn verify_with(
     verify_profiles(
         directory,
         &[
+            (GameBuildProfile::Stable25658350, &STABLE_25658350),
             (GameBuildProfile::Stable25632706, &STABLE_25632706),
             (GameBuildProfile::Stable25628371, &STABLE_25628371),
             (GameBuildProfile::Stable25257040, &STABLE),
@@ -210,6 +229,11 @@ mod tests {
         assert!(GameBuildProfile::Stable25628371.uses_beta_abi());
         assert!(GameBuildProfile::Beta25531577.uses_beta_abi());
         assert!(GameBuildProfile::Stable25632706.uses_beta_abi());
+        assert!(GameBuildProfile::Stable25658350.uses_beta_abi());
+        assert_eq!(
+            GameBuildProfile::Stable25658350.base_skill_access_field(),
+            "skill"
+        );
         assert_eq!(
             GameBuildProfile::Stable25632706.base_skill_access_field(),
             "skill"
@@ -292,7 +316,7 @@ mod tests {
     }
 
     /// Run explicitly against the installed game's bytecode while the game is
-    /// closed, even though its exact fingerprint normally bypasses this scan.
+    /// closed. Reviewed fingerprints and compatible newer bytecode both qualify.
     #[test]
     #[ignore = "requires FAREVER_GAME_DIRECTORY pointing to the reviewed installation"]
     fn reviewed_installation_satisfies_embedded_bytecode_contract() {
@@ -312,13 +336,18 @@ mod tests {
         .unwrap();
         let directory = Path::new(&directory);
         let (profile, details) = verify_installed(directory).unwrap();
-        assert_eq!(profile, GameBuildProfile::Stable25632706);
-        assert!(details.contains("verification=fingerprint"));
-        // Omit the newly fingerprinted release to exercise the actual fallback
-        // on identical installed bytecode, including parsing and schema checks.
+        assert!(profile.uses_beta_abi());
+        if profile == GameBuildProfile::Compatible25632706 {
+            assert!(details.contains("verification=bytecode-signatures"));
+        } else {
+            assert!(details.contains("verification=fingerprint"));
+        }
+        eprintln!("Installed game profile={} {details}", profile.name());
+        // Only offer the old native pair as a fingerprint. It cannot match
+        // CURRENT_NATIVE, so this always exercises the real bytecode fallback.
         let (profile, details) = verify_profiles(
             directory,
-            &[(GameBuildProfile::Stable25628371, &STABLE_25628371)],
+            &[(GameBuildProfile::Stable25257040, &STABLE)],
             &CURRENT_NATIVE,
             |path| {
                 farever_api_inspector::verify_bytecode_contract(
