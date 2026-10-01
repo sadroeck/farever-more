@@ -30,18 +30,27 @@ dependencies = [
 ]
 
 [[package]]
-name = "gps"
-version = "0.1.1"
+name = "farever-waypoint-protocol"
+version = "1.0.0"
 dependencies = [
  "farever-more-sdk",
 ]
 
 [[package]]
+name = "gps"
+version = "0.2.0"
+dependencies = [
+ "farever-more-sdk",
+ "farever-waypoint-protocol",
+]
+
+[[package]]
 name = "minimap"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "farever-more-sdk",
  "farever-poi-protocol",
+ "farever-waypoint-protocol",
 ]
 
 [[package]]

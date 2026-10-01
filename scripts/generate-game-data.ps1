@@ -1,8 +1,8 @@
-# Regenerates the game data that farever-db embeds, and the POI table projected
-# from it.
+# Regenerates the extracted inventory and its POI/soulstone projections.
+# Also verifies reviewed soulstone roots against the installed map archive.
 #
-#   .\scripts\generate-game-data.ps1          # write both
-#   .\scripts\generate-game-data.ps1 -Check   # fail when either is stale
+#   .\scripts\generate-game-data.ps1          # write projections and check sites
+#   .\scripts\generate-game-data.ps1 -Check   # fail on stale artifacts/sites
 #
 # The extractor reads the installed game; -Check still does, because comparing
 # the artifacts against the installation is the point of the check. It runs with
@@ -48,6 +48,12 @@ try {
     if ($LASTEXITCODE -ne 0) {
         throw "placements project failed with exit code $LASTEXITCODE"
     }
+    & $cargo run -q -p farever-db --bin soulstones -- (Join-Path $repoRoot 'addons\gps\assets\soulstones_generated.rs') @mode
+    if ($LASTEXITCODE -ne 0) { throw "soulstones projection failed with exit code $LASTEXITCODE" }
+    & $cargo run -q -p farever-db --bin soulstones -- --verify-map
+    if ($LASTEXITCODE -ne 0) { throw "soulstone map verification failed with exit code $LASTEXITCODE" }
+    & $cargo run -q -p farever-db --features portrait-import --bin soulstones -- --icons (Join-Path $repoRoot 'addons\minimap\assets\soulstones') @mode
+    if ($LASTEXITCODE -ne 0) { throw "soulstone portrait import failed with exit code $LASTEXITCODE" }
 }
 finally {
     Pop-Location

@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased
+
+- Left-clicking any of the eight soulstones in the backpack preserves its
+  normal behavior and replaces the GPS destination with its fixed W1 summoning
+  site. Creating a destination also shows a previously hidden GPS arrow.
+- Show the active soulstone's inventory portrait on the minimap and clear it
+  through GPS's existing arrival behavior.
+- Share the active destination through GPS's read-only waypoint service, with
+  no change to the WIT add-on API. Native full-map markers remain pending.
+
+Soulstone click navigation, the GPS arrow, and the minimap marker were confirmed
+in-game by the user on Steam build `25632706`.
+
 ## 0.2.3
 
 - Support version 25632706 of farever

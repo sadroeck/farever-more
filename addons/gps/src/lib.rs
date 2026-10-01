@@ -1,4 +1,5 @@
 mod arrow_mesh;
+mod soulstones;
 
 use arrow_mesh::{Material, TRIANGLES, VERTICES};
 use farever_more_sdk::prelude::*;
@@ -13,6 +14,10 @@ const GPS_TOPIC: &str = "gps";
 /// Native full-map observations use their own topic so the map-click setting
 /// also gates host-originated clicks without disabling explicit /gps commands.
 const MAP_CLICK_TOPIC: &str = "farever.map-click@1";
+const INVENTORY_CLICK_TOPIC: &str = "farever.inventory-click@1";
+const SOULSTONE_CLICKS: Setting<bool> = Setting::boolean("soulstone-clicks", true)
+    .label("Arrows from soulstones")
+    .description("Set a summoning waypoint when you left-click a soulstone in your inventory.");
 /// Whether a marker press elsewhere opens an arrow here.
 const MAP_CLICKS: Setting<bool> = Setting::boolean("map-clicks", true)
     .label("Arrows from the map")
@@ -63,6 +68,10 @@ impl Addon for WayfinderArrow {
             .bus()
             .subscribe(MAP_CLICK_TOPIC)
             .map_err(|error| format!("failed to subscribe to full-map clicks: {error:?}"))?;
+        context
+            .bus()
+            .subscribe(INVENTORY_CLICK_TOPIC)
+            .map_err(|error| format!("failed to subscribe to inventory clicks: {error:?}"))?;
         context.assets().register_font(
             "noto-sans-regular",
             &[TextStyle::Body, TextStyle::Small],
@@ -78,9 +87,34 @@ impl Addon for WayfinderArrow {
         Ok(Self {
             state: WayfinderState {
                 map_clicks: context.config().register(&MAP_CLICKS)?,
+                soulstone_clicks: context.config().register(&SOULSTONE_CLICKS)?,
                 ..WayfinderState::default()
             },
         })
+    }
+
+    fn call_service(
+        &mut self,
+        service: &str,
+        operation: u32,
+        request: &[u8],
+    ) -> SdkResult<Vec<u8>> {
+        if service != farever_waypoint_protocol::SERVICE_ID
+            || operation != farever_waypoint_protocol::CURRENT_OPERATION
+            || !request.is_empty()
+        {
+            return Err("invalid waypoint snapshot request".to_owned());
+        }
+        let waypoint = self.state.targets.front().and_then(|target| {
+            Some(farever_waypoint_protocol::Waypoint {
+                process_session: self.state.process_session?,
+                world: target.world.clone()?,
+                position: [target.position.x, target.position.y, target.position.z],
+                name: target.name.clone(),
+                item_id: target.item_id.clone(),
+            })
+        });
+        farever_waypoint_protocol::encode(waypoint.as_ref())
     }
 
     fn on_messages(&mut self, context: &mut Context, batch: Messages) -> SdkResult<()> {
@@ -94,6 +128,7 @@ impl Addon for WayfinderArrow {
         }
 
         let snapshot = context.game().snapshot();
+        self.state.area_id = context.game().zone().value.and_then(|zone| zone.area_id);
         let (handled, warnings) = self.state.apply_messages(&snapshot, batch.into_messages());
         if handled {
             if let Some(target) = self.state.targets.front() {
@@ -120,12 +155,17 @@ impl Addon for WayfinderArrow {
                 context.config().set(&MAP_CLICKS, &checked)?;
                 self.state.map_clicks = checked;
             }
+            if id == SOULSTONE_CLICKS.key() {
+                context.config().set(&SOULSTONE_CLICKS, &checked)?;
+                self.state.soulstone_clicks = checked;
+            }
         }
         Ok(())
     }
 
     fn on_tick(&mut self, context: &mut Context, _tick: Tick) -> SdkResult<TickControl> {
         let snapshot = context.game().snapshot();
+        self.state.area_id = context.game().zone().value.and_then(|zone| zone.area_id);
         if let Some(frame) = self.state.render_if_snapshot_changed(&snapshot) {
             context.replace_ui(frame);
         }
@@ -148,6 +188,8 @@ struct Direction {
 struct WaypointTarget {
     position: Vec3,
     name: String,
+    world: Option<String>,
+    item_id: Option<String>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -169,7 +211,9 @@ struct WayfinderState {
     visible: bool,
     /// Honors native full-map clicks and waypoint requests from other add-ons.
     map_clicks: bool,
+    soulstone_clicks: bool,
     process_session: Option<u64>,
+    area_id: Option<String>,
     targets: VecDeque<WaypointTarget>,
     last_rendered_snapshot: Option<(u64, u64)>,
 }
@@ -179,7 +223,9 @@ impl Default for WayfinderState {
         Self {
             visible: true,
             map_clicks: true,
+            soulstone_clicks: true,
             process_session: None,
+            area_id: None,
             targets: VecDeque::new(),
             last_rendered_snapshot: None,
         }
@@ -217,6 +263,19 @@ impl WayfinderState {
 
         for message in messages {
             let from_host = message.source_addon_id == HOST_MESSAGE_SOURCE_ID;
+            if message.topic == INVENTORY_CLICK_TOPIC {
+                if !from_host || !self.soulstone_clicks {
+                    continue;
+                }
+                match self.apply_soulstone_click(snapshot, &message.payload) {
+                    Ok(true) => {
+                        handled = true;
+                    }
+                    Ok(false) => {}
+                    Err(error) => warnings.push(format!("Ignored soulstone click: {error}")),
+                }
+                continue;
+            }
             let native_click = message.topic == MAP_CLICK_TOPIC;
             if message.topic != GPS_TOPIC && !native_click {
                 continue;
@@ -246,15 +305,6 @@ impl WayfinderState {
             {
                 Ok(()) => {
                     handled = true;
-                    // A click asks for an arrow the player can see, so a hidden
-                    // surface is worth saying out loud instead of silently
-                    // keeping the marker off the screen.
-                    if map_request && !self.visible {
-                        warnings.push(
-                            "Waypoint set while the arrow is hidden; run `/gps show` to display it"
-                                .to_owned(),
-                        );
-                    }
                 }
                 Err(error) => warnings.push(format!(
                     "Ignored {}: {error}",
@@ -297,11 +347,46 @@ impl WayfinderState {
                             z: player_position.z,
                         },
                         name: waypoint.name,
+                        world: self.area_id.clone(),
+                        item_id: None,
                     })
                     .collect();
+                self.visible = true;
             }
         }
         Ok(())
+    }
+
+    fn apply_soulstone_click(
+        &mut self,
+        snapshot: &GameState,
+        payload: &[u8],
+    ) -> Result<bool, String> {
+        let item = std::str::from_utf8(payload).map_err(|_| "invalid item ID")?;
+        let Some(site) = soulstones::find(item) else {
+            return Ok(false);
+        };
+        self.sync_session(snapshot);
+        if !snapshot.session.in_world || self.area_id.as_deref() != Some(site.world) {
+            return Err("this summoning spot is in W1 Siagarta".into());
+        }
+        if snapshot
+            .player
+            .value
+            .as_ref()
+            .and_then(|player| player.position)
+            .is_none()
+        {
+            return Err("the current player position is unavailable".into());
+        }
+        self.targets = VecDeque::from([WaypointTarget {
+            position: site.position(),
+            name: site.name.to_owned(),
+            world: Some(site.world.to_owned()),
+            item_id: Some(site.item.to_owned()),
+        }]);
+        self.visible = true;
+        Ok(true)
     }
 
     fn sync_session(&mut self, snapshot: &GameState) {
@@ -311,6 +396,14 @@ impl WayfinderState {
         }
 
         if !snapshot.session.in_world {
+            self.targets.clear();
+        }
+        if self.targets.front().is_some_and(|target| {
+            target
+                .world
+                .as_deref()
+                .is_some_and(|world| self.area_id.as_deref() != Some(world))
+        }) {
             self.targets.clear();
         }
     }
@@ -499,11 +592,18 @@ fn render_snapshot(state: &mut WayfinderState, snapshot: &GameState) -> Frame {
     state.sync_session(snapshot);
     state.clear_arrived_targets(snapshot);
     let map_clicks = state.map_clicks;
+    let soulstone_clicks = state.soulstone_clicks;
     let mut frame = FrameBuilder::new();
     // The settings page must survive an empty target list, so it is registered
     // before any early return.
     frame.config_menu("settings", "GPS", move |ui| {
         ui.checkbox(MAP_CLICKS.key(), "Arrows from the map", map_clicks, true);
+        ui.checkbox(
+            SOULSTONE_CLICKS.key(),
+            "Arrows from soulstones",
+            soulstone_clicks,
+            true,
+        );
     });
     if !state.visible {
         return frame.finish();
@@ -802,6 +902,159 @@ farever_more_sdk::export!(WayfinderArrow);
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn soulstone_click_replaces_queue_preserves_real_altitude_and_uses_normal_arrival() {
+        let snapshot = snapshot_at(0., 0., 0.);
+        let mut state = WayfinderState {
+            area_id: Some("World/W1_Siagarta".into()),
+            map_clicks: false,
+            ..WayfinderState::default()
+        };
+        state
+            .apply_command(
+                &snapshot,
+                GpsCommand::SetSequence(vec![
+                    waypoint_spec(4., 5., "Old"),
+                    waypoint_spec(8., 9., "Queued"),
+                ]),
+            )
+            .unwrap();
+        state.apply_command(&snapshot, GpsCommand::Hide).unwrap();
+        let (handled, warnings) = state.apply_messages(
+            &snapshot,
+            vec![message(
+                INVENTORY_CLICK_TOPIC,
+                HOST_MESSAGE_SOURCE_ID,
+                b"Soulstone_Z2_2",
+            )],
+        );
+        assert!(handled);
+        assert!(warnings.is_empty());
+        assert!(state.visible);
+        assert_eq!(render_snapshot(&mut state, &snapshot).surface_count(), 1);
+        assert_eq!(state.targets.len(), 1);
+        assert_target(&state, [1906.8905, 358.2576, 224.8445], "Asmodeaf");
+        let mut addon = WayfinderArrow { state };
+        let current =
+            farever_waypoint_protocol::decode(&addon.call_service("waypoint", 1, &[]).unwrap())
+                .unwrap()
+                .unwrap();
+        assert_eq!(current.name, "Asmodeaf");
+        assert_eq!(current.item_id.as_deref(), Some("Soulstone_Z2_2"));
+        let arrival = snapshot_at(1906.8905, 358.2576, 0.);
+        render_snapshot(&mut addon.state, &arrival);
+        assert!(addon.state.targets.is_empty());
+        assert!(farever_waypoint_protocol::decode(
+            &addon.call_service("waypoint", 1, &[]).unwrap()
+        )
+        .unwrap()
+        .is_none());
+    }
+
+    #[test]
+    fn inventory_clicks_require_host_known_item_enabled_preference_and_correct_world() {
+        let snapshot = snapshot_at(0., 0., 0.);
+        let mut state = WayfinderState {
+            area_id: Some("World/W1_Siagarta".into()),
+            ..WayfinderState::default()
+        };
+        for (source, item) in [
+            ("other-addon", b"Soulstone_Z2_2".as_slice()),
+            (HOST_MESSAGE_SOURCE_ID, b"Soulstone"),
+            (HOST_MESSAGE_SOURCE_ID, b"10 20 injected"),
+        ] {
+            let (handled, warnings) = state.apply_messages(
+                &snapshot,
+                vec![message(INVENTORY_CLICK_TOPIC, source, item)],
+            );
+            assert!(!handled);
+            assert!(warnings.is_empty());
+            assert!(state.targets.is_empty());
+        }
+        state.soulstone_clicks = false;
+        assert!(
+            !state
+                .apply_messages(
+                    &snapshot,
+                    vec![message(
+                        INVENTORY_CLICK_TOPIC,
+                        HOST_MESSAGE_SOURCE_ID,
+                        b"Soulstone_Z1_4"
+                    )]
+                )
+                .0
+        );
+        state.soulstone_clicks = true;
+        state.area_id = Some("Dungeon/Test".into());
+        let (handled, warnings) = state.apply_messages(
+            &snapshot,
+            vec![message(
+                INVENTORY_CLICK_TOPIC,
+                HOST_MESSAGE_SOURCE_ID,
+                b"Soulstone_Z1_4",
+            )],
+        );
+        assert!(!handled);
+        assert_eq!(warnings.len(), 1);
+        assert!(state.targets.is_empty());
+    }
+
+    #[test]
+    fn regular_waypoint_replacement_clears_the_soulstone_portrait_identity() {
+        let snapshot = snapshot_at(0., 0., 0.);
+        let mut addon = WayfinderArrow {
+            state: WayfinderState {
+                area_id: Some("World/W1_Siagarta".into()),
+                ..WayfinderState::default()
+            },
+        };
+        addon
+            .state
+            .apply_soulstone_click(&snapshot, b"Soulstone_Z2_2")
+            .unwrap();
+        addon
+            .state
+            .apply_command(
+                &snapshot,
+                GpsCommand::SetSequence(vec![waypoint_spec(100., 200., "Asmodeaf")]),
+            )
+            .unwrap();
+        let current =
+            farever_waypoint_protocol::decode(&addon.call_service("waypoint", 1, &[]).unwrap())
+                .unwrap()
+                .unwrap();
+        assert_eq!(
+            current.item_id, None,
+            "a matching label does not imply a soulstone"
+        );
+    }
+
+    #[test]
+    fn soulstone_target_clears_on_world_change_and_logout_even_when_hidden() {
+        let snapshot = snapshot_at(0., 0., 0.);
+        let mut state = WayfinderState {
+            area_id: Some("World/W1_Siagarta".into()),
+            visible: false,
+            ..WayfinderState::default()
+        };
+        state
+            .apply_soulstone_click(&snapshot, b"Soulstone_Z1_1")
+            .unwrap();
+        state.apply_command(&snapshot, GpsCommand::Hide).unwrap();
+        state.area_id = Some("Dungeon/Test".into());
+        render_snapshot(&mut state, &snapshot);
+        assert!(state.targets.is_empty());
+        state.area_id = Some("World/W1_Siagarta".into());
+        state
+            .apply_soulstone_click(&snapshot, b"Soulstone_Z1_1")
+            .unwrap();
+        state.apply_command(&snapshot, GpsCommand::Hide).unwrap();
+        let mut logout = snapshot;
+        logout.session.in_world = false;
+        render_snapshot(&mut state, &logout);
+        assert!(state.targets.is_empty());
+    }
 
     fn status(available: bool) -> StateStatus {
         StateStatus {
@@ -1173,6 +1426,7 @@ mod tests {
         assert!(warnings.is_empty());
         assert!(state.targets.is_empty());
         for payload in [b"hide".as_slice(), b"next", b"10 20, 30 40", b"NaN 20"] {
+            state.visible = false;
             let (handled, warnings) = state.apply_messages(
                 &snapshot,
                 vec![message(MAP_CLICK_TOPIC, HOST_MESSAGE_SOURCE_ID, payload)],
@@ -1180,12 +1434,12 @@ mod tests {
             assert!(!handled, "{payload:?}");
             assert_eq!(warnings.len(), 1);
             assert!(state.targets.is_empty());
-            assert!(state.visible);
+            assert!(!state.visible, "rejected requests preserve visibility");
         }
     }
 
     #[test]
-    fn full_map_clicks_report_hidden_arrows_and_out_of_world_requests() {
+    fn full_map_clicks_show_hidden_arrows_and_report_out_of_world_requests() {
         let mut snapshot = snapshot_at(0.0, 0.0, 0.0);
         let request = || message(MAP_CLICK_TOPIC, HOST_MESSAGE_SOURCE_ID, b"120 -45");
         let mut state = WayfinderState {
@@ -1194,8 +1448,8 @@ mod tests {
         };
         let (handled, warnings) = state.apply_messages(&snapshot, vec![request()]);
         assert!(handled);
-        assert!(warnings[0].contains("/gps show"));
-        assert!(!state.visible);
+        assert!(warnings.is_empty());
+        assert!(state.visible);
         snapshot.session.in_world = false;
         let (handled, warnings) = state.apply_messages(&snapshot, vec![request()]);
         assert!(!handled);
@@ -1214,17 +1468,15 @@ mod tests {
             payload: b"10 20 \"Obelisk\"".to_vec(),
         };
 
-        // A click while the arrow is hidden still sets the waypoint, and the
-        // player is told how to see it instead of nothing happening.
+        // An accepted peer request shows the arrow without a manual command.
         let mut hidden = WayfinderState {
             visible: false,
             ..WayfinderState::default()
         };
         let (handled, warnings) = hidden.apply_messages(&snapshot, vec![request("minimap")]);
         assert!(handled, "{warnings:?}");
-        assert!(!hidden.visible);
-        assert_eq!(warnings.len(), 1, "{warnings:?}");
-        assert!(warnings[0].contains("/gps show"), "{warnings:?}");
+        assert!(hidden.visible);
+        assert!(warnings.is_empty(), "{warnings:?}");
 
         // With the setting off the click is refused out loud, not silently.
         let mut disabled = WayfinderState {
@@ -1350,7 +1602,7 @@ mod tests {
     }
 
     #[test]
-    fn setting_a_target_while_hidden_does_not_show_it() {
+    fn setting_a_target_while_hidden_shows_it() {
         let snapshot = snapshot_at(1.0, 2.0, 3.0);
         let mut state = WayfinderState::default();
         state
@@ -1363,7 +1615,7 @@ mod tests {
             )
             .expect("set target");
 
-        assert!(render_snapshot(&mut state, &snapshot).surface_count() == 0);
+        assert_eq!(render_snapshot(&mut state, &snapshot).surface_count(), 1);
         assert_target(&state, [4.0, 6.0, 3.0], "Hidden target");
     }
 
@@ -1425,6 +1677,8 @@ mod tests {
         state.targets = targets
             .iter()
             .map(|(position, name)| WaypointTarget {
+                world: None,
+                item_id: None,
                 position: Vec3 {
                     x: position[0],
                     y: position[1],

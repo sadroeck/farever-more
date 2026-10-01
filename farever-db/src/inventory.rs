@@ -339,6 +339,26 @@ mod zones {
     include!("../assets/zones.rs");
 }
 
+/// A reviewed fixed summoning location linked to its required item and demon.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct SoulstoneSite {
+    pub item: &'static str,
+    /// Full 256x256 inventory portrait in the game's resource archive.
+    pub icon_path: &'static str,
+    pub demon: &'static str,
+    pub site: &'static str,
+    pub tile: &'static str,
+    pub world: &'static str,
+    pub x: f32,
+    pub y: f32,
+    pub z: f32,
+}
+
+#[cfg(feature = "embedded")]
+mod soulstones {
+    include!("../assets/soulstones.rs");
+}
+
 #[cfg(feature = "embedded")]
 mod placements {
     include!("../assets/placements.rs");
@@ -407,6 +427,12 @@ pub struct Inventory;
 
 #[cfg(feature = "embedded")]
 impl Inventory {
+    /// Fixed soulstone sites reviewed against W1's map archive in build 25632706.
+    #[must_use]
+    pub fn soulstones() -> &'static [SoulstoneSite] {
+        soulstones::RECORDS
+    }
+
     /// Which game build the extracted tables came from.
     #[must_use]
     pub fn build() -> &'static BuildSource {

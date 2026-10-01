@@ -12,6 +12,8 @@ default = ["embedded"]
 # build even when a table is stale or missing: rewriting them is its whole job,
 # and it cannot do that from a package they prevent from compiling.
 embedded = []
+# Offline portrait importer; never linked into the host or reference add-ons.
+portrait-import = ["dep:image", "dep:texture2ddecoder"]
 
 [[bin]]
 name = "placements"
@@ -20,7 +22,14 @@ path = "src/bin/placements.rs"
 # buildable - when they are compiled in.
 required-features = ["embedded"]
 
+[[bin]]
+name = "soulstones"
+path = "src/bin/soulstones.rs"
+required-features = ["embedded"]
+
 [dependencies]
+image = { workspace = true, optional = true }
+texture2ddecoder = { version = "0.1.2", optional = true }
 hex.workspace = true
 serde.workspace = true
 serde_json.workspace = true

@@ -10,6 +10,17 @@ use farever_poi_protocol::{
     Bounds as PoiBounds, Client as PoiClient, Poi, PoiFamily, PoiFamilyRef, PoiKind, PoiKindRef,
     QueryRegion,
 };
+use farever_waypoint_protocol::{Client as WaypointClient, Waypoint};
+
+mod soulstone_portraits {
+    include!("../assets/soulstones/icons_generated.rs");
+}
+
+#[derive(Clone, Copy)]
+struct WaypointMarker<'a> {
+    waypoint: &'a Waypoint,
+    icon: Option<&'a Image>,
+}
 
 // Match the host's continuous-state polling cadence so player and camera
 // direction changes are delivered at approximately 60 Hz.
@@ -281,6 +292,8 @@ struct MinimapPoc {
     /// Markers of the last rendered frame, in canvas-local points, so a press
     /// can be matched to what the player actually sees.
     marker_hits: Vec<MarkerHit>,
+    waypoint_client: Option<WaypointClient>,
+    soulstone_icons: Vec<(&'static str, Image)>,
 }
 
 /// One marker as drawn on the last frame.
@@ -427,6 +440,15 @@ impl Addon for MinimapPoc {
             poi_buffer.revision,
             poi_buffer.pois.len()
         ));
+        let soulstone_icons = soulstone_portraits::SOURCES
+            .iter()
+            .map(|(item, png)| {
+                context
+                    .assets()
+                    .register_image(&format!("soulstone-{item}"), png)
+                    .map(|image| (*item, image))
+            })
+            .collect::<SdkResult<Vec<_>>>()?;
         Ok(Self {
             map_image,
             player_marker,
@@ -437,6 +459,8 @@ impl Addon for MinimapPoc {
             poi_client,
             poi_buffer,
             marker_hits: Vec::new(),
+            waypoint_client: WaypointClient::open(&context.dependencies()).ok(),
+            soulstone_icons,
         })
     }
 
@@ -502,6 +526,15 @@ impl Addon for MinimapPoc {
         let snapshot = game.snapshot();
         let area_id = game.zone().value.and_then(|zone| zone.area_id);
         let mut marker_hits = Vec::new();
+        let waypoint = self
+            .waypoint_client
+            .as_ref()
+            .and_then(|client| client.current().ok())
+            .flatten()
+            .filter(|point| {
+                point.process_session == snapshot.session.process_session
+                    && area_id.as_deref() == Some(point.world.as_str())
+            });
         // Re-poll only once the player leaves the buffered window; frames in
         // between render purely from the cache. A failed re-poll keeps the
         // stale buffer so the map never goes blank.
@@ -541,6 +574,15 @@ impl Addon for MinimapPoc {
             &self.poi_atlases,
             &self.poi_buffer.pois,
             &mut marker_hits,
+            waypoint.as_ref().map(|point| WaypointMarker {
+                waypoint: point,
+                icon: point.item_id.as_deref().and_then(|item| {
+                    self.soulstone_icons
+                        .iter()
+                        .find(|(id, _)| *id == item)
+                        .map(|(_, image)| image)
+                }),
+            }),
         ));
         self.marker_hits = marker_hits;
         Ok(TickControl::Continue)
@@ -590,6 +632,7 @@ fn render_snapshot(
         &poi_icons(),
         &[],
         &mut Vec::new(),
+        None,
     )
 }
 
@@ -604,6 +647,7 @@ fn render_snapshot_with_pois(
     poi_atlases: &[Image; POI_ATLAS_KEYS.len()],
     pois: &[Poi],
     marker_hits: &mut Vec<MarkerHit>,
+    waypoint: Option<WaypointMarker<'_>>,
 ) -> Frame {
     let mut frame = FrameBuilder::new();
     frame.config_menu(CONFIG_MENU_ID, "Minimap", |ui| {
@@ -684,6 +728,7 @@ fn render_snapshot_with_pois(
                     if show_pois { pois } else { &[] },
                     poi_types,
                     marker_hits,
+                    waypoint,
                 );
             });
         },
@@ -729,6 +774,7 @@ fn draw_minimap(
     pois: &[Poi],
     poi_types: &PoiKindFlags,
     marker_hits: &mut Vec<MarkerHit>,
+    waypoint: Option<WaypointMarker<'_>>,
 ) {
     if layout.square {
         canvas.rect(
@@ -780,6 +826,39 @@ fn draw_minimap(
         CAMERA_DIRECTION_FILL,
         CAMERA_DIRECTION_EDGE,
     );
+    if let Some(target) = waypoint {
+        if let Some(point) =
+            waypoint_canvas_position(target.waypoint.position, position, uv_min, uv_max, layout)
+        {
+            if let Some(icon) = target.icon {
+                canvas.rect(
+                    [point[0] - 11.0, point[1] - 11.0],
+                    [point[0] + 11.0, point[1] + 11.0],
+                    3.0,
+                    Some(Color::rgba8(24, 24, 28, 230)),
+                    Some(Stroke::new(1.0, MAP_EDGE)),
+                );
+                canvas.image(
+                    icon.clone(),
+                    [point[0] - 10.0, point[1] - 10.0],
+                    [point[0] + 10.0, point[1] + 10.0],
+                    [0.0, 0.0],
+                    [1.0, 1.0],
+                    0.0,
+                    None,
+                    0.0,
+                );
+            } else {
+                canvas.circle(
+                    point,
+                    7.0,
+                    Some(Color::rgba8(24, 15, 35, 245)),
+                    Some(Stroke::new(2.0, Color::rgba8(229, 137, 255, 255))),
+                );
+                canvas.circle(point, 2.5, Some(Color::rgba8(251, 224, 255, 255)), None);
+            }
+        }
+    }
     if layout.square {
         canvas.rect(
             layout.map_min,
@@ -813,6 +892,51 @@ fn draw_minimap(
         None,
         0.0,
     );
+}
+
+/// Project the active destination, clamping far-away targets inside the map edge.
+fn waypoint_canvas_position(
+    target: [f32; 3],
+    player: Vec3,
+    uv_min: [f32; 2],
+    uv_max: [f32; 2],
+    layout: MapLayout,
+) -> Option<[f32; 2]> {
+    if !target.iter().all(|v| v.is_finite()) {
+        return None;
+    }
+    let dx = target[0] - player.x;
+    let dy = target[1] - player.y;
+    if dx * dx + dy * dy < 9.0 {
+        return None;
+    }
+    let pixel = reference_world_to_map_pixel(Vec3 {
+        x: target[0],
+        y: target[1],
+        z: target[2],
+    });
+    let mut point = std::array::from_fn(|i| {
+        layout.map_min[i]
+            + (pixel[i] / MAP_SIZE_PIXELS - uv_min[i]) / (uv_max[i] - uv_min[i])
+                * (layout.map_max[i] - layout.map_min[i])
+    });
+    let offset = [point[0] - layout.center[0], point[1] - layout.center[1]];
+    let limit = if layout.square {
+        let half = [
+            (layout.map_max[0] - layout.map_min[0]) * 0.5 - 16.0,
+            (layout.map_max[1] - layout.map_min[1]) * 0.5 - 16.0,
+        ];
+        (offset[0].abs() / half[0])
+            .max(offset[1].abs() / half[1])
+            .max(1.0)
+    } else {
+        ((offset[0] * offset[0] + offset[1] * offset[1]).sqrt() / (layout.clip_radius - 16.0))
+            .max(1.0)
+    };
+    for i in 0..2 {
+        point[i] = layout.center[i] + offset[i] / limit;
+    }
+    Some(point)
 }
 
 /// Marker icons that overhang the map plate are cut into at most this many
@@ -1220,6 +1344,36 @@ const CUSTOM_ATLAS_PNG: &[u8] = include_bytes!("../assets/poi_custom_atlas.png")
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn active_destination_clamps_inside_both_map_frames_and_disappears_on_arrival() {
+        let player = Vec3 {
+            x: 0.,
+            y: 0.,
+            z: 0.,
+        };
+        for square in [false, true] {
+            let layout = map_layout(square);
+            let (min, max) = crop_uv(reference_world_to_map_pixel(player), layout.map_size());
+            for target in [
+                [1906.8905, 358.2576, 224.8445],
+                [-10000., -10000., 0.],
+                [10000., 10000., 0.],
+            ] {
+                let point = waypoint_canvas_position(target, player, min, max, layout).unwrap();
+                assert!(plate_contains_box(
+                    layout,
+                    [point[0] - 11., point[1] - 11.],
+                    [point[0] + 11., point[1] + 11.]
+                ));
+            }
+            assert!(waypoint_canvas_position([2.9, 0., 100.], player, min, max, layout).is_none());
+            assert!(waypoint_canvas_position([3., 0., 100.], player, min, max, layout).is_some());
+            assert!(
+                waypoint_canvas_position([f32::NAN, 0., 0.], player, min, max, layout).is_none()
+            );
+        }
+    }
     use std::f32::consts::PI;
 
     fn image() -> Image {
@@ -1380,6 +1534,7 @@ mod tests {
                 &poi_icons(),
                 &pois,
                 &mut Vec::new(),
+                None,
             )
         };
         let counts = |show_pois: bool| {
@@ -1474,6 +1629,7 @@ mod tests {
                 &poi_icons(),
                 &pois,
                 &mut Vec::new(),
+                None,
             )
         };
         let image_counts = |types: &PoiKindFlags| {
@@ -1943,6 +2099,7 @@ mod tests {
                 &poi_icons(),
                 &pois,
                 &mut Vec::new(),
+                None,
             )
         };
         let counts = |show_pois: bool| {

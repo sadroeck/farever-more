@@ -18,6 +18,7 @@ mod game_build;
 mod hashlink;
 mod healing_hooks;
 mod host_settings;
+mod inventory_clicks;
 mod inventory_hooks;
 mod kill_hooks;
 mod lifecycle_hooks;
@@ -255,6 +256,7 @@ pub fn run(config: RuntimeConfig) {
     let mut damage = damage::DamageCapture::new(&config.addon_root);
     let mut slash_commands = slash_commands::SlashCommandCapture::new();
     let mut map_clicks = map_clicks::MapClickCapture::new();
+    let mut inventory_clicks = inventory_clicks::InventoryClickCapture::new();
     let mut chat_output_diagnostics = chat_output::ChatOutputDiagnostics::new();
     if in_process {
         let armed = damage.arm();
@@ -798,8 +800,24 @@ pub fn run(config: RuntimeConfig) {
         for event in slash_commands.take_diagnostics() {
             diagnostics.info(&format!("chat {event}"));
         }
-        // Native map clicks are observations, not explicit slash commands.
+        // Native item/map clicks are observations, not explicit slash commands.
         // Discard them if the player has left the world before delivery.
+        let inventory_click_payloads = inventory_clicks.drain();
+        if latest_snapshot.session.in_world {
+            if let Some(plugins) = &mut plugins {
+                for payload in inventory_click_payloads {
+                    if let Err(error) = plugins.broadcast_host_message(
+                        inventory_clicks::INVENTORY_CLICK_TOPIC.to_owned(),
+                        payload,
+                    ) {
+                        diagnostics.warn(&format!("inventory click rejected: {error}"));
+                    }
+                }
+            }
+        }
+        for event in inventory_clicks.take_diagnostics() {
+            diagnostics.info(&event);
+        }
         let clicks = map_clicks.drain();
         if latest_snapshot.session.in_world {
             if let Some(plugins) = &mut plugins {

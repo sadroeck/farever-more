@@ -13,6 +13,12 @@ poi-database service.
 - POIs are filtered by category. Clicking a visible marker publishes a
   waypoint request; the GPS add-on turns that request into an arrow when its
   map-clicks setting is enabled.
+- With GPS installed, a soulstone destination uses that stone's inventory
+  portrait with a small gold border. Regular destinations use a purple ring.
+  Both stay visible regardless of the POI category toggles. Distant destinations sit inside the map edge in
+  their direction of travel. The pin disappears on GPS arrival or clearing,
+  world/session mismatch, or an unavailable GPS service. `/gps hide` hides the
+  arrow while retaining the minimap pin.
 - The add-on hides outside W1 or when the player is not in the world.
   EscapeMenu, GameMenu, and LoadingScreen may remain open; another registered
   game window hides the minimap. LoadingScreen is allowed only after the host
@@ -32,11 +38,20 @@ The point-of-interest provider currently serves the bundled W1 dataset. See
 [services.md](../../docs/services.md) for the service and [the third-party
 notices](../../THIRD_PARTY_NOTICES.md) for data and artwork boundaries.
 
+GPS is an optional dependency. The minimap opens its `waypoint` service during
+activation and queries the current destination on each tick, using the shared
+`farever-waypoint-protocol` codec. Installing GPS later requires reloading the
+minimap to open the service handle. No native full-map marker is added yet.
+The eight soulstone portraits are bundled game assets; GPS supplies the item ID
+so the minimap selects the correct image without matching waypoint labels.
+
 ## Limits and live QA
 
 The map currently covers W1. It has no panning, zoom controls, or party
 markers. Clicking a marker requires the GPS add-on to show a waypoint arrow.
-The map's appearance and hooks still need in-game QA on each supported build.
+The soulstone destination marker was confirmed in-game by the user on Steam
+build `25632706`. All eight portraits, arrival clearing, and other supported
+builds still need individual live checks.
 
 ## Support
 

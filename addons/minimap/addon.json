@@ -1,11 +1,16 @@
 {
   "manifest-version": 1,
   "id": "minimap",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "name": "Minimap",
   "description": "World minimap with POI markers.",
   "tags": ["map", "overlay", "poi"],
   "dependencies": [
+    {
+      "addon": "gps",
+      "optional": true,
+      "services": [{ "id": "waypoint", "version": "^0.2" }]
+    },
     {
       "addon": "poi-database",
       "services": [

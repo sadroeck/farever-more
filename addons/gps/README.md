@@ -12,8 +12,8 @@ may be double-quoted to include commas, with doubled quotes representing a
 literal quote. All entries capture the player's current Z coordinate because
 the public syntax is intentionally limited to horizontal same-world
 coordinates. `/gps hide` and `/gps show` toggle only the surface and preserve
-the queue; setting a sequence while hidden does not make it visible. The add-on
-clears the sequence after leaving the world or starting a new process session.
+the queue; creating a new waypoint or sequence automatically shows the arrow. The add-on
+clears the sequence after leaving the world, changing area, or starting a new process session.
 Replacing this command-owned source with an add-on-owned combat-reference
 policy remains a later step.
 
@@ -34,10 +34,37 @@ pressed. Full-map clicks and peer requests are gated by this add-on's `map-click
 affected rather than to the sender, and a peer cannot pass itself off as the
 player's command. With the setting off, `/gps` commands keep working and map
 requests are answered with a chat line naming the setting instead of being
-dropped in silence. A click is also reported when the arrow is hidden: the
-waypoint is set, and the player is told to run `/gps show`. Requests take the
+dropped in silence. An accepted new waypoint shows the arrow automatically,
+including when it was hidden. Requests take the
 same path as commands: an unavailable player position or a session outside the
 world is reported as an ignored request instead of failing the callback.
+
+## Soulstone clicks
+
+Left-clicking a soulstone in the local backpack replaces the GPS queue with its
+fixed summoning destination while preserving Farever's normal click behavior.
+Right-clicks, drags, bank/shop slots, and non-soulstone items do not set a target.
+The GPS setting "Arrows from soulstones" (`soulstone-clicks`, default on) controls
+this separately from map clicks. An accepted soulstone click shows the arrow
+automatically, including when it was hidden.
+
+All eight supported stones summon in `World/W1_Siagarta`, including the Z2
+demon variants: Baphometal, Luciferrari, Belzebeat, Ariana Grandemon, Lilithium,
+Asmodeaf, Mortalkombaal, and Kristian Belial. The curated inventory table at
+`farever-db/assets/soulstones.rs` records exact XYZ summoning roots from Steam
+build `25632706`; GPS consumes its generated projection. Unlike horizontal
+chat commands, these targets retain the real site altitude for arrow tilt.
+Arrival uses the same horizontal distance below 3 meters as other waypoints.
+
+`scripts/generate-game-data.ps1 -Check` checks the projection and verifies each
+reviewed root against the installed map's item cost, spawned demon, and XYZ.
+It fails if a reviewed site moves; newly added stones require table review.
+The read-only `waypoint` service exposes the active destination to the minimap,
+including normal command and map-click targets.
+Soulstone targets include their item ID so the minimap draws the original
+inventory portrait; a normal command or map-click replacement clears that ID.
+Phase two will add a marker to Farever's native full map; phase one marks the
+minimap only.
 
 It subtracts `camera.heading-radians` from the horizontal world-space bearing
 between player and selected reference, wraps the result to `(-pi, pi]`, and
@@ -99,6 +126,12 @@ reference components unless `-SkipReferenceAddon` is passed.
 
 Waypoint direction still needs an in-game check because the camera and player
 heading may use different zero directions.
+Soulstone native click capture, the GPS arrow appearing, and the minimap
+destination marker were confirmed in-game by the user on Steam build `25632706`.
+Native full-map destination markers remain pending.
+The exact hook signatures/layouts and all eight summoning roots were verified
+offline against Steam build `25632706`; all eight destinations and arrival
+behavior still need individual live checks.
 Full-map target selection and the lower default arrow placement were confirmed
 in user beta testing on Steam profile `25531577`.
 

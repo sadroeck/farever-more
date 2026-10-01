@@ -64,6 +64,20 @@ GPS accepts this topic only from `farever.host` and applies its "Arrows from
 the map" preference to these observations. Explicit host `/gps` commands on
 `gps` bypass that preference.
 
+Completed left mouse clicks in the local backpack use `farever.inventory-click@1`
+from `farever.host`, with the exact UTF-8 item kind ID as payload and no
+correlation ID. On profiled build `25632706`, the host wraps inherited
+`ui.UIElement.release` and `click` methods on `ui.win.InventorySlot`. A left
+release supplies context; the native release's nested click authorizes capture,
+preserving its drag, release-outside, and duplicate-frame suppression. Both
+hooks forward once. The host copies at most 128 UTF-16 units before the native
+action can move or consume the item, into a bounded 64-record queue. It accepts
+only an enabled slot owned by the current Hero's loadout inventory. The worker
+decodes UTF-8 and drops records after Hero replacement or outside the world.
+GPS accepts only host-originated known soulstone IDs and applies its separate
+"Arrows from soulstones" preference. This sets a destination without using or
+consuming the stone itself.
+
 ## Topic and payload rules
 
 Topics contain 1 through 128 ASCII bytes. They start with a lowercase letter,

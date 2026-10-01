@@ -4,4 +4,17 @@ The generated tables in this directory are derived from Farever in-game data. Mo
 
 `placements.rs` is imported from a W1_Siagarta placement census; its source details are recorded in the file header. The placement records are also derived from Farever world data.
 
+`soulstones.rs` is a curated table of all eight fixed W1 summoning sites reviewed
+against Steam build `25632706`. Each site links an item ID to the map root's
+spawned demon and world XYZ. It is not an extracted CastleDB sheet. Review this
+table when the map changes; the ordinary generator projects it into the GPS
+add-on and verifies the listed roots against the installed map archive. Run
+`cargo run -p farever-db --bin soulstones -- --verify-map` to check those roots
+independently of CastleDB extraction.
+The table also records the exact full inventory portrait resource path for
+each stone. `soulstones --icons` (with the `portrait-import` Cargo feature)
+verifies those `item.gfx` definitions and decodes their DDS BC7 top mips into
+the minimap's bundled PNGs and generated mapping. `--check` compares both
+the images and mapping against the installed resources.
+
 Farever is developed and published by [Shiro Games](https://store.steampowered.com/app/3672400/Farever/). The data is included solely for use within the Farever client and is not covered by Farever More's MIT source license. See [third-party notices](../../THIRD_PARTY_NOTICES.md).

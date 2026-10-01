@@ -14,6 +14,16 @@ The shared protocol defines POI kinds and activity families. Consumers can
 filter by kind and use the family to choose artwork or group activity records.
 Unknown IDs are preserved, so newer records are not silently discarded.
 
+GPS (0.2.0) also provides the read-only `waypoint` service. The minimap declares
+GPS as optional with `^0.2` and opens a handle during activation. Its typed
+`farever-waypoint-protocol` client queries the active destination each tick;
+missing/failed queries remove the pin without affecting the minimap or POIs.
+The GPS destination remains owned by GPS, so arrival, queue advancement, and
+clearing are reflected without broadcasting a second state stream.
+`farever-waypoint-protocol` is a shared Rust library compiled into both GPS and
+the minimap, not a separately installed component. It owns their common data
+type, encoder/decoder, and service client over the existing WIT byte transport.
+
 Services are experimental and not yet a stable public API. Spatial queries use
 a grid, so points near cell edges may fall just outside the requested bounds.
 Nearest-first queries use 3D distance when both points have depth, and planar
@@ -82,6 +92,20 @@ budget. A busy, missing, trapped, or rejecting provider returns an error.
 The POI protocol encodes values in little-endian order and strings as UTF-8. It
 does not depend on Rust's in-memory layout and rejects malformed, oversized,
 or unsupported data.
+
+The waypoint service uses operation `1` with an empty request. Its response is
+`[version=2, present=0]` for no target, or `[2, 1]` followed by a little-endian
+`u64` process session, three finite `f32` XYZ values, world ID, target name,
+and optional inventory item ID (an empty string means no item portrait).
+Each string has a little-endian `u16` UTF-8 byte count bounded to 512. The codec
+rejects truncation, unknown versions, nonfinite coordinates, invalid UTF-8,
+oversized strings, and trailing data. Other operations or nonempty requests
+are rejected. A target without a known area is not exposed. Consumers match
+the world and process session before drawing; the minimap also suppresses the
+pin inside the GPS horizontal arrival radius, even between GPS ticks.
+The decoder also accepts version 1 responses, which have no item ID and use
+the generic destination marker. Soulstone IDs select one of eight bundled
+inventory portraits; unknown IDs and regular waypoints fall back to the ring.
 
 ## What is not supported yet
 

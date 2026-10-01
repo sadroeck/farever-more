@@ -177,6 +177,18 @@ Map dragging and the native HUD selector keep their game behavior. See the
 [message protocol](message-bus.md) and [GPS add-on](../addons/gps/README.md).
 Native full-map target selection has been confirmed in user beta testing.
 
+Soulstone navigation observes completed left-clicks on `ui.win.InventorySlot`
+through the validated inherited `ui.UIElement.release` and `click` methods.
+The native release remains responsible for distinguishing clicks from drags.
+The host copies the item kind only from the current Hero's enabled backpack
+slot and publishes `farever.inventory-click@1` on the worker. GPS resolves the
+eight fixed W1 summoning sites from a projection of the curated game inventory,
+replaces its destination, and exposes it through a read-only service for the
+minimap's active pin. No WIT change is needed. Hook metadata and installed map
+roots were verified offline against `25632706`. The user confirmed live
+soulstone click navigation, the GPS arrow appearing, and the minimap marker on
+that build. Individual checks of all eight stones and arrival remain pending.
+
 ## Hooking rules
 
 Hooks are enabled only after the host checks the expected Windows x64 calling

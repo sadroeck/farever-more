@@ -4205,6 +4205,109 @@ mod tests {
 
     #[test]
     #[ignore = "set FAREVER_ADDON_SMOKE_DIR to a built add-ons directory"]
+    fn built_soulstone_click_sets_arrow_and_minimap_pin_then_clears_on_arrival() {
+        let directory = std::env::var_os("FAREVER_ADDON_SMOKE_DIR")
+            .map(PathBuf::from)
+            .expect("FAREVER_ADDON_SMOKE_DIR");
+        let config = TempConfigRoot::new();
+        let mut snapshot = live_snapshot();
+        snapshot.map.area_id = Some("World/W1_Siagarta".to_owned());
+        snapshot.ui.open_windows.clear();
+        let mut plugins = Plugins::load(&directory, &config.0, &snapshot);
+        assert_eq!(plugins.len(), 4, "{:?}", plugins.take_diagnostics());
+        let has_arrow = |frame: &api::UiFrame| {
+            frame
+                .surfaces
+                .iter()
+                .any(|surface| surface.id.contains("wayfinder-arrow"))
+        };
+        let has_pin = |frame: &api::UiFrame, item: &str| {
+            frame
+                .surfaces
+                .iter()
+                .filter(|surface| surface.owner == "minimap")
+                .flat_map(|surface| &surface.canvas)
+                .any(|command| {
+                    matches!(&command.primitive,
+                    api::CanvasPrimitive::Image { source, .. }
+                    if source.id.contains(&format!("soulstone-{item}")))
+                })
+        };
+        let advance = |plugins: &mut Plugins| {
+            plugins.started = plugins
+                .started
+                .checked_sub(Duration::from_millis(60))
+                .unwrap();
+        };
+        advance(&mut plugins);
+        let frame = plugins.dispatch(&snapshot, None, &[]);
+        assert!(!has_arrow(&frame) && !has_pin(&frame, "Soulstone_Z2_2"));
+        plugins
+            .broadcast_host_message("gps".to_owned(), b"hide".to_vec())
+            .unwrap();
+        assert!(!has_arrow(&plugins.dispatch(&snapshot, None, &[])));
+        plugins
+            .broadcast_host_message(
+                crate::inventory_clicks::INVENTORY_CLICK_TOPIC.to_owned(),
+                b"Soulstone_Z2_2".to_vec(),
+            )
+            .unwrap();
+        advance(&mut plugins);
+        let frame = plugins.dispatch(&snapshot, None, &[]);
+        assert!(has_arrow(&frame), "soulstone opens GPS");
+        assert!(
+            has_pin(&frame, "Soulstone_Z2_2"),
+            "optional service exposes destination to minimap"
+        );
+        snapshot.player.value.as_mut().unwrap().position = api::Vec3 {
+            x: 1906.8905,
+            y: 358.2576,
+            z: 0.0,
+        };
+        snapshot.sequence += 1;
+        advance(&mut plugins);
+        let frame = plugins.dispatch(&snapshot, None, &[]);
+        assert!(
+            !has_arrow(&frame) && !has_pin(&frame, "Soulstone_Z2_2"),
+            "normal planar arrival clears both"
+        );
+        for site in farever_db::Inventory::soulstones() {
+            plugins
+                .broadcast_host_message(
+                    crate::inventory_clicks::INVENTORY_CLICK_TOPIC.to_owned(),
+                    site.item.as_bytes().to_vec(),
+                )
+                .unwrap();
+            // Asmodeaf was just reached above; stand away from every site.
+            snapshot.player.value.as_mut().unwrap().position = api::Vec3 {
+                x: 0.0,
+                y: 0.0,
+                z: 0.0,
+            };
+            snapshot.sequence += 1;
+            advance(&mut plugins);
+            let frame = plugins.dispatch(&snapshot, None, &[]);
+            assert!(
+                has_arrow(&frame) && has_pin(&frame, site.item),
+                "{} portrait missing",
+                site.item
+            );
+            assert_eq!(
+                frame
+                    .surfaces
+                    .iter()
+                    .filter(|surface| surface.owner == "minimap")
+                    .flat_map(|surface| &surface.canvas)
+                    .filter(|command| matches!(&command.primitive,
+                    api::CanvasPrimitive::Image { source, .. } if source.id.contains("soulstone-")))
+                    .count(),
+                1
+            );
+        }
+    }
+
+    #[test]
+    #[ignore = "set FAREVER_ADDON_SMOKE_DIR to a built add-ons directory"]
     fn minimap_without_provider_is_rejected() {
         let built = std::env::var_os("FAREVER_ADDON_SMOKE_DIR")
             .map(PathBuf::from)

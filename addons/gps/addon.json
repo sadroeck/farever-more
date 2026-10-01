@@ -1,7 +1,8 @@
 {
   "manifest-version": 1,
   "id": "gps",
-  "version": "0.1.1",
+  "version": "0.2.0",
+  "provides": ["waypoint"],
   "name": "GPS",
   "description": "Waypoint arrow that points at your destination.",
   "tags": ["map", "waypoint", "navigation"]

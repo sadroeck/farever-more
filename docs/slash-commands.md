@@ -17,7 +17,7 @@ The Wayfinder arrow subscribes to the `gps` topic. It accepts:
 ```
 
 `hide` and `show` only change visibility; they preserve the waypoint sequence.
-Setting a sequence while hidden replaces it without making the surface visible.
+Setting a new waypoint or sequence replaces it and automatically shows the arrow.
 Comma-separated entries are visited in order. A name may contain spaces without
 quotes; enclose it in double quotes when it contains a comma. Inside a quoted
 name, `""` represents a literal double quote. When a name is omitted, the

@@ -280,6 +280,15 @@
       "variants": []
     },
     {
+      "name": "h2d.Bitmap",
+      "kind": "object",
+      "super_type": "h2d.Drawable",
+      "fields": {},
+      "methods": {},
+      "bindings": {},
+      "variants": []
+    },
+    {
       "name": "h2d.Drawable",
       "kind": "object",
       "super_type": "h2d.Object",
@@ -528,6 +537,80 @@
       },
       "bindings": {},
       "variants": []
+    },
+    {
+      "name": "hxd.Event",
+      "kind": "object",
+      "super_type": null,
+      "fields": {
+        "button": "i32",
+        "kind": "hxd.EventKind"
+      },
+      "methods": {},
+      "bindings": {},
+      "variants": []
+    },
+    {
+      "name": "hxd.EventKind",
+      "kind": "enum",
+      "super_type": null,
+      "fields": {},
+      "methods": {},
+      "bindings": {},
+      "variants": [
+        {
+          "name": "EPush",
+          "parameters": []
+        },
+        {
+          "name": "ERelease",
+          "parameters": []
+        },
+        {
+          "name": "EMove",
+          "parameters": []
+        },
+        {
+          "name": "EOver",
+          "parameters": []
+        },
+        {
+          "name": "EOut",
+          "parameters": []
+        },
+        {
+          "name": "EWheel",
+          "parameters": []
+        },
+        {
+          "name": "EFocus",
+          "parameters": []
+        },
+        {
+          "name": "EFocusLost",
+          "parameters": []
+        },
+        {
+          "name": "EKeyDown",
+          "parameters": []
+        },
+        {
+          "name": "EKeyUp",
+          "parameters": []
+        },
+        {
+          "name": "EReleaseOutside",
+          "parameters": []
+        },
+        {
+          "name": "ETextInput",
+          "parameters": []
+        },
+        {
+          "name": "ECheck",
+          "parameters": []
+        }
+      ]
     },
     {
       "name": "MapActivity",
@@ -1380,6 +1463,19 @@
       "variants": []
     },
     {
+      "name": "ui.comp.ItemButton",
+      "kind": "object",
+      "super_type": "ui.UIElement",
+      "fields": {
+        "icon": "h2d.Bitmap",
+        "item": "st.Item",
+        "placeholder": "ui.comp.FmtText"
+      },
+      "methods": {},
+      "bindings": {},
+      "variants": []
+    },
+    {
       "name": "ui.comp.UnitEffectDisplay",
       "kind": "object",
       "super_type": "ui.UIElement",
@@ -1456,11 +1552,28 @@
       "name": "ui.UIElement",
       "kind": "object",
       "super_type": "ui.BaseElement",
-      "fields": {},
+      "fields": {
+        "enable": "bool"
+      },
       "methods": {
+        "click": {
+          "arguments": [
+            "ui.UIElement",
+            "String"
+          ],
+          "return_type": "bool"
+        },
         "dispose": {
           "arguments": [
             "ui.UIElement"
+          ],
+          "return_type": "void"
+        },
+        "release": {
+          "arguments": [
+            "ui.UIElement",
+            "String",
+            "hxd.Event"
           ],
           "return_type": "void"
         }
@@ -1491,6 +1604,20 @@
       "kind": "object",
       "super_type": "ui.win.TitleWindow",
       "fields": {},
+      "methods": {},
+      "bindings": {},
+      "variants": []
+    },
+    {
+      "name": "ui.win.InventorySlot",
+      "kind": "object",
+      "super_type": "ui.UIElement",
+      "fields": {
+        "button": "ui.comp.ItemButton",
+        "inventory": "st.Inventory",
+        "item": "st.Item",
+        "locked": "bool"
+      },
       "methods": {},
       "bindings": {},
       "variants": []
