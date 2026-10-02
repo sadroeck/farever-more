@@ -79,17 +79,9 @@ impl SkillImages {
                 .pak
                 .read(icon.atlas_path)
                 .map_err(|error| format!("read atlas {:?}: {error}", icon.atlas_path))?;
-            let mut reader = ImageReader::new(Cursor::new(encoded));
-            reader.set_format(image::ImageFormat::Png);
-            let mut limits = Limits::default();
-            limits.max_image_width = Some(MAX_ATLAS_EDGE);
-            limits.max_image_height = Some(MAX_ATLAS_EDGE);
-            limits.max_alloc = Some(MAX_DECODED_ATLAS_BYTES as u64);
-            reader.limits(limits);
-            let atlas = reader
-                .decode()
-                .map_err(|error| format!("decode atlas {:?}: {error}", icon.atlas_path))?
-                .into_rgba8();
+            let remaining_bytes = MAX_DECODED_ATLAS_BYTES.saturating_sub(self.atlas_bytes);
+            let atlas = decode_atlas(&encoded, remaining_bytes)
+                .map_err(|error| format!("decode atlas {:?}: {error}", icon.atlas_path))?;
             let atlas_bytes = atlas.as_raw().len();
             let total_atlas_bytes = self.atlas_bytes.saturating_add(atlas_bytes);
             if total_atlas_bytes > MAX_DECODED_ATLAS_BYTES {
@@ -140,6 +132,31 @@ impl SkillImages {
     }
 }
 
+// The archive preserves .png paths even when Heaps compiles them to DDS.
+// Select by payload signature, with the same limits for both encodings.
+fn decode_atlas(encoded: &[u8], max_decoded_bytes: usize) -> Result<RgbaImage, String> {
+    if encoded.starts_with(b"DDS ") {
+        return farever_db::texture::decode_bc7_dds(encoded, MAX_ATLAS_EDGE, max_decoded_bytes);
+    }
+    let mut reader = ImageReader::new(Cursor::new(encoded));
+    reader.set_format(image::ImageFormat::Png);
+    let mut limits = Limits::default();
+    limits.max_image_width = Some(MAX_ATLAS_EDGE);
+    limits.max_image_height = Some(MAX_ATLAS_EDGE);
+    limits.max_alloc = Some(max_decoded_bytes as u64);
+    reader.limits(limits);
+    let atlas = reader
+        .decode()
+        .map_err(|error| error.to_string())?
+        .into_rgba8();
+    if atlas.as_raw().len() > max_decoded_bytes {
+        return Err(format!(
+            "decoded atlas exceeds byte limit {max_decoded_bytes}"
+        ));
+    }
+    Ok(atlas)
+}
+
 fn crop_icon(atlas: &RgbaImage, icon: &IconCrop) -> Result<RgbaImage, String> {
     if icon.width == 0
         || icon.height == 0
@@ -180,6 +197,19 @@ mod tests {
     use farever_db::{discover_game, Inventory};
 
     #[test]
+    fn retains_png_support_and_rejects_invalid_or_over_budget_data() {
+        let atlas = RgbaImage::from_pixel(2, 1, image::Rgba([200, 40, 80, 123]));
+        let mut encoded = Cursor::new(Vec::new());
+        atlas
+            .write_to(&mut encoded, image::ImageFormat::Png)
+            .unwrap();
+        assert_eq!(decode_atlas(encoded.get_ref(), 1024).unwrap(), atlas);
+        assert!(decode_atlas(encoded.get_ref(), 7).is_err());
+        assert!(decode_atlas(b"DDS ", 1024).is_err());
+        assert!(decode_atlas(b"unsupported image", 1024).is_err());
+    }
+
+    #[test]
     fn crops_the_declared_pixel_rectangle() {
         let mut atlas = RgbaImage::new(4, 2);
         for y in 0..2 {
@@ -204,22 +234,53 @@ mod tests {
     }
 
     #[test]
-    fn current_install_loads_a_skill_icon_when_available() {
+    fn current_install_loads_all_skill_icons_when_available() {
         let Ok(game) = discover_game() else { return };
-        let mut images = SkillImages::open(&game).unwrap();
-        for skill_id in ["GS_Nova_Combo", "Axe_Base_Attack"] {
-            let icon = Inventory::skill(skill_id)
-                .and_then(|skill| skill.icon.as_ref())
-                .expect("icon");
-            let reference = images.resolve(icon).unwrap().unwrap();
-            let asset = images
-                .assets
-                .iter()
-                .find(|asset| asset.id == reference.id)
-                .unwrap();
+        let mut checked = 0;
+        let paths: HashSet<_> = Inventory::skills()
+            .iter()
+            .filter_map(|skill| skill.icon.as_ref().map(|icon| icon.atlas_path))
+            .collect();
+        // Cover all classes without retaining the entire game's atlas collection
+        // at once: the live registry deliberately caps its cumulative cache.
+        for path in &paths {
+            let mut images = SkillImages::open(&game).unwrap();
+            let mut seen = HashSet::new();
+            for skill in Inventory::skills().iter().filter(|skill| {
+                skill
+                    .icon
+                    .as_ref()
+                    .is_some_and(|icon| icon.atlas_path == *path)
+            }) {
+                let Some(icon) = skill.icon.as_ref() else {
+                    continue;
+                };
+                if !seen.insert(icon) {
+                    continue;
+                }
+                let reference = images
+                    .resolve(icon)
+                    .unwrap_or_else(|error| panic!("skill {}: {error}", skill.id))
+                    .unwrap();
+                let asset = images
+                    .assets
+                    .iter()
+                    .find(|asset| asset.id == reference.id)
+                    .unwrap();
 
-            assert_eq!((asset.width, asset.height), (96, 96));
-            assert_eq!(asset.rgba.len(), 96 * 96 * 4);
+                assert_eq!((asset.width, asset.height), (icon.width, icon.height));
+                assert_eq!(asset.rgba.len(), (icon.width * icon.height * 4) as usize);
+                if ["GS_Nova_Combo", "Axe_Base_Attack"].contains(&skill.id) {
+                    assert!(asset.rgba.chunks_exact(4).any(|pixel| pixel[3] != 0));
+                }
+                assert_eq!(images.resolve(icon).unwrap(), Some(reference));
+                checked += 1;
+            }
         }
+        assert!(checked > 0);
+        eprintln!(
+            "Loaded {checked} unique skill crops from {} installed atlases",
+            paths.len()
+        );
     }
 }

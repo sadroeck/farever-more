@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.2.5 - Restore DPS meter icons
+
+- Restore skill icons when Farever packages `.png` atlas paths as DDS/BC7
+  textures. Select the decoder by payload signature and retain PNG support.
+- Validate single 2D BC7 textures, top-mip bounds, dimensions, and decoded
+  memory limits before allocating and decoding.
+
+All 365 unique skill crops across 53 installed atlases passed offline decoding
+checks. The user confirmed the restored DPS meter icons in-game on 2026-10-02.
+The WIT add-on API remains `1.0.0`; bundled add-on versions are unchanged.
+
 ## 0.2.4 — Startup metadata and Farever compatibility
 
 - Recognize Farever Steam build `25658350` by its reviewed executable,

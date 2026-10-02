@@ -10,7 +10,7 @@ egui.workspace = true
 egui_extras.workspace = true
 farever-more-api = { path = "../farever-more-api" }
 farever-more-manifest = { path = "../farever-more-manifest" }
-farever-db = { path = "../farever-db" }
+farever-db = { path = "../farever-db", features = ["texture-decoding"] }
 farever-api-inspector = { path = "../farever-api-inspector" }
 hex.workspace = true
 image.workspace = true

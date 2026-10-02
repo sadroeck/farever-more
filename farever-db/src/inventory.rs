@@ -195,7 +195,7 @@ pub struct Icon {
     pub gfx: Option<IconCrop>,
 }
 
-/// Pixel-space crop of one icon inside a packaged PNG atlas.
+/// Pixel-space crop of one icon inside a packaged atlas (PNG or compiled DDS).
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct IconCrop {
     /// Atlas path inside the game's `res.pak`.

@@ -14,6 +14,8 @@ pub mod loot;
 pub mod pak;
 #[cfg(feature = "embedded")]
 pub mod placements;
+#[cfg(feature = "texture-decoding")]
+pub mod texture;
 
 pub use cdb::{discover_game, BuildFingerprint, CdbSummary, GameInstall};
 pub use inventory::{
