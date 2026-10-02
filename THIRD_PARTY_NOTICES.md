@@ -26,6 +26,10 @@ solely for use within the Farever client. Farever is developed and published by
 Shiro Games. These materials are not covered by the project MIT license; their
 attribution appears beside the relevant assets.
 
+The Map Waypoints add-on reuses the eight inventory portraits under
+`addons/minimap/assets/soulstones/`. These are extracted Farever artwork and
+retain the same attribution and use restrictions as the minimap assets.
+
 ## Slint
 
 The manager pins Slint 1.18.0 and uses its Royalty-free Desktop, Mobile, and

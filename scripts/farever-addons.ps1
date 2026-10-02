@@ -347,7 +347,7 @@ function New-InstallArtifacts {
         $componentRoot = Join-Path $script:RepoRoot "target\component-build\wasm32-unknown-unknown\$profile"
         # Each shipped add-on installs as `<id>/addon.wasm` plus the manifest
         # that names it, stamped with the component's fingerprint.
-        foreach ($unit in @("dyno", "gps", "minimap", "poi-database")) {
+        foreach ($unit in @("dyno", "gps", "minimap", "map-waypoints", "poi-database")) {
             $component = Join-Path $componentRoot "$($unit.Replace('-', '_')).wasm"
             $artifacts.Add([pscustomobject]@{
                 id = $unit

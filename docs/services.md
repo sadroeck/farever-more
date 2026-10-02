@@ -6,7 +6,11 @@ Add-ons using `farever:addon@1.0.0` can make synchronous, read-only calls to a
 declared dependency. `poi-database` (1.3.0) provides the `poi` service, which
 the minimap opens during activation through `farever-poi-protocol`.
 
-The provider serves 1,224 bundled W1 records and reads no game files at
+The provider serves 1,232 bundled W1 records: 1,224 imported placements and eight
+reviewed fixed demon summoning sites from `farever_db::Inventory::soulstones()`.
+The `soulstone` kind uses the required inventory item ID as its POI ID. The
+existing string-ID wire format preserves this additive kind without a WIT or
+wire-version change. The provider reads no game files at
 runtime. The minimap caches nearby records and fetches more as the player moves.
 Category checkboxes filter the cache without another request.
 
@@ -17,7 +21,9 @@ Unknown IDs are preserved, so newer records are not silently discarded.
 GPS (0.2.0) also provides the read-only `waypoint` service. The minimap declares
 GPS as optional with `^0.2` and opens a handle during activation. Its typed
 `farever-waypoint-protocol` client queries the active destination each tick;
-missing/failed queries remove the pin without affecting the minimap or POIs.
+missing/failed queries remove the destination highlight or ordinary pin without
+affecting the minimap or permanent POIs. Map Waypoints also requires the POI
+provider and declares GPS optional; it fetches all demon sites on activation.
 The GPS destination remains owned by GPS, so arrival, queue advancement, and
 clearing are reflected without broadcasting a second state stream.
 `farever-waypoint-protocol` is a shared Rust library compiled into both GPS and
@@ -104,8 +110,11 @@ are rejected. A target without a known area is not exposed. Consumers match
 the world and process session before drawing; the minimap also suppresses the
 pin inside the GPS horizontal arrival radius, even between GPS ticks.
 The decoder also accepts version 1 responses, which have no item ID and use
-the generic destination marker. Soulstone IDs select one of eight bundled
-inventory portraits; unknown IDs and regular waypoints fall back to the ring.
+the generic destination marker. Known soulstone IDs select the gold outline on
+one of eight permanent POIs, using the same inventory portrait and diamond
+frame on both maps. The selected marker also has an enlarged portrait and a
+contrasting gold circular halo. Map-icon clicks select the same site identity
+as inventory clicks. Unknown IDs and regular waypoints use the minimap ring.
 
 ## What is not supported yet
 

@@ -75,7 +75,7 @@ fn project(positional: &[String], check: bool) -> Result<(), String> {
     let [table_path] = positional else {
         return Err(USAGE.to_owned());
     };
-    let records = placements::build_table(farever_db::Inventory::placements());
+    let records = placements::build_inventory_table()?;
     let generated = placements::render_table(&records);
 
     if check {

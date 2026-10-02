@@ -27,7 +27,7 @@ $licenseDestination = Join-Path $outputRoot "addons\dyno\LICENSES\Noto-Sans-OFL-
 # Every unit is one component (`addon.wasm`) plus its manifest. The built
 # artifact is named after the crate, so a dashed add-on id maps to an
 # underscored file name.
-$units = foreach ($id in @("dyno", "gps", "minimap", "poi-database")) {
+$units = foreach ($id in @("dyno", "gps", "minimap", "map-waypoints", "poi-database")) {
     [pscustomobject]@{
         Id = $id
         Source = Join-Path $componentRoot "$($id.Replace('-', '_')).wasm"

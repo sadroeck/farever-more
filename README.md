@@ -32,7 +32,7 @@ supported yet; Linux support is planned for a future release.
 
 ## How to install
 
-Download the **`-full.zip`** bundle (framework and all four add-ons) from the
+Download the **`-full.zip`** bundle (framework and bundled add-ons) from the
 [latest release](https://github.com/sadroeck/farever-more/releases/latest).
 
 1. Close Farever and extract the **full ZIP contents** into the folder containing
@@ -40,9 +40,9 @@ Download the **`-full.zip`** bundle (framework and all four add-ons) from the
 2. Start Farever to load the add-ons.
 
 For a custom selection, use the framework ZIP and extract each chosen add-on
-ZIP into `farever-addons/addons/<id>/` (`dyno`, `gps`, `minimap`, or
+ZIP into `farever-addons/addons/<id>/` (`dyno`, `gps`, `minimap`, `map-waypoints`, or
 `poi-database`). Each folder must contain `addon.json` and `addon.wasm` directly,
-plus bundled notices. **Minimap requires POI Database**.
+plus bundled notices. **Minimap and Map Waypoints require POI Database**.
 
 When updating, merge the existing folders to preserve add-ons and settings.
 

@@ -2,18 +2,29 @@
 
 ## Unreleased
 
-- Add API 1.1.0's read-only map snapshot and separate passive-canvas options
-  interface, retaining compatibility with API 1.0.0 components.
+- Make selected demon POIs more prominent with a larger portrait and a bright
+  gold outline/halo. Clicking their map icons reuses the inventory-click name,
+  exact destination and selection identity instead of naming them "Waypoint".
 - Left-clicking any of the eight soulstones in the backpack preserves its
   normal behavior and replaces the GPS destination with its fixed W1 summoning
   site. Creating a destination also shows a previously hidden GPS arrow.
-- Show the active soulstone's inventory portrait on the minimap and clear it
-  through GPS's existing arrival behavior.
+- Add all eight demon summoning sites as permanent POIs on the minimap and full
+  map, using inventory portraits in matching bronze diamond frames. Soulstone
+  clicks highlight the matching site in gold; arrival clears the highlight.
 - Share the active destination through GPS's read-only waypoint service, with
-  no change to the WIT add-on API. Native full-map markers remain pending.
+  no change to the WIT add-on API for GPS/minimap navigation.
+- Add Map Waypoints, which reuses the eight extracted inventory portraits on
+  the native full map. It follows pan and zoom, clips to the map rectangle,
+  passes mouse input through, and keeps permanent POIs after GPS clears.
+- Add API 1.1.0's read-only map snapshot and separate passive-canvas options
+  interface, retaining compatibility with API 1.0.0 components.
 
 Soulstone click navigation, the GPS arrow, and the minimap marker were confirmed
 in-game by the user on Steam build `25632706`.
+The user confirmed the full-map overlay works on `25658350` and, on 2026-10-02,
+confirmed the stronger target highlight and correct demon waypoint name.
+Permanent demon POIs and the shared icon styling also pass source and compiled
+host-boundary tests. Individual live checks of all eight sites remain pending.
 
 ## 0.2.3
 

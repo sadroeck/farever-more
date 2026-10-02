@@ -1,0 +1,12 @@
+{
+  "manifest-version": 1,
+  "id": "map-waypoints",
+  "version": "0.1.0",
+  "name": "Map Waypoints",
+  "description": "Permanent demon summoning POIs with the selected soulstone highlighted on the full map.",
+  "tags": ["map", "waypoint", "navigation"],
+  "dependencies": [
+    { "addon": "poi-database", "services": [{ "id": "poi", "version": "^1" }] },
+    { "addon": "gps", "optional": true, "services": [{ "id": "waypoint", "version": "^0.2" }] }
+  ]
+}

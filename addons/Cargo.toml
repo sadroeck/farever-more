@@ -3,6 +3,7 @@ members = [
     "dyno",
     "gps",
     "minimap",
+    "map-waypoints",
     "poi-database",
     "farever-poi-protocol",
     "farever-waypoint-protocol",

@@ -3888,11 +3888,11 @@ mod tests {
         let mut plugins = Plugins::load(&built, &config.0, &live_snapshot());
         let diagnostics = plugins.take_diagnostics();
 
-        assert_eq!(plugins.len(), 4, "diagnostics={diagnostics:#?}");
+        assert_eq!(plugins.len(), 5, "diagnostics={diagnostics:#?}");
         assert!(
             diagnostics.iter().any(|message| {
                 message.contains("Minimap PoC activated with POI service version=1.3.0")
-                    && message.contains("records=1105")
+                    && message.contains("records=1112")
             }),
             "diagnostics={diagnostics:#?}"
         );
@@ -3908,9 +3908,9 @@ mod tests {
         let initial = live_snapshot();
         let mut plugins = Plugins::load(&directory, &config.0, &initial);
         let _ = plugins.take_diagnostics();
-        assert_eq!(plugins.len(), 4);
+        assert_eq!(plugins.len(), 5);
         // Teleport far outside the seeded window, then back: the return
-        // re-walks the dense 1105-record origin window inside one tick,
+        // re-walks the dense 1112-record origin window inside one tick,
         // which must fit the per-callback fuel budget without trapping.
         let mut far = live_snapshot();
         far.sequence += 1;
@@ -3936,13 +3936,13 @@ mod tests {
             .expect("advance monotonic test clock");
         plugins.dispatch(&back, None, &[]);
         let diagnostics = plugins.take_diagnostics();
-        // The return re-walks the dense origin window: records=1105 proves
+        // The return re-walks the dense origin window: records=1112 proves
         // the full-volume re-fetch completed inside tick fuel. Surface
         // rendering itself is covered by the host-boundary smoke.
         assert!(
             diagnostics.iter().any(
                 |message| message.contains("Minimap PoC refreshed POI buffer")
-                    && message.contains("records=1105")
+                    && message.contains("records=1112")
             ),
             "dense refresh missing: {diagnostics:#?}"
         );
@@ -4193,7 +4193,7 @@ mod tests {
         let mut snapshot = live_snapshot();
         snapshot.ui.open_windows = vec!["ui.win.MapWindow".to_owned()];
         let mut plugins = Plugins::load(&directory, &config.0, &snapshot);
-        assert_eq!(plugins.len(), 4, "{:?}", plugins.take_diagnostics());
+        assert_eq!(plugins.len(), 5, "{:?}", plugins.take_diagnostics());
         let has_arrow = |frame: &api::UiFrame| {
             frame
                 .surfaces
@@ -4268,7 +4268,7 @@ mod tests {
             z: 0.0,
         };
         let mut plugins = Plugins::load(&directory, &directory.join(".test-config"), &snapshot);
-        assert_eq!(plugins.len(), 4, "{:?}", plugins.take_diagnostics());
+        assert_eq!(plugins.len(), 5, "{:?}", plugins.take_diagnostics());
 
         let advance = |plugins: &mut Plugins| {
             plugins.started = plugins
@@ -4314,7 +4314,7 @@ mod tests {
 
     #[test]
     #[ignore = "set FAREVER_ADDON_SMOKE_DIR to a built add-ons directory"]
-    fn built_soulstone_click_sets_arrow_and_minimap_pin_then_clears_on_arrival() {
+    fn built_soulstone_click_highlights_permanent_minimap_poi_until_arrival() {
         let directory = std::env::var_os("FAREVER_ADDON_SMOKE_DIR")
             .map(PathBuf::from)
             .expect("FAREVER_ADDON_SMOKE_DIR");
@@ -4322,8 +4322,13 @@ mod tests {
         let mut snapshot = live_snapshot();
         snapshot.map.area_id = Some("World/W1_Siagarta".to_owned());
         snapshot.ui.open_windows.clear();
+        snapshot.player.value.as_mut().unwrap().position = api::Vec3 {
+            x: 1856.8905,
+            y: 358.2576,
+            z: 0.0,
+        };
         let mut plugins = Plugins::load(&directory, &config.0, &snapshot);
-        assert_eq!(plugins.len(), 4, "{:?}", plugins.take_diagnostics());
+        assert_eq!(plugins.len(), 5, "{:?}", plugins.take_diagnostics());
         let has_arrow = |frame: &api::UiFrame| {
             frame
                 .surfaces
@@ -4348,9 +4353,18 @@ mod tests {
                 .checked_sub(Duration::from_millis(60))
                 .unwrap();
         };
+        let has_highlight = |frame: &api::UiFrame| {
+            frame.surfaces.iter().filter(|surface| surface.owner == "minimap")
+                .flat_map(|surface| &surface.canvas).any(|command| {
+                    matches!(&command.primitive, api::CanvasPrimitive::Path { stroke: Some(stroke), .. }
+                        if stroke.width == 3.0 && stroke.color.red == 1.0
+                            && stroke.color.green == 213.0 / 255.0)
+                })
+        };
         advance(&mut plugins);
         let frame = plugins.dispatch(&snapshot, None, &[]);
-        assert!(!has_arrow(&frame) && !has_pin(&frame, "Soulstone_Z2_2"));
+        assert!(!has_arrow(&frame) && has_pin(&frame, "Soulstone_Z2_2"));
+        assert!(!has_highlight(&frame), "permanent POI starts unselected");
         plugins
             .broadcast_host_message("gps".to_owned(), b"hide".to_vec())
             .unwrap();
@@ -4366,8 +4380,9 @@ mod tests {
         assert!(has_arrow(&frame), "soulstone opens GPS");
         assert!(
             has_pin(&frame, "Soulstone_Z2_2"),
-            "optional service exposes destination to minimap"
+            "the selected destination keeps its permanent portrait"
         );
+        assert!(has_highlight(&frame));
         snapshot.player.value.as_mut().unwrap().position = api::Vec3 {
             x: 1906.8905,
             y: 358.2576,
@@ -4377,8 +4392,8 @@ mod tests {
         advance(&mut plugins);
         let frame = plugins.dispatch(&snapshot, None, &[]);
         assert!(
-            !has_arrow(&frame) && !has_pin(&frame, "Soulstone_Z2_2"),
-            "normal planar arrival clears both"
+            !has_arrow(&frame) && has_pin(&frame, "Soulstone_Z2_2") && !has_highlight(&frame),
+            "normal planar arrival clears navigation and highlight, keeping the POI"
         );
         for site in farever_db::Inventory::soulstones() {
             plugins
@@ -4387,17 +4402,17 @@ mod tests {
                     site.item.as_bytes().to_vec(),
                 )
                 .unwrap();
-            // Asmodeaf was just reached above; stand away from every site.
+            // Keep the selected site in the viewport without reaching it.
             snapshot.player.value.as_mut().unwrap().position = api::Vec3 {
-                x: 0.0,
-                y: 0.0,
+                x: site.x - 50.0,
+                y: site.y,
                 z: 0.0,
             };
             snapshot.sequence += 1;
             advance(&mut plugins);
             let frame = plugins.dispatch(&snapshot, None, &[]);
             assert!(
-                has_arrow(&frame) && has_pin(&frame, site.item),
+                has_arrow(&frame) && has_pin(&frame, site.item) && has_highlight(&frame),
                 "{} portrait missing",
                 site.item
             );
@@ -4408,11 +4423,171 @@ mod tests {
                     .filter(|surface| surface.owner == "minimap")
                     .flat_map(|surface| &surface.canvas)
                     .filter(|command| matches!(&command.primitive,
-                    api::CanvasPrimitive::Image { source, .. } if source.id.contains("soulstone-")))
+                    api::CanvasPrimitive::Path { stroke: Some(stroke), .. }
+                    if stroke.width == 3.0 && stroke.color.red == 1.0
+                        && stroke.color.green == 213.0 / 255.0))
                     .count(),
                 1
             );
         }
+    }
+
+    #[test]
+    #[ignore = "set FAREVER_ADDON_SMOKE_DIR to a built add-ons directory"]
+    fn built_map_waypoints_keeps_all_demon_pois_and_highlights_one_selection() {
+        let directory = PathBuf::from(
+            std::env::var_os("FAREVER_ADDON_SMOKE_DIR").expect("component directory"),
+        );
+        let config = TempConfigRoot::new();
+        let mut snapshot = live_snapshot();
+        snapshot.map.area_id = Some("World/W1_Siagarta".into());
+        snapshot.ui.open_windows = vec!["ui.win.MapWindow".into()];
+        snapshot.ui.focused_window = Some("ui.win.MapWindow".into());
+        snapshot.map_view = api::StateSnapshot::live(
+            250,
+            1,
+            api::VisibleMap {
+                world: "World/W1_Siagarta".into(),
+                bounds: [100.0, 200.0, 800.0, 600.0],
+                world_to_client: [0.1, 0.0, 0.0, 0.1, 400.0, 400.0],
+                pixels_per_point: 2.0,
+            },
+        );
+        let mut plugins = Plugins::load(&directory, &config.0, &snapshot);
+        assert_eq!(plugins.len(), 5, "{:?}", plugins.take_diagnostics());
+        let advance = |plugins: &mut Plugins| {
+            plugins.started = plugins
+                .started
+                .checked_sub(Duration::from_millis(60))
+                .unwrap();
+        };
+        let counts = |frame: &api::UiFrame| {
+            let map = frame
+                .surfaces
+                .iter()
+                .find(|surface| surface.owner == "map-waypoints")
+                .expect("permanent map POIs");
+            let portraits = map
+                .canvas
+                .iter()
+                .filter(|command| {
+                    matches!(&command.primitive,
+                api::CanvasPrimitive::Image { source, .. } if source.id.contains("soulstone-"))
+                })
+                .count();
+            let highlights = map
+                .canvas
+                .iter()
+                .filter(|command| {
+                    matches!(&command.primitive,
+                api::CanvasPrimitive::Path { stroke: Some(stroke), .. }
+                if stroke.width == 3.0 && stroke.color.red == 1.0
+                    && stroke.color.green == 213.0 / 255.0)
+                })
+                .count();
+            (portraits, highlights)
+        };
+        advance(&mut plugins);
+        assert_eq!(
+            counts(&plugins.dispatch(&snapshot, None, &[])),
+            (8, 0),
+            "all eight sites appear without a GPS target"
+        );
+        for site in farever_db::Inventory::soulstones() {
+            snapshot.player.value.as_mut().unwrap().position = api::Vec3 {
+                x: 0.0,
+                y: 0.0,
+                z: 0.0,
+            };
+            plugins
+                .broadcast_host_message(
+                    crate::inventory_clicks::INVENTORY_CLICK_TOPIC.into(),
+                    site.item.as_bytes().to_vec(),
+                )
+                .unwrap();
+            advance(&mut plugins);
+            let frame = plugins.dispatch(&snapshot, None, &[]);
+            assert_eq!(counts(&frame), (8, 1), "{} selection", site.item);
+            let map = frame
+                .surfaces
+                .iter()
+                .find(|surface| surface.owner == "map-waypoints")
+                .expect("map portrait");
+            assert!(matches!(map.nodes[0].widget, api::Widget::PassiveCanvas(_)));
+            assert!(map.canvas.iter().any(|command| matches!(&command.primitive,
+                api::CanvasPrimitive::Image { source, .. } if source.id.contains(&format!("soulstone-{}", site.item)))));
+            let selected = map
+                .canvas
+                .iter()
+                .find_map(|command| match &command.primitive {
+                    api::CanvasPrimitive::Path {
+                        points,
+                        stroke: Some(stroke),
+                        ..
+                    } if stroke.width == 3.0
+                        && stroke.color.red == 1.0
+                        && stroke.color.green == 213.0 / 255.0 =>
+                    {
+                        Some(points)
+                    }
+                    _ => None,
+                })
+                .expect("selected POI outline");
+            let expected_x = (site.x * 0.1 + 400.0 - 100.0) / 2.0;
+            let expected_y = (site.y * 0.1 + 400.0 - 200.0) / 2.0;
+            assert!((selected[0].x - expected_x).abs() < 0.001);
+            assert!((selected[0].y + 20.0 - expected_y).abs() < 0.001);
+            // The passive overlay forwards clicks to the native map; GPS
+            // resolves those coordinates back to the same demon destination.
+            plugins
+                .broadcast_host_message(
+                    crate::map_clicks::MAP_CLICK_TOPIC.into(),
+                    format!("{} {}", site.x + 100.0, site.y).into_bytes(),
+                )
+                .unwrap();
+            advance(&mut plugins);
+            let frame = plugins.dispatch(&snapshot, None, &[]);
+            assert_eq!(
+                counts(&frame),
+                (8, 1),
+                "map icon keeps the soulstone highlight"
+            );
+            assert!(
+                plugins
+                    .take_diagnostics()
+                    .iter()
+                    .any(|message| message.contains(&format!(
+                        "Waypoint set: {}",
+                        farever_db::Inventory::unit(site.demon)
+                            .unwrap()
+                            .name
+                            .unwrap()
+                    ))),
+                "native icon click uses the inventory-click destination name"
+            );
+            snapshot.player.value.as_mut().unwrap().position = api::Vec3 {
+                x: site.x,
+                y: site.y,
+                z: 0.0,
+            };
+            snapshot.sequence += 1;
+            advance(&mut plugins);
+            assert_eq!(
+                counts(&plugins.dispatch(&snapshot, None, &[])),
+                (8, 0),
+                "arrival keeps permanent POIs"
+            );
+        }
+        snapshot.map_view = api::StateSnapshot::default();
+        plugins.started = plugins
+            .started
+            .checked_sub(Duration::from_millis(60))
+            .unwrap();
+        assert!(!plugins
+            .dispatch(&snapshot, None, &[])
+            .surfaces
+            .iter()
+            .any(|surface| surface.owner == "map-waypoints"));
     }
 
     #[test]
@@ -5407,7 +5582,7 @@ mod tests {
         initial.map.area_id = Some("World/W1_Siagarta".to_owned());
         initial.ui.open_windows.clear();
         let mut plugins = Plugins::load(&directory, &directory.join(".test-config"), &initial);
-        assert_eq!(plugins.len(), 4, "{:?}", plugins.take_diagnostics());
+        assert_eq!(plugins.len(), 5, "{:?}", plugins.take_diagnostics());
         let tick_interval = |plugins: &Plugins, namespace: &str| {
             plugins
                 .loaded
@@ -5475,7 +5650,7 @@ mod tests {
 
         drop(plugins);
         let mut plugins = Plugins::load(&directory, &directory.join(".test-config"), &initial);
-        assert_eq!(plugins.len(), 4, "{:?}", plugins.take_diagnostics());
+        assert_eq!(plugins.len(), 5, "{:?}", plugins.take_diagnostics());
         let restored_frame = plugins.dispatch(&initial, None, &[]);
         assert!(restored_frame.config_menus.iter().any(|menu| {
             menu.owner == "dyno"

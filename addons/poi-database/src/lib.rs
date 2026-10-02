@@ -52,7 +52,7 @@ impl Addon for PoiDatabase {
 }
 
 /// Bundled W1 dataset projected from farever-db's placement table (the
-/// farever-minimap W1_Siagarta census, 1224 records) into
+/// farever-minimap W1_Siagarta census, 1224 records) and eight reviewed demon sites into
 /// `assets/pois_w1_generated.rs` by `scripts/generate-game-data.ps1`. The table
 /// is static on purpose: parsing it inside the guest would blow the host's
 /// 25M-fuel activation budget, while data-segment initialization is already
@@ -141,13 +141,13 @@ mod tests {
     }
 
     #[test]
-    fn bundled_dataset_matches_farever_minimap_census() {
+    fn bundled_dataset_contains_the_census_and_reviewed_demons() {
         // Independent count of the farever-minimap W1_Siagarta census: the
         // loader must carry every record with a usable identity. Counts are
         // keyed by the shared kind enum, so a kind the crate does not name
         // fails here instead of reaching consumers as a stray string.
         let pois = load_w1_pois();
-        assert_eq!(pois.len(), 1224);
+        assert_eq!(pois.len(), 1232);
         let mut total = 0;
         for (kind, expected) in [
             (PoiKind::Plant, 313),
@@ -159,6 +159,7 @@ mod tests {
             (PoiKind::Dungeon, 12),
             (PoiKind::Obelisk, 11),
             (PoiKind::Merchant, 4),
+            (PoiKind::Soulstone, 8),
         ] {
             let found = pois
                 .iter()
@@ -254,15 +255,15 @@ mod tests {
             &region(-100_000.0, -100_000.0, 100_000.0, 100_000.0, &[], 1_024, 0),
         )
         .unwrap();
-        assert_eq!(full.total, 1224);
+        assert_eq!(full.total, 1232);
     }
 
     #[test]
     fn origin_buffer_pages_through_without_hitting_the_safety_cap() {
         // The minimap seeds its buffer in a +/-1500 window around the
-        // origin. 1024 records sit strictly inside; whole-cell takes add
-        // the boundary cells for 1105 total, so 64-record pages walk it in
-        // 18 pages, far below the fetch safety cap.
+        // origin. 1024 census records sit strictly inside; whole-cell takes
+        // add boundary cells plus seven demon sites for 1112 total. The
+        // 64-record pages walk it in 18 pages, below the fetch safety cap.
         let database = database();
         let window = |offset| {
             query_region_indexed(
@@ -274,11 +275,11 @@ mod tests {
             .unwrap()
         };
         let first = window(0);
-        assert_eq!(first.total, 1105);
+        assert_eq!(first.total, 1112);
         assert_eq!(first.pois.len(), 64);
         assert!(first.truncated);
         let last = window(1088);
-        assert_eq!(last.pois.len(), 17);
+        assert_eq!(last.pois.len(), 24);
         assert!(!last.truncated);
     }
 

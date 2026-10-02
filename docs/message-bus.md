@@ -63,6 +63,10 @@ discarded outside the world, and no click is retained for a future subscriber.
 GPS accepts this topic only from `farever.host` and applies its "Arrows from
 the map" preference to these observations. Explicit host `/gps` commands on
 `gps` bypass that preference.
+The coordinate-only host payload stays generic. GPS resolves clicks on the
+eight fixed demon POIs to the same name, XYZ and item ID as inventory clicks,
+using the current map transform for an 18-point screen hit radius. Minimap
+requests on `gps` use their rounded site coordinates for the same match.
 
 Completed left mouse clicks in the local backpack use `farever.inventory-click@1`
 from `farever.host`, with the exact UTF-8 item kind ID as payload and no

@@ -24,7 +24,12 @@ converted world coordinates. On beta `25531577`, clicking an activity marker
 also sets a waypoint when Farever opens its built-in HUD selector. The host
 preserves the native selector and map dragging behavior; drags do not set GPS
 waypoints. Full-map clicks arrive on `farever.map-click@1` from `farever.host`,
-with one `x y` waypoint and the default name "Waypoint".
+with one `x y` waypoint. GPS matches demon icons against the eight fixed sites
+using an 18-point hit radius in the current map transform and display scale.
+Those clicks use the inventory-click demon name, exact site XYZ, and soulstone
+item ID, so they highlight the same permanent POI. Other locations keep the
+default name "Waypoint". Rounded minimap marker coordinates resolve the same
+sites within 0.02 world units. Explicit `/gps` names are preserved.
 
 The host forwards the player's own `/gps` commands on `gps`, which always apply.
 Other add-ons may publish a waypoint request on `gps` with the same syntax as a
@@ -59,12 +64,12 @@ Arrival uses the same horizontal distance below 3 meters as other waypoints.
 `scripts/generate-game-data.ps1 -Check` checks the projection and verifies each
 reviewed root against the installed map's item cost, spawned demon, and XYZ.
 It fails if a reviewed site moves; newly added stones require table review.
-The read-only `waypoint` service exposes the active destination to the minimap,
+The read-only `waypoint` service exposes the active destination to both maps,
 including normal command and map-click targets.
-Soulstone targets include their item ID so the minimap draws the original
-inventory portrait; a normal command or map-click replacement clears that ID.
-Phase two will add a marker to Farever's native full map; phase one marks the
-minimap only.
+Soulstone targets include their item ID so the maps highlight the matching
+permanent demon POI. The POI provider uses that same item ID for the site's
+identity. A normal command or non-demon map-click replacement clears the selection ID.
+Arrival removes the arrow and highlight, while the permanent POI remains.
 
 It subtracts `camera.heading-radians` from the horizontal world-space bearing
 between player and selected reference, wraps the result to `(-pi, pi]`, and
@@ -128,7 +133,13 @@ Waypoint direction still needs an in-game check because the camera and player
 heading may use different zero directions.
 Soulstone native click capture, the GPS arrow appearing, and the minimap
 destination marker were confirmed in-game by the user on Steam build `25632706`.
-Native full-map destination markers remain pending.
+The separate [Map Waypoints](../map-waypoints/README.md) add-on draws the
+eight permanent demon POIs on the native full map and uses this service to
+highlight the selected soulstone's site.
+The user confirmed the full-map overlay works on `25658350` and, on 2026-10-02,
+confirmed the stronger target highlight and correct demon waypoint name.
+The permanent POI changes and shared diamond styling also pass source and
+compiled host-boundary tests.
 The exact hook signatures/layouts and all eight summoning roots were verified
 offline against Steam build `25632706`; all eight destinations and arrival
 behavior still need individual live checks.

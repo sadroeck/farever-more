@@ -202,7 +202,10 @@ The host copies the item kind only from the current Hero's enabled backpack
 slot and publishes `farever.inventory-click@1` on the worker. GPS resolves the
 eight fixed W1 summoning sites from a projection of the curated game inventory,
 replaces its destination, and exposes it through a read-only service for the
-minimap's active pin. No WIT change is needed. Hook metadata and installed map
+maps' selected-site highlight. The POI provider projects those same inventory
+sites as eight permanent `soulstone` records alongside the placement census;
+the required item ID is the stable POI ID. No WIT change is needed for this
+data or selection behavior. Hook metadata and installed map
 roots were verified offline against `25632706`. The user confirmed live
 soulstone click navigation, the GPS arrow appearing, and the minimap marker on
 that build. Individual checks of all eight stones and arrival remain pending.
@@ -221,8 +224,11 @@ bounds/transforms at most once per second, allowing pan, zoom, and resizing
 to be checked without turning on verbose logging. API 1.1.0 exposes this
 provider as the callback-frozen `map.current` snapshot. It includes the current
 world ID and the renderer's physical pixels per overlay point; a frontmost
-MapWindow is required. A clipped, passive canvas preserves mouse input for
-native map controls. Options are staged through the
+MapWindow is required. The separate `map-waypoints` add-on reads the eight
+permanent demon sites from the POI service, with GPS's optional waypoint service
+supplying the selected-site highlight. Both maps reuse the extracted inventory
+portraits in a shared bronze diamond frame. Its clipped, passive canvas
+preserves mouse input for native map controls. Options are staged through the
 independent `canvas-options` interface and published only with a validated
 replacement frame. A failed capture hook reports `provider-failed`.
 Hook signatures
@@ -232,8 +238,10 @@ on `25658350`. The first live attempt activated scale capture but rejected sync
 and removal because their inherited runtime declaration signatures use
 `h2d.Object` receivers. The declarations have been corrected while preserving
 exact MapWindow filtering. Offline projection, rendering, compatibility with
-API 1.0.0 components, and callback isolation are validated.
-The user subsequently confirmed the full-map overlay works on `25658350`.
+API 1.0.0 components, and all eight compiled portrait paths are validated.
+The user subsequently confirmed the full-map overlay works on `25658350` and,
+on 2026-10-02, confirmed the stronger target highlight and correct demon
+waypoint name. Individual live checks of all eight sites remain outstanding.
 
 ## Hooking rules
 

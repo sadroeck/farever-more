@@ -18,7 +18,7 @@ The workflow publishes:
   native proxy and host binaries, the direct-install runtime layout,
   and the framework notices;
 - `farever-more-framework-v<version>-windows-x86_64-full.zip`, containing that
-  framework plus Dyno, GPS, Minimap, and POI Database already placed under
+  framework plus Dyno, GPS, Minimap, Map Waypoints, and POI Database placed under
   `farever-addons/addons/<id>/`, including their manifests and notices;
 - one `farever-more-addon-<id>-v<addon-version>.zip` per maintained reference
   add-on, containing `addon.wasm`, its stamped `addon.json`, and any add-on

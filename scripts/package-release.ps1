@@ -200,7 +200,7 @@ try {
     New-Zip -SourceDirectory $frameworkRoot -Destination $frameworkArchive
 
     $addonRecords = [ordered]@{}
-    foreach ($id in @("dyno", "gps", "minimap", "poi-database")) {
+    foreach ($id in @("dyno", "gps", "minimap", "map-waypoints", "poi-database")) {
         $source = Join-Path $addonOutput "addons\$id"
         $manifestPath = Join-Path $source "addon.json"
         $wasmPath = Join-Path $source "addon.wasm"

@@ -31,11 +31,12 @@ pub enum PoiKind {
     Plant,
     Ore,
     Activity,
+    Soulstone,
 }
 
 impl PoiKind {
     /// Every kind, in the order consumers present them.
-    pub const ALL: [PoiKind; 9] = [
+    pub const ALL: [PoiKind; 10] = [
         PoiKind::Obelisk,
         PoiKind::Merchant,
         PoiKind::Dungeon,
@@ -45,6 +46,7 @@ impl PoiKind {
         PoiKind::Plant,
         PoiKind::Ore,
         PoiKind::Activity,
+        PoiKind::Soulstone,
     ];
 
     /// Stable wire id. Renaming one is a data change, not a cosmetic one.
@@ -60,6 +62,7 @@ impl PoiKind {
             PoiKind::Plant => "plant",
             PoiKind::Ore => "ore",
             PoiKind::Activity => "activity",
+            PoiKind::Soulstone => "soulstone",
         }
     }
 
@@ -76,6 +79,7 @@ impl PoiKind {
             PoiKind::Plant => 6,
             PoiKind::Ore => 7,
             PoiKind::Activity => 8,
+            PoiKind::Soulstone => 9,
         }
     }
 

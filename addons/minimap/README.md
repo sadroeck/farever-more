@@ -13,12 +13,19 @@ poi-database service.
 - POIs are filtered by category. Clicking a visible marker publishes a
   waypoint request; the GPS add-on turns that request into an arrow when its
   map-clicks setting is enabled.
-- With GPS installed, a soulstone destination uses that stone's inventory
-  portrait with a small gold border. Regular destinations use a purple ring.
-  Both stay visible regardless of the POI category toggles. Distant destinations sit inside the map edge in
-  their direction of travel. The pin disappears on GPS arrival or clearing,
-  world/session mismatch, or an unavailable GPS service. `/gps hide` hides the
-  arrow while retaining the minimap pin.
+- All eight demon summoning sites are permanent POIs in the nearby map view,
+  enabled by default under "Demon summoning sites". Their inventory portraits
+  sit in compact bronze diamond frames shared with the full-map add-on.
+  An inventory soulstone click keeps normal game behavior, sets GPS, and adds
+  a larger portrait, bright gold outline, and contrasting circular halo to its
+  matching POI. Clicking a demon POI selects the same named destination as its
+  inventory soulstone. Arrival, clearing, world/session mismatch,
+  or an unavailable GPS service removes the highlight and leaves the POI.
+  The category and master POI toggles also apply to demon sites. Locations
+  stay at their true coordinates; distant demon sites are outside the view.
+- Regular GPS destinations use a purple ring, regardless of POI toggles, and
+  distant destinations sit inside the map edge in their direction of travel.
+  `/gps hide` hides the arrow while retaining the current marker or highlight.
 - The add-on hides outside W1 or when the player is not in the world.
   EscapeMenu, GameMenu, and LoadingScreen may remain open; another registered
   game window hides the minimap. LoadingScreen is allowed only after the host
@@ -41,9 +48,11 @@ notices](../../THIRD_PARTY_NOTICES.md) for data and artwork boundaries.
 GPS is an optional dependency. The minimap opens its `waypoint` service during
 activation and queries the current destination on each tick, using the shared
 `farever-waypoint-protocol` codec. Installing GPS later requires reloading the
-minimap to open the service handle. No native full-map marker is added yet.
-The eight soulstone portraits are bundled game assets; GPS supplies the item ID
-so the minimap selects the correct image without matching waypoint labels.
+minimap to open the service handle. The separate [Map Waypoints](../map-waypoints/README.md)
+add-on draws all eight permanent demon POIs on the game's full map.
+The eight soulstone portraits are bundled game assets. The POI database uses
+the required soulstone item ID as each demon site's stable ID; GPS supplies
+the selected item ID, so highlights never depend on translated labels.
 
 ## Limits and live QA
 
@@ -51,7 +60,11 @@ The map currently covers W1. It has no panning, zoom controls, or party
 markers. Clicking a marker requires the GPS add-on to show a waypoint arrow.
 The soulstone destination marker was confirmed in-game by the user on Steam
 build `25632706`. All eight portraits, arrival clearing, and other supported
-builds still need individual live checks.
+builds still need individual live checks. The permanent POIs and shared diamond
+styling pass source and compiled host-boundary tests, including all eight
+portraits and arrival preserving the POI. On 2026-10-02, the user confirmed
+the stronger selected-site highlight and correct demon waypoint name on
+`25658350`; individual live checks of all eight sites remain outstanding.
 
 ## Support
 

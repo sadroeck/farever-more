@@ -16,10 +16,12 @@ mod soulstone_portraits {
     include!("../assets/soulstones/icons_generated.rs");
 }
 
+#[path = "../../shared/soulstone_marker.rs"]
+mod soulstone_marker;
+
 #[derive(Clone, Copy)]
 struct WaypointMarker<'a> {
     waypoint: &'a Waypoint,
-    icon: Option<&'a Image>,
 }
 
 // Match the host's continuous-state polling cadence so player and camera
@@ -129,6 +131,14 @@ const POI_KIND_DEFS: [PoiKindDef; PoiKind::ALL.len()] = [
         label: "Activities",
         default_visible: true,
         icon: (0, 3, 1, 8, 3),
+    },
+    PoiKindDef {
+        kind: PoiKind::Soulstone,
+        setting_key: "minimap-poi-cat-soulstone",
+        label: "Demon summoning sites",
+        default_visible: true,
+        // Fallback only; known sites use their inventory portrait.
+        icon: (1, 0, 0, 5, 1),
     },
 ];
 const POI_SECTION_ID: &str = "minimap-poi-section";
@@ -572,17 +582,12 @@ impl Addon for MinimapPoc {
             &self.map_image,
             &self.player_marker,
             &self.poi_atlases,
+            &self.soulstone_icons,
             &self.poi_buffer.pois,
             &mut marker_hits,
-            waypoint.as_ref().map(|point| WaypointMarker {
-                waypoint: point,
-                icon: point.item_id.as_deref().and_then(|item| {
-                    self.soulstone_icons
-                        .iter()
-                        .find(|(id, _)| *id == item)
-                        .map(|(_, image)| image)
-                }),
-            }),
+            waypoint
+                .as_ref()
+                .map(|point| WaypointMarker { waypoint: point }),
         ));
         self.marker_hits = marker_hits;
         Ok(TickControl::Continue)
@@ -631,6 +636,7 @@ fn render_snapshot(
         player_marker,
         &poi_icons(),
         &[],
+        &[],
         &mut Vec::new(),
         None,
     )
@@ -645,6 +651,7 @@ fn render_snapshot_with_pois(
     map_image: &Image,
     player_marker: &Image,
     poi_atlases: &[Image; POI_ATLAS_KEYS.len()],
+    soulstone_icons: &[(&str, Image)],
     pois: &[Poi],
     marker_hits: &mut Vec<MarkerHit>,
     waypoint: Option<WaypointMarker<'_>>,
@@ -721,6 +728,7 @@ fn render_snapshot_with_pois(
                     camera_heading,
                     player_marker,
                     poi_atlases,
+                    soulstone_icons,
                     layout,
                     // The cached POI set is rendered as-is; the toggles only
                     // select between the cache and an empty slice, so
@@ -770,6 +778,7 @@ fn draw_minimap(
     camera_heading: Option<f32>,
     player_marker: &Image,
     poi_atlases: &[Image; POI_ATLAS_KEYS.len()],
+    soulstone_icons: &[(&str, Image)],
     layout: MapLayout,
     pois: &[Poi],
     poi_types: &PoiKindFlags,
@@ -813,6 +822,14 @@ fn draw_minimap(
         pois,
         poi_types,
         poi_atlases,
+        soulstone_icons,
+        waypoint
+            .filter(|target| {
+                let dx = target.waypoint.position[0] - position.x;
+                let dy = target.waypoint.position[1] - position.y;
+                dx * dx + dy * dy >= 9.0
+            })
+            .and_then(|target| target.waypoint.item_id.as_deref()),
         uv_min,
         uv_max,
         layout,
@@ -827,36 +844,26 @@ fn draw_minimap(
         CAMERA_DIRECTION_EDGE,
     );
     if let Some(target) = waypoint {
-        if let Some(point) =
-            waypoint_canvas_position(target.waypoint.position, position, uv_min, uv_max, layout)
+        // A soulstone's destination is its permanent POI, not a second pin
+        // clamped to the map edge. Ordinary destinations retain their ring.
+        let permanent = target
+            .waypoint
+            .item_id
+            .as_deref()
+            .is_some_and(|item| soulstone_icons.iter().any(|(id, _)| *id == item));
+        if let Some(point) = (!permanent)
+            .then(|| {
+                waypoint_canvas_position(target.waypoint.position, position, uv_min, uv_max, layout)
+            })
+            .flatten()
         {
-            if let Some(icon) = target.icon {
-                canvas.rect(
-                    [point[0] - 11.0, point[1] - 11.0],
-                    [point[0] + 11.0, point[1] + 11.0],
-                    3.0,
-                    Some(Color::rgba8(24, 24, 28, 230)),
-                    Some(Stroke::new(1.0, MAP_EDGE)),
-                );
-                canvas.image(
-                    icon.clone(),
-                    [point[0] - 10.0, point[1] - 10.0],
-                    [point[0] + 10.0, point[1] + 10.0],
-                    [0.0, 0.0],
-                    [1.0, 1.0],
-                    0.0,
-                    None,
-                    0.0,
-                );
-            } else {
-                canvas.circle(
-                    point,
-                    7.0,
-                    Some(Color::rgba8(24, 15, 35, 245)),
-                    Some(Stroke::new(2.0, Color::rgba8(229, 137, 255, 255))),
-                );
-                canvas.circle(point, 2.5, Some(Color::rgba8(251, 224, 255, 255)), None);
-            }
+            canvas.circle(
+                point,
+                7.0,
+                Some(Color::rgba8(24, 15, 35, 245)),
+                Some(Stroke::new(2.0, Color::rgba8(229, 137, 255, 255))),
+            );
+            canvas.circle(point, 2.5, Some(Color::rgba8(251, 224, 255, 255)), None);
         }
     }
     if layout.square {
@@ -1086,6 +1093,8 @@ fn draw_poi_markers(
     pois: &[Poi],
     poi_types: &PoiKindFlags,
     poi_atlases: &[Image; POI_ATLAS_KEYS.len()],
+    soulstone_icons: &[(&str, Image)],
+    selected_item: Option<&str>,
     uv_min: [f32; 2],
     uv_max: [f32; 2],
     layout: MapLayout,
@@ -1117,6 +1126,31 @@ fn draw_poi_markers(
             continue;
         }
         if !poi_kind_visible(poi_types, &poi.kind) {
+            continue;
+        }
+        let portrait = (poi.kind.known() == Some(PoiKind::Soulstone))
+            .then(|| soulstone_icons.iter().find(|(id, _)| *id == poi.id))
+            .flatten();
+        if let Some((_, image)) = portrait {
+            let selected = selected_item == Some(poi.id.as_str());
+            // Reserve the highlight's extent even while unselected, so
+            // selecting a POI cannot change its visibility at the edge.
+            let reach = soulstone_marker::MAX_REACH;
+            // Paths have no rounded-plate clip, so only draw the complete
+            // marker when its frame fits within the minimap plate.
+            if !plate_contains_box(
+                layout,
+                [point[0] - reach, point[1] - reach],
+                [point[0] + reach, point[1] + reach],
+            ) {
+                continue;
+            }
+            soulstone_marker::draw(canvas, point, image, selected);
+            marker_hits.push(MarkerHit {
+                canvas: point,
+                world: [poi.x, poi.y],
+                name: poi.name.clone(),
+            });
             continue;
         }
         // Only markers the player can see are clickable.
@@ -1532,6 +1566,7 @@ mod tests {
                 &image(),
                 &player_marker(),
                 &poi_icons(),
+                &[],
                 &pois,
                 &mut Vec::new(),
                 None,
@@ -1594,6 +1629,88 @@ mod tests {
     }
 
     #[test]
+    fn permanent_demon_poi_uses_one_portrait_and_selection_adds_only_an_outline() {
+        let player = Vec3 {
+            x: -1800.0,
+            y: -2000.0,
+            z: 0.0,
+        };
+        let poi = Poi::new(
+            PoiKind::Soulstone,
+            "Soulstone_Z1_1",
+            "Baphometal",
+            W1_AREA_ID,
+            player.x + 50.0,
+            player.y,
+            Some(10.0),
+        );
+        let icons = [(
+            "Soulstone_Z1_1",
+            Image {
+                id: "demon-portrait".into(),
+            },
+        )];
+        let mut target = Waypoint {
+            process_session: 1,
+            world: W1_AREA_ID.into(),
+            position: [poi.x, poi.y, 10.0],
+            name: poi.name.clone(),
+            item_id: Some(poi.id.clone()),
+        };
+        for square in [false, true] {
+            let render = |point: Option<&Waypoint>, types: &PoiKindFlags| {
+                let mut hits = Vec::new();
+                let frame = render_snapshot_with_pois(
+                    &snapshot(true, Some(player)),
+                    Some(W1_AREA_ID),
+                    square,
+                    true,
+                    types,
+                    &image(),
+                    &player_marker(),
+                    &poi_icons(),
+                    &icons,
+                    std::slice::from_ref(&poi),
+                    &mut hits,
+                    point.map(|waypoint| WaypointMarker { waypoint }),
+                );
+                (frame, hits)
+            };
+            let counts = |frame: &Frame| {
+                let surface = frame.surface(SURFACE_ID).unwrap();
+                let portraits = surface
+                    .canvas()
+                    .filter(|command| matches!(command.primitive(), PrimitiveRef::Image))
+                    .count()
+                    - 2; // The other images are the map and player.
+                let highlights = surface
+                    .canvas()
+                    .filter(|command| {
+                        matches!(command.primitive(), PrimitiveRef::Path(path)
+                            if path.stroke().is_some_and(|stroke|
+                                stroke.color == Color::rgba8(255, 213, 126, 255)))
+                    })
+                    .count();
+                (portraits, highlights)
+            };
+            let (base, hits) = render(None, &visible_kinds());
+            assert_eq!(counts(&base), (1, 0));
+            assert_eq!(hits.len(), 1);
+            let (selected, selected_hits) = render(Some(&target), &visible_kinds());
+            assert_eq!(counts(&selected), (1, 1));
+            assert_eq!(selected_hits[0].canvas, hits[0].canvas);
+            let mut hidden = visible_kinds();
+            hidden[PoiKind::Soulstone.ordinal()] = false;
+            let (filtered, hidden_hits) = render(Some(&target), &hidden);
+            assert_eq!(counts(&filtered), (0, 0));
+            assert!(hidden_hits.is_empty());
+            target.position = [player.x, player.y, player.z];
+            assert_eq!(counts(&render(Some(&target), &visible_kinds()).0), (1, 0));
+            target.position = [poi.x, poi.y, 10.0];
+        }
+    }
+
+    #[test]
     fn poi_type_toggles_gate_each_kind_independently() {
         // Both markers stack exactly at the player so visibility, not
         // projection, decides what is drawn.
@@ -1627,6 +1744,7 @@ mod tests {
                 &image(),
                 &player_marker(),
                 &poi_icons(),
+                &[],
                 &pois,
                 &mut Vec::new(),
                 None,
@@ -1709,6 +1827,7 @@ mod tests {
             PoiKind::Respawn,
             PoiKind::Chest,
             PoiKind::Activity,
+            PoiKind::Soulstone,
         ] {
             assert!(poi_kind_def(kind).default_visible, "kind {kind}");
             assert!(defaults[kind.ordinal()], "kind {kind}");
@@ -1985,6 +2104,8 @@ mod tests {
                             std::slice::from_ref(&poi),
                             &visible_kinds(),
                             &poi_icons(),
+                            &[],
+                            None,
                             uv_min,
                             uv_max,
                             layout,
@@ -2051,6 +2172,7 @@ mod tests {
             "Plants",
             "Ores",
             "Activities",
+            "Demon summoning sites",
         ];
         assert_eq!(POI_KIND_DEFS.len(), expected.len());
         for (def, label) in POI_KIND_DEFS.iter().zip(expected) {
@@ -2097,6 +2219,7 @@ mod tests {
                 &image(),
                 &player_marker(),
                 &poi_icons(),
+                &[],
                 &pois,
                 &mut Vec::new(),
                 None,
