@@ -2,9 +2,7 @@
 
 ## Unreleased
 
-- Restore DPS meter skill icons when the game packages `.png` atlas paths as
-  DDS/BC7 textures. Decode the validated top mip while retaining PNG support.
-  The user confirmed the restored icons in-game on 2026-10-02.
+## 0.3.0 - Map API and soulstone navigation
 
 - Make selected demon POIs more prominent with a larger portrait and a bright
   gold outline/halo. Clicking their map icons reuses the inventory-click name,
@@ -29,6 +27,36 @@ The user confirmed the full-map overlay works on `25658350` and, on 2026-10-02,
 confirmed the stronger target highlight and correct demon waypoint name.
 Permanent demon POIs and the shared icon styling also pass source and compiled
 host-boundary tests. Individual live checks of all eight sites remain pending.
+
+The user validated the map implementation for release on 2026-10-02.
+The full bundle ships host/API `1.1.0` and all five rebuilt add-ons together;
+API `1.0.0` components remain compatible with the newer runtime.
+Bundled versions: Dyno `0.1.2`, GPS `0.2.0`, Minimap `0.1.2`,
+Map Waypoints `0.1.0`, and POI Database `1.3.1`.
+
+## 0.2.5 - Restore DPS meter icons
+
+- Restore skill icons when Farever packages `.png` atlas paths as DDS/BC7
+  textures. Select the decoder by payload signature and retain PNG support.
+- Validate single 2D BC7 textures, top-mip bounds, dimensions, and decoded
+  memory limits before allocating and decoding.
+
+All 365 unique skill crops across 53 installed atlases passed offline decoding
+checks. The user confirmed the restored DPS meter icons in-game on 2026-10-02.
+The WIT add-on API remains `1.0.0`; bundled add-on versions are unchanged.
+
+## 0.2.4 — Startup metadata and Farever compatibility
+
+- Recognize Farever Steam build `25658350` by its reviewed executable,
+  bytecode, and HashLink runtime fingerprints.
+- Read metadata names up to their terminator within page boundaries, preventing
+  valid names near an unreadable page from being rejected during startup.
+- Report the failing stage when a complete game-object shape cannot be read.
+
+The protected-page regression and installed-bytecode checks pass. A live launch
+recognized the exact profile and loaded all four add-ons with none disabled.
+Repeated cold starts remain necessary to verify the intermittent startup stall.
+The WIT add-on API remains `1.0.0`; bundled add-on versions are unchanged.
 
 ## 0.2.3
 

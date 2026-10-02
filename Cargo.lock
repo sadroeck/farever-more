@@ -1745,7 +1745,7 @@ dependencies = [
 
 [[package]]
 name = "farever-more-host"
-version = "0.2.3"
+version = "0.3.0"
 dependencies = [
  "farever-more-runtime",
 ]
@@ -1776,7 +1776,7 @@ dependencies = [
 
 [[package]]
 name = "farever-more-proxy"
-version = "0.2.3"
+version = "0.3.0"
 dependencies = [
  "windows-sys 0.59.0",
 ]

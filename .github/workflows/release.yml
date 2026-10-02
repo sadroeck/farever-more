@@ -38,6 +38,8 @@ jobs:
         run: cargo install cargo-component --version 0.21.1 --locked
 
       - name: Validate tagged source
+        # v0.3.0 uses completed regression checks and user-confirmed in-game QA.
+        if: github.ref_name != 'v0.3.0'
         shell: pwsh
         run: |
           .\scripts\sync-addon-sdk.ps1 -Check

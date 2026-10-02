@@ -1,7 +1,7 @@
 {
   "manifest-version": 1,
   "id": "dyno",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "name": "Dyno",
   "description": "Group damage meter with per-player and per-skill totals.",
   "tags": ["combat", "meter", "damage"]
