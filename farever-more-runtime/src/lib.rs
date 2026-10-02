@@ -24,6 +24,7 @@ mod kill_hooks;
 mod lifecycle_hooks;
 mod loot_hooks;
 mod map_clicks;
+mod map_view;
 mod memory;
 mod overlay;
 mod party_hooks;
@@ -256,6 +257,9 @@ pub fn run(config: RuntimeConfig) {
     let mut damage = damage::DamageCapture::new(&config.addon_root);
     let mut slash_commands = slash_commands::SlashCommandCapture::new();
     let mut map_clicks = map_clicks::MapClickCapture::new();
+    let mut map_view = map_view::MapViewCapture::new();
+    let mut logged_map_view = None;
+    let mut next_map_view_log = Instant::now();
     let mut inventory_clicks = inventory_clicks::InventoryClickCapture::new();
     let mut chat_output_diagnostics = chat_output::ChatOutputDiagnostics::new();
     if in_process {
@@ -270,6 +274,9 @@ pub fn run(config: RuntimeConfig) {
             diagnostics.info(&format!("chat {event}"));
         }
         for event in map_clicks.take_diagnostics() {
+            diagnostics.info(&event);
+        }
+        for event in map_view.take_diagnostics() {
             diagnostics.info(&event);
         }
         for event in chat_output_diagnostics.take_diagnostics() {
@@ -339,6 +346,7 @@ pub fn run(config: RuntimeConfig) {
     let mut window_provider = WindowProviderState::new(in_process);
     let mut latest_raw = FasSnapshotV0::default();
     let mut latest_snapshot = farever_more_api::GameSnapshot::default();
+    let mut last_map_snapshot = farever_more_api::StateSnapshot::default();
     let mut game_menu_geometry = None;
     let mut game_menu_geometry_revision = 0_u64;
     let mut next_poll = Instant::now();
@@ -832,6 +840,64 @@ pub fn run(config: RuntimeConfig) {
             }
         }
         for event in map_clicks.take_diagnostics() {
+            diagnostics.info(&event);
+        }
+        let captured_map_view = map_view.refresh(latest_snapshot.session.in_world);
+        let visible_map = captured_map_view
+            .zip(overlay.pixels_per_point())
+            .zip(latest_snapshot.map.area_id.as_ref())
+            .filter(|_| {
+                latest_snapshot
+                    .ui
+                    .focused_window
+                    .as_deref()
+                    .is_some_and(|name| matches!(name, "ui.win.MapWindow" | "MapWindow"))
+            })
+            .map(
+                |((view, pixels_per_point), world)| farever_more_api::VisibleMap {
+                    world: world.clone(),
+                    bounds: view.bounds,
+                    world_to_client: view.world_to_client,
+                    pixels_per_point,
+                },
+            );
+        let revision = last_map_snapshot
+            .revision
+            .wrapping_add(u64::from(last_map_snapshot.value != visible_map));
+        last_map_snapshot = match visible_map {
+            Some(value) => farever_more_api::StateSnapshot::live(
+                latest_snapshot.captured_at_ms,
+                revision,
+                value,
+            ),
+            None => farever_more_api::StateSnapshot::unavailable(
+                revision,
+                map_view.unavailable_reason(),
+            ),
+        };
+        latest_snapshot.map_view = last_map_snapshot.clone();
+        let visibility_changed = captured_map_view.is_some() != logged_map_view.is_some();
+        if visibility_changed
+            || (captured_map_view != logged_map_view && Instant::now() >= next_map_view_log)
+        {
+            if let Some(view) = captured_map_view {
+                diagnostics.info(&format!(
+                    "map viewport {} bounds={:?} world_to_client={:?}",
+                    if visibility_changed {
+                        "visible"
+                    } else {
+                        "updated"
+                    },
+                    view.bounds,
+                    view.world_to_client
+                ));
+            } else {
+                diagnostics.info("map viewport unavailable");
+            }
+            logged_map_view = captured_map_view;
+            next_map_view_log = Instant::now() + Duration::from_secs(1);
+        }
+        for event in map_view.take_diagnostics() {
             diagnostics.info(&event);
         }
         for event in chat_output_diagnostics.take_diagnostics() {

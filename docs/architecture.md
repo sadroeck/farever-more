@@ -207,6 +207,34 @@ roots were verified offline against `25632706`. The user confirmed live
 soulstone click navigation, the GPS arrow appearing, and the minimap marker on
 that build. Individual checks of all eight stones and arrival remain pending.
 
+The internal full-map viewport provider observes the inherited
+`ui.BaseElement.sync` callback for exact `ui.win.MapWindow` receivers, after
+the native sync updates child transforms. It copies the scroll transform,
+scroll-container dimensions, and render context's scene viewport. A separate
+`MapWindow.get_tileScale` hook copies the game's world-to-map scale without
+recalculating terrain dimensions. The worker combines those bounded scalar
+records into an affine world-to-client-pixel transform and visible rectangle;
+`MapWindow.onRemove`, leaving the world, or 500 ms without synchronization
+invalidates the snapshot. Unsupported rotation of the clipping rectangle is
+rejected. The default host log records open/close transitions and changed
+bounds/transforms at most once per second, allowing pan, zoom, and resizing
+to be checked without turning on verbose logging. API 1.1.0 exposes this
+provider as the callback-frozen `map.current` snapshot. It includes the current
+world ID and the renderer's physical pixels per overlay point; a frontmost
+MapWindow is required. A clipped, passive canvas preserves mouse input for
+native map controls. Options are staged through the
+independent `canvas-options` interface and published only with a validated
+replacement frame. A failed capture hook reports `provider-failed`.
+Hook signatures
+and projection semantics were inspected offline on `25632706`. Unit tests,
+runtime tests, and the expanded installed-bytecode compatibility check passed
+on `25658350`. The first live attempt activated scale capture but rejected sync
+and removal because their inherited runtime declaration signatures use
+`h2d.Object` receivers. The declarations have been corrected while preserving
+exact MapWindow filtering. Offline projection, rendering, compatibility with
+API 1.0.0 components, and callback isolation are validated.
+The user subsequently confirmed the full-map overlay works on `25658350`.
+
 ## Hooking rules
 
 Hooks are enabled only after the host checks the expected Windows x64 calling

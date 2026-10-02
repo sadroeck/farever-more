@@ -1,11 +1,26 @@
 # Rust add-on SDK
 
 Rust add-on authors use `farever-more-sdk` to work with the
-`farever:addon@1.0.0` interface. The SDK handles generated bindings, component
+`farever:addon@1.1.0` interface. The SDK handles generated bindings, component
 exports, and conversion between WIT data and Rust types, so add-on code does
 not import WIT modules directly.
 
 ## Add-on shape
+
+`context.game().map()` returns a callback-frozen `Snapshot<VisibleMap>` for
+the native full map. Its `world` matches the zone's internal area ID. The
+`bounds` rectangle and `world_to_client.project([x, y])` result use physical
+game-client pixels; divide by `pixels_per_point` for overlay coordinates.
+Closed, obscured, stale, loading, or unavailable maps carry no value.
+
+Use `ui.passive_canvas(...)` for annotations that must preserve native mouse
+input. A surface containing only that canvas paints at the exact anchor and
+margin with no window gutter, decoration, or automatic repositioning. The
+canvas clips primitives to its rectangle and the client viewport. The SDK
+stages options through the separate `canvas-options` interface when returning
+the frame. They apply atomically to that callback's replacement frame, never
+to another add-on or a retained frame. Passive canvases are excluded from
+configuration menus. Existing interactive canvases keep their click behavior.
 
 An add-on is an ordinary stateful Rust value with use-case-level callbacks:
 

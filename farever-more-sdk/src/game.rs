@@ -2,7 +2,8 @@
 
 use crate::__wit::farever::addon::{
     camera as raw_camera, combat as raw_combat, game as raw_game, instance_session as raw_instance,
-    party as raw_party, player as raw_player, windows as raw_windows, zone as raw_zone,
+    map as raw_map, party as raw_party, player as raw_player, windows as raw_windows,
+    zone as raw_zone,
 };
 use crate::assets::Image;
 use crate::common::{StateStatus, Vec3};
@@ -11,6 +12,68 @@ use crate::common::{StateStatus, Vec3};
 pub struct Snapshot<T> {
     pub status: StateStatus,
     pub value: Option<T>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct MapBounds {
+    pub left: f32,
+    pub top: f32,
+    pub width: f32,
+    pub height: f32,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct MapTransform {
+    pub a: f32,
+    pub b: f32,
+    pub c: f32,
+    pub d: f32,
+    pub tx: f32,
+    pub ty: f32,
+}
+
+impl MapTransform {
+    /// Project world X/Y into physical game-client pixels.
+    #[must_use]
+    pub fn project(self, position: [f32; 2]) -> [f32; 2] {
+        [
+            self.a * position[0] + self.c * position[1] + self.tx,
+            self.b * position[0] + self.d * position[1] + self.ty,
+        ]
+    }
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct VisibleMap {
+    pub world: String,
+    pub bounds: MapBounds,
+    pub world_to_client: MapTransform,
+    pub pixels_per_point: f32,
+}
+
+impl From<raw_map::VisibleMap> for VisibleMap {
+    fn from(value: raw_map::VisibleMap) -> Self {
+        let bounds = value.bounds;
+        let transform = value.world_to_client;
+        Self {
+            world: value.world,
+            bounds: MapBounds {
+                left: bounds.left,
+                top: bounds.top,
+                width: bounds.width,
+                height: bounds.height,
+            },
+            world_to_client: MapTransform {
+                a: transform.a,
+                b: transform.b,
+                c: transform.c,
+                d: transform.d,
+                tx: transform.tx,
+                ty: transform.ty,
+            },
+            pixels_per_point: value.pixels_per_point,
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -308,6 +371,16 @@ impl Game {
     #[must_use]
     pub fn windows(&self) -> Snapshot<Windows> {
         let snapshot = raw_windows::current();
+        Snapshot {
+            status: snapshot.status.into(),
+            value: snapshot.value.map(Into::into),
+        }
+    }
+
+    /// Visible full-map geometry frozen for this callback.
+    #[must_use]
+    pub fn map(&self) -> Snapshot<VisibleMap> {
+        let snapshot = raw_map::current();
         Snapshot {
             status: snapshot.status.into(),
             value: snapshot.value.map(Into::into),

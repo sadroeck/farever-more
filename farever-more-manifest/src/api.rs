@@ -27,7 +27,7 @@ use std::fmt;
 ///
 /// Equal to the WIT package version in `wit/farever-addon.wit`; the boundary
 /// check fails the build when the two drift apart.
-pub const ADDON_API_VERSION: &str = "1.0.0";
+pub const ADDON_API_VERSION: &str = "1.1.0";
 
 /// A parsed `MAJOR.MINOR.PATCH` add-on API version.
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]

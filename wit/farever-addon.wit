@@ -1,9 +1,10 @@
-package farever:addon@1.0.0;
+package farever:addon@1.1.0;
 
 /// The imports and callbacks available to a Farever add-on.
 world farever-addon {
     import runtime;
     import assets;
+    import canvas-options;
 
     import game;
     import player;
@@ -13,6 +14,7 @@ world farever-addon {
     import instance-session;
     import zone;
     import windows;
+    import %map;
 
     import bus;
     import dependencies;

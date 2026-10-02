@@ -1,0 +1,41 @@
+/// Read-only geometry of the game's visible full map.
+interface %map {
+    use common.{state-status};
+
+    record map-bounds {
+        left: f32,
+        top: f32,
+        width: f32,
+        height: f32,
+    }
+
+    record map-transform {
+        a: f32,
+        b: f32,
+        c: f32,
+        d: f32,
+        tx: f32,
+        ty: f32,
+    }
+
+    record visible-map {
+        /// Internal world/area ID, matching zone.current.
+        %world: string,
+        /// Clipping rectangle in physical game-client pixels.
+        bounds: map-bounds,
+        /// Client x = a*world-x + c*world-y + tx;
+        /// client y = b*world-x + d*world-y + ty.
+        world-to-client: map-transform,
+        /// Physical client pixels per logical overlay point.
+        pixels-per-point: f32,
+    }
+
+    record map-snapshot {
+        status: state-status,
+        /// None when closed, stale, obscured, or unavailable.
+        value: option<visible-map>,
+    }
+
+    /// Frozen for this callback, like the other game snapshots.
+    current: func() -> map-snapshot;
+}

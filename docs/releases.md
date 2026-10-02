@@ -33,7 +33,7 @@ The full bundle is the default installation: extract its contents beside
 support selecting individual add-ons.
 
 The framework release version and add-on release versions are independent of
-the WIT add-on API version. The current public API is `1.0.0`; the framework
+the WIT add-on API version. This checkout implements API `1.1.0` (unreleased); the framework
 release is `0.2.3`, while each add-on keeps the version in its source
 `addon.json`.
 

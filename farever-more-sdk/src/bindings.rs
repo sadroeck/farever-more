@@ -57,7 +57,7 @@ pub mod farever {
                     let ptr0 = vec0.as_ptr().cast::<u8>();
                     let len0 = vec0.len();
                     #[cfg(target_arch = "wasm32")]
-                    #[link(wasm_import_module = "farever:addon/runtime@1.0.0")]
+                    #[link(wasm_import_module = "farever:addon/runtime@1.1.0")]
                     unsafe extern "C" {
                         #[link_name = "log"]
                         fn wit_import1(_: i32, _: *mut u8, _: usize);
@@ -77,7 +77,7 @@ pub mod farever {
             pub fn schedule_tick(interval_ms: u32) -> u32 {
                 unsafe {
                     #[cfg(target_arch = "wasm32")]
-                    #[link(wasm_import_module = "farever:addon/runtime@1.0.0")]
+                    #[link(wasm_import_module = "farever:addon/runtime@1.1.0")]
                     unsafe extern "C" {
                         #[link_name = "schedule-tick"]
                         fn wit_import0(_: i32) -> i32;
@@ -209,7 +209,7 @@ pub mod farever {
                     let len2 = vec2.len();
                     let ptr3 = ret_area.0.as_mut_ptr().cast::<u8>();
                     #[cfg(target_arch = "wasm32")]
-                    #[link(wasm_import_module = "farever:addon/assets@1.0.0")]
+                    #[link(wasm_import_module = "farever:addon/assets@1.1.0")]
                     unsafe extern "C" {
                         #[link_name = "register-font"]
                         fn wit_import4(
@@ -304,7 +304,7 @@ pub mod farever {
                     let len1 = vec1.len();
                     let ptr2 = ret_area.0.as_mut_ptr().cast::<u8>();
                     #[cfg(target_arch = "wasm32")]
-                    #[link(wasm_import_module = "farever:addon/assets@1.0.0")]
+                    #[link(wasm_import_module = "farever:addon/assets@1.1.0")]
                     unsafe extern "C" {
                         #[link_name = "register-image"]
                         fn wit_import3(
@@ -374,6 +374,137 @@ pub mod farever {
                 }
             }
         }
+        /// Additive rendering options without changing existing UI frame types.
+        #[allow(dead_code, async_fn_in_trait, unused_imports, clippy::all)]
+        pub mod canvas_options {
+            #[used]
+            #[doc(hidden)]
+            static __FORCE_SECTION_REF: fn() = super::super::super::__link_custom_section_describing_imports;
+            use super::super::super::_rt;
+            #[derive(Clone)]
+            pub struct CanvasRef {
+                pub surface_id: _rt::String,
+                pub node_id: _rt::String,
+            }
+            impl ::core::fmt::Debug for CanvasRef {
+                fn fmt(
+                    &self,
+                    f: &mut ::core::fmt::Formatter<'_>,
+                ) -> ::core::fmt::Result {
+                    f.debug_struct("CanvasRef")
+                        .field("surface-id", &self.surface_id)
+                        .field("node-id", &self.node_id)
+                        .finish()
+                }
+            }
+            #[allow(unused_unsafe, clippy::all)]
+            /// Applies only to the replacement frame returned by this callback.
+            /// Listed canvases paint without mouse hit regions. A surface containing
+            /// only one listed canvas paints at the exact anchor/offset, without
+            /// window decoration or automatic repositioning. Configuration menus are
+            /// excluded. Invalid references reject the frame; failed callbacks publish
+            /// neither the frame nor its options. At most 256 references, IDs <=128 bytes.
+            pub fn set_passive_canvases(
+                canvases: &[CanvasRef],
+            ) -> Result<(), _rt::String> {
+                unsafe {
+                    #[cfg_attr(target_pointer_width = "64", repr(align(8)))]
+                    #[cfg_attr(target_pointer_width = "32", repr(align(4)))]
+                    struct RetArea(
+                        [::core::mem::MaybeUninit<
+                            u8,
+                        >; 3 * ::core::mem::size_of::<*const u8>()],
+                    );
+                    let mut ret_area = RetArea(
+                        [::core::mem::MaybeUninit::uninit(); 3
+                            * ::core::mem::size_of::<*const u8>()],
+                    );
+                    let vec3 = canvases;
+                    let len3 = vec3.len();
+                    let layout3 = _rt::alloc::Layout::from_size_align_unchecked(
+                        vec3.len() * (4 * ::core::mem::size_of::<*const u8>()),
+                        ::core::mem::size_of::<*const u8>(),
+                    );
+                    let result3 = if layout3.size() != 0 {
+                        let ptr = _rt::alloc::alloc(layout3).cast::<u8>();
+                        if ptr.is_null() {
+                            _rt::alloc::handle_alloc_error(layout3);
+                        }
+                        ptr
+                    } else {
+                        ::core::ptr::null_mut()
+                    };
+                    for (i, e) in vec3.into_iter().enumerate() {
+                        let base = result3
+                            .add(i * (4 * ::core::mem::size_of::<*const u8>()));
+                        {
+                            let CanvasRef {
+                                surface_id: surface_id0,
+                                node_id: node_id0,
+                            } = e;
+                            let vec1 = surface_id0;
+                            let ptr1 = vec1.as_ptr().cast::<u8>();
+                            let len1 = vec1.len();
+                            *base
+                                .add(::core::mem::size_of::<*const u8>())
+                                .cast::<usize>() = len1;
+                            *base.add(0).cast::<*mut u8>() = ptr1.cast_mut();
+                            let vec2 = node_id0;
+                            let ptr2 = vec2.as_ptr().cast::<u8>();
+                            let len2 = vec2.len();
+                            *base
+                                .add(3 * ::core::mem::size_of::<*const u8>())
+                                .cast::<usize>() = len2;
+                            *base
+                                .add(2 * ::core::mem::size_of::<*const u8>())
+                                .cast::<*mut u8>() = ptr2.cast_mut();
+                        }
+                    }
+                    let ptr4 = ret_area.0.as_mut_ptr().cast::<u8>();
+                    #[cfg(target_arch = "wasm32")]
+                    #[link(wasm_import_module = "farever:addon/canvas-options@1.1.0")]
+                    unsafe extern "C" {
+                        #[link_name = "set-passive-canvases"]
+                        fn wit_import5(_: *mut u8, _: usize, _: *mut u8);
+                    }
+                    #[cfg(not(target_arch = "wasm32"))]
+                    unsafe extern "C" fn wit_import5(_: *mut u8, _: usize, _: *mut u8) {
+                        unreachable!()
+                    }
+                    unsafe { wit_import5(result3, len3, ptr4) };
+                    let l6 = i32::from(*ptr4.add(0).cast::<u8>());
+                    let result10 = match l6 {
+                        0 => {
+                            let e = ();
+                            Ok(e)
+                        }
+                        1 => {
+                            let e = {
+                                let l7 = *ptr4
+                                    .add(::core::mem::size_of::<*const u8>())
+                                    .cast::<*mut u8>();
+                                let l8 = *ptr4
+                                    .add(2 * ::core::mem::size_of::<*const u8>())
+                                    .cast::<usize>();
+                                let len9 = l8;
+                                let bytes9 = _rt::Vec::from_raw_parts(
+                                    l7.cast(),
+                                    len9,
+                                    len9,
+                                );
+                                _rt::string_lift(bytes9)
+                            };
+                            Err(e)
+                        }
+                        _ => _rt::invalid_enum_discriminant(),
+                    };
+                    if layout3.size() != 0 {
+                        _rt::alloc::dealloc(result3.cast(), layout3);
+                    }
+                    result10
+                }
+            }
+        }
         /// The current game session and snapshot identity.
         #[allow(dead_code, async_fn_in_trait, unused_imports, clippy::all)]
         pub mod game {
@@ -432,7 +563,7 @@ pub mod farever {
                     let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 24]);
                     let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                     #[cfg(target_arch = "wasm32")]
-                    #[link(wasm_import_module = "farever:addon/game@1.0.0")]
+                    #[link(wasm_import_module = "farever:addon/game@1.1.0")]
                     unsafe extern "C" {
                         #[link_name = "observation"]
                         fn wit_import1(_: *mut u8);
@@ -462,7 +593,7 @@ pub mod farever {
                     let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 16]);
                     let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                     #[cfg(target_arch = "wasm32")]
-                    #[link(wasm_import_module = "farever:addon/game@1.0.0")]
+                    #[link(wasm_import_module = "farever:addon/game@1.1.0")]
                     unsafe extern "C" {
                         #[link_name = "session"]
                         fn wit_import1(_: *mut u8);
@@ -698,7 +829,7 @@ pub mod farever {
                     );
                     let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                     #[cfg(target_arch = "wasm32")]
-                    #[link(wasm_import_module = "farever:addon/player@1.0.0")]
+                    #[link(wasm_import_module = "farever:addon/player@1.1.0")]
                     unsafe extern "C" {
                         #[link_name = "current"]
                         fn wit_import1(_: *mut u8);
@@ -1048,7 +1179,7 @@ pub mod farever {
                     );
                     let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                     #[cfg(target_arch = "wasm32")]
-                    #[link(wasm_import_module = "farever:addon/party@1.0.0")]
+                    #[link(wasm_import_module = "farever:addon/party@1.1.0")]
                     unsafe extern "C" {
                         #[link_name = "current"]
                         fn wit_import1(_: *mut u8);
@@ -1330,7 +1461,7 @@ pub mod farever {
                     let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 40]);
                     let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                     #[cfg(target_arch = "wasm32")]
-                    #[link(wasm_import_module = "farever:addon/camera@1.0.0")]
+                    #[link(wasm_import_module = "farever:addon/camera@1.1.0")]
                     unsafe extern "C" {
                         #[link_name = "current"]
                         fn wit_import1(_: *mut u8);
@@ -1649,7 +1780,7 @@ pub mod farever {
                     );
                     let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                     #[cfg(target_arch = "wasm32")]
-                    #[link(wasm_import_module = "farever:addon/combat@1.0.0")]
+                    #[link(wasm_import_module = "farever:addon/combat@1.1.0")]
                     unsafe extern "C" {
                         #[link_name = "current"]
                         fn wit_import1(_: *mut u8);
@@ -1901,7 +2032,7 @@ pub mod farever {
                     );
                     let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                     #[cfg(target_arch = "wasm32")]
-                    #[link(wasm_import_module = "farever:addon/instance-session@1.0.0")]
+                    #[link(wasm_import_module = "farever:addon/instance-session@1.1.0")]
                     unsafe extern "C" {
                         #[link_name = "current"]
                         fn wit_import1(_: *mut u8);
@@ -2073,7 +2204,7 @@ pub mod farever {
                     );
                     let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                     #[cfg(target_arch = "wasm32")]
-                    #[link(wasm_import_module = "farever:addon/zone@1.0.0")]
+                    #[link(wasm_import_module = "farever:addon/zone@1.1.0")]
                     unsafe extern "C" {
                         #[link_name = "current"]
                         fn wit_import1(_: *mut u8);
@@ -2264,7 +2395,7 @@ pub mod farever {
                     );
                     let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                     #[cfg(target_arch = "wasm32")]
-                    #[link(wasm_import_module = "farever:addon/windows@1.0.0")]
+                    #[link(wasm_import_module = "farever:addon/windows@1.1.0")]
                     unsafe extern "C" {
                         #[link_name = "current"]
                         fn wit_import1(_: *mut u8);
@@ -2379,6 +2510,237 @@ pub mod farever {
                         },
                     };
                     result18
+                }
+            }
+        }
+        /// Read-only geometry of the game's visible full map.
+        #[allow(dead_code, async_fn_in_trait, unused_imports, clippy::all)]
+        pub mod map {
+            #[used]
+            #[doc(hidden)]
+            static __FORCE_SECTION_REF: fn() = super::super::super::__link_custom_section_describing_imports;
+            use super::super::super::_rt;
+            pub type StateStatus = super::super::super::farever::addon::common::StateStatus;
+            #[repr(C)]
+            #[derive(Clone, Copy)]
+            pub struct MapBounds {
+                pub left: f32,
+                pub top: f32,
+                pub width: f32,
+                pub height: f32,
+            }
+            impl ::core::fmt::Debug for MapBounds {
+                fn fmt(
+                    &self,
+                    f: &mut ::core::fmt::Formatter<'_>,
+                ) -> ::core::fmt::Result {
+                    f.debug_struct("MapBounds")
+                        .field("left", &self.left)
+                        .field("top", &self.top)
+                        .field("width", &self.width)
+                        .field("height", &self.height)
+                        .finish()
+                }
+            }
+            #[repr(C)]
+            #[derive(Clone, Copy)]
+            pub struct MapTransform {
+                pub a: f32,
+                pub b: f32,
+                pub c: f32,
+                pub d: f32,
+                pub tx: f32,
+                pub ty: f32,
+            }
+            impl ::core::fmt::Debug for MapTransform {
+                fn fmt(
+                    &self,
+                    f: &mut ::core::fmt::Formatter<'_>,
+                ) -> ::core::fmt::Result {
+                    f.debug_struct("MapTransform")
+                        .field("a", &self.a)
+                        .field("b", &self.b)
+                        .field("c", &self.c)
+                        .field("d", &self.d)
+                        .field("tx", &self.tx)
+                        .field("ty", &self.ty)
+                        .finish()
+                }
+            }
+            #[derive(Clone)]
+            pub struct VisibleMap {
+                /// Internal world/area ID, matching zone.current.
+                pub world: _rt::String,
+                /// Clipping rectangle in physical game-client pixels.
+                pub bounds: MapBounds,
+                /// Client x = a*world-x + c*world-y + tx;
+                /// client y = b*world-x + d*world-y + ty.
+                pub world_to_client: MapTransform,
+                /// Physical client pixels per logical overlay point.
+                pub pixels_per_point: f32,
+            }
+            impl ::core::fmt::Debug for VisibleMap {
+                fn fmt(
+                    &self,
+                    f: &mut ::core::fmt::Formatter<'_>,
+                ) -> ::core::fmt::Result {
+                    f.debug_struct("VisibleMap")
+                        .field("world", &self.world)
+                        .field("bounds", &self.bounds)
+                        .field("world-to-client", &self.world_to_client)
+                        .field("pixels-per-point", &self.pixels_per_point)
+                        .finish()
+                }
+            }
+            #[derive(Clone)]
+            pub struct MapSnapshot {
+                pub status: StateStatus,
+                /// None when closed, stale, obscured, or unavailable.
+                pub value: Option<VisibleMap>,
+            }
+            impl ::core::fmt::Debug for MapSnapshot {
+                fn fmt(
+                    &self,
+                    f: &mut ::core::fmt::Formatter<'_>,
+                ) -> ::core::fmt::Result {
+                    f.debug_struct("MapSnapshot")
+                        .field("status", &self.status)
+                        .field("value", &self.value)
+                        .finish()
+                }
+            }
+            #[allow(unused_unsafe, clippy::all)]
+            /// Frozen for this callback, like the other game snapshots.
+            pub fn current() -> MapSnapshot {
+                unsafe {
+                    #[repr(align(8))]
+                    struct RetArea(
+                        [::core::mem::MaybeUninit<
+                            u8,
+                        >; 72 + 4 * ::core::mem::size_of::<*const u8>()],
+                    );
+                    let mut ret_area = RetArea(
+                        [::core::mem::MaybeUninit::uninit(); 72
+                            + 4 * ::core::mem::size_of::<*const u8>()],
+                    );
+                    let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+                    #[cfg(target_arch = "wasm32")]
+                    #[link(wasm_import_module = "farever:addon/map@1.1.0")]
+                    unsafe extern "C" {
+                        #[link_name = "current"]
+                        fn wit_import1(_: *mut u8);
+                    }
+                    #[cfg(not(target_arch = "wasm32"))]
+                    unsafe extern "C" fn wit_import1(_: *mut u8) {
+                        unreachable!()
+                    }
+                    unsafe { wit_import1(ptr0) };
+                    let l2 = i32::from(*ptr0.add(0).cast::<u8>());
+                    let l4 = *ptr0.add(16).cast::<i64>();
+                    let l5 = i32::from(*ptr0.add(24).cast::<u8>());
+                    let l7 = i32::from(*ptr0.add(32).cast::<u8>());
+                    let result22 = MapSnapshot {
+                        status: super::super::super::farever::addon::common::StateStatus {
+                            observed_at_ms: match l2 {
+                                0 => None,
+                                1 => {
+                                    let e = {
+                                        let l3 = *ptr0.add(8).cast::<i64>();
+                                        l3 as u64
+                                    };
+                                    Some(e)
+                                }
+                                _ => _rt::invalid_enum_discriminant(),
+                            },
+                            revision: l4 as u64,
+                            reason: match l5 {
+                                0 => None,
+                                1 => {
+                                    let e = {
+                                        let l6 = i32::from(*ptr0.add(25).cast::<u8>());
+                                        super::super::super::farever::addon::common::UnavailableReason::_lift(
+                                            l6 as u8,
+                                        )
+                                    };
+                                    Some(e)
+                                }
+                                _ => _rt::invalid_enum_discriminant(),
+                            },
+                        },
+                        value: match l7 {
+                            0 => None,
+                            1 => {
+                                let e = {
+                                    let l8 = *ptr0
+                                        .add(32 + 1 * ::core::mem::size_of::<*const u8>())
+                                        .cast::<*mut u8>();
+                                    let l9 = *ptr0
+                                        .add(32 + 2 * ::core::mem::size_of::<*const u8>())
+                                        .cast::<usize>();
+                                    let len10 = l9;
+                                    let bytes10 = _rt::Vec::from_raw_parts(
+                                        l8.cast(),
+                                        len10,
+                                        len10,
+                                    );
+                                    let l11 = *ptr0
+                                        .add(32 + 3 * ::core::mem::size_of::<*const u8>())
+                                        .cast::<f32>();
+                                    let l12 = *ptr0
+                                        .add(36 + 3 * ::core::mem::size_of::<*const u8>())
+                                        .cast::<f32>();
+                                    let l13 = *ptr0
+                                        .add(40 + 3 * ::core::mem::size_of::<*const u8>())
+                                        .cast::<f32>();
+                                    let l14 = *ptr0
+                                        .add(44 + 3 * ::core::mem::size_of::<*const u8>())
+                                        .cast::<f32>();
+                                    let l15 = *ptr0
+                                        .add(48 + 3 * ::core::mem::size_of::<*const u8>())
+                                        .cast::<f32>();
+                                    let l16 = *ptr0
+                                        .add(52 + 3 * ::core::mem::size_of::<*const u8>())
+                                        .cast::<f32>();
+                                    let l17 = *ptr0
+                                        .add(56 + 3 * ::core::mem::size_of::<*const u8>())
+                                        .cast::<f32>();
+                                    let l18 = *ptr0
+                                        .add(60 + 3 * ::core::mem::size_of::<*const u8>())
+                                        .cast::<f32>();
+                                    let l19 = *ptr0
+                                        .add(64 + 3 * ::core::mem::size_of::<*const u8>())
+                                        .cast::<f32>();
+                                    let l20 = *ptr0
+                                        .add(68 + 3 * ::core::mem::size_of::<*const u8>())
+                                        .cast::<f32>();
+                                    let l21 = *ptr0
+                                        .add(72 + 3 * ::core::mem::size_of::<*const u8>())
+                                        .cast::<f32>();
+                                    VisibleMap {
+                                        world: _rt::string_lift(bytes10),
+                                        bounds: MapBounds {
+                                            left: l11,
+                                            top: l12,
+                                            width: l13,
+                                            height: l14,
+                                        },
+                                        world_to_client: MapTransform {
+                                            a: l15,
+                                            b: l16,
+                                            c: l17,
+                                            d: l18,
+                                            tx: l19,
+                                            ty: l20,
+                                        },
+                                        pixels_per_point: l21,
+                                    }
+                                };
+                                Some(e)
+                            }
+                            _ => _rt::invalid_enum_discriminant(),
+                        },
+                    };
+                    result22
                 }
             }
         }
@@ -2536,7 +2898,7 @@ pub mod farever {
                     let len0 = vec0.len();
                     let ptr1 = ret_area.0.as_mut_ptr().cast::<u8>();
                     #[cfg(target_arch = "wasm32")]
-                    #[link(wasm_import_module = "farever:addon/bus@1.0.0")]
+                    #[link(wasm_import_module = "farever:addon/bus@1.1.0")]
                     unsafe extern "C" {
                         #[link_name = "subscribe"]
                         fn wit_import2(_: *mut u8, _: usize, _: *mut u8);
@@ -2600,7 +2962,7 @@ pub mod farever {
                     let len4 = vec4.len();
                     let ptr5 = ret_area.0.as_mut_ptr().cast::<u8>();
                     #[cfg(target_arch = "wasm32")]
-                    #[link(wasm_import_module = "farever:addon/bus@1.0.0")]
+                    #[link(wasm_import_module = "farever:addon/bus@1.1.0")]
                     unsafe extern "C" {
                         #[link_name = "publish"]
                         fn wit_import6(
@@ -2811,7 +3173,7 @@ pub mod farever {
                     let len1 = vec1.len();
                     let ptr2 = ret_area.0.as_mut_ptr().cast::<u8>();
                     #[cfg(target_arch = "wasm32")]
-                    #[link(wasm_import_module = "farever:addon/dependencies@1.0.0")]
+                    #[link(wasm_import_module = "farever:addon/dependencies@1.1.0")]
                     unsafe extern "C" {
                         #[link_name = "open"]
                         fn wit_import3(
@@ -2914,7 +3276,7 @@ pub mod farever {
                     let len2 = vec2.len();
                     let ptr3 = ret_area.0.as_mut_ptr().cast::<u8>();
                     #[cfg(target_arch = "wasm32")]
-                    #[link(wasm_import_module = "farever:addon/dependencies@1.0.0")]
+                    #[link(wasm_import_module = "farever:addon/dependencies@1.1.0")]
                     unsafe extern "C" {
                         #[link_name = "call"]
                         fn wit_import4(
@@ -3312,7 +3674,7 @@ pub mod farever {
                     };
                     let ptr8 = ret_area.0.as_mut_ptr().cast::<u8>();
                     #[cfg(target_arch = "wasm32")]
-                    #[link(wasm_import_module = "farever:addon/config@1.0.0")]
+                    #[link(wasm_import_module = "farever:addon/config@1.1.0")]
                     unsafe extern "C" {
                         #[link_name = "register-property"]
                         fn wit_import9(
@@ -3463,7 +3825,7 @@ pub mod farever {
                     );
                     let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                     #[cfg(target_arch = "wasm32")]
-                    #[link(wasm_import_module = "farever:addon/config@1.0.0")]
+                    #[link(wasm_import_module = "farever:addon/config@1.1.0")]
                     unsafe extern "C" {
                         #[link_name = "status"]
                         fn wit_import1(_: *mut u8);
@@ -3530,7 +3892,7 @@ pub mod farever {
                     let len0 = vec0.len();
                     let ptr1 = ret_area.0.as_mut_ptr().cast::<u8>();
                     #[cfg(target_arch = "wasm32")]
-                    #[link(wasm_import_module = "farever:addon/config@1.0.0")]
+                    #[link(wasm_import_module = "farever:addon/config@1.1.0")]
                     unsafe extern "C" {
                         #[link_name = "get"]
                         fn wit_import2(_: *mut u8, _: usize, _: *mut u8);
@@ -3703,7 +4065,7 @@ pub mod farever {
                     };
                     let ptr4 = ret_area.0.as_mut_ptr().cast::<u8>();
                     #[cfg(target_arch = "wasm32")]
-                    #[link(wasm_import_module = "farever:addon/config@1.0.0")]
+                    #[link(wasm_import_module = "farever:addon/config@1.1.0")]
                     unsafe extern "C" {
                         #[link_name = "set"]
                         fn wit_import5(
@@ -3819,7 +4181,7 @@ pub mod farever {
                     let len0 = vec0.len();
                     let ptr1 = ret_area.0.as_mut_ptr().cast::<u8>();
                     #[cfg(target_arch = "wasm32")]
-                    #[link(wasm_import_module = "farever:addon/config@1.0.0")]
+                    #[link(wasm_import_module = "farever:addon/config@1.1.0")]
                     unsafe extern "C" {
                         #[link_name = "remove"]
                         fn wit_import2(_: *mut u8, _: usize, _: *mut u8);
@@ -3909,7 +4271,7 @@ pub mod farever {
                     let ptr0 = vec0.as_ptr().cast::<u8>();
                     let len0 = vec0.len();
                     #[cfg(target_arch = "wasm32")]
-                    #[link(wasm_import_module = "farever:addon/chat@1.0.0")]
+                    #[link(wasm_import_module = "farever:addon/chat@1.1.0")]
                     unsafe extern "C" {
                         #[link_name = "print"]
                         fn wit_import1(_: *mut u8, _: usize);
@@ -3931,7 +4293,7 @@ pub mod farever {
                     let ptr0 = vec0.as_ptr().cast::<u8>();
                     let len0 = vec0.len();
                     #[cfg(target_arch = "wasm32")]
-                    #[link(wasm_import_module = "farever:addon/chat@1.0.0")]
+                    #[link(wasm_import_module = "farever:addon/chat@1.1.0")]
                     unsafe extern "C" {
                         #[link_name = "print-error"]
                         fn wit_import1(_: *mut u8, _: usize);
@@ -24568,70 +24930,70 @@ pub mod exports {
                 }
                 #[doc(hidden)]
                 #[macro_export]
-                macro_rules! __export_farever_addon_plugin_1_0_0_cabi {
+                macro_rules! __export_farever_addon_plugin_1_1_0_cabi {
                     ($ty:ident with_types_in $($path_to_types:tt)*) => {
                         const _ : () = { #[unsafe (export_name =
-                        "farever:addon/plugin@1.0.0#activate")] unsafe extern "C" fn
+                        "farever:addon/plugin@1.1.0#activate")] unsafe extern "C" fn
                         export_activate(arg0 : * mut u8, arg1 : usize, arg2 : i32, arg3 :
                         * mut u8, arg4 : usize, arg5 : i64, arg6 : i64,) -> * mut u8 {
                         unsafe { $($path_to_types)*:: _export_activate_cabi::<$ty >
                         (arg0, arg1, arg2, arg3, arg4, arg5, arg6) } } #[unsafe
-                        (export_name = "cabi_post_farever:addon/plugin@1.0.0#activate")]
+                        (export_name = "cabi_post_farever:addon/plugin@1.1.0#activate")]
                         unsafe extern "C" fn _post_return_activate(arg0 : * mut u8,) {
                         unsafe { $($path_to_types)*:: __post_return_activate::<$ty >
                         (arg0) } } #[unsafe (export_name =
-                        "farever:addon/plugin@1.0.0#call-service")] unsafe extern "C" fn
+                        "farever:addon/plugin@1.1.0#call-service")] unsafe extern "C" fn
                         export_call_service(arg0 : * mut u8, arg1 : usize, arg2 : i32,
                         arg3 : * mut u8, arg4 : usize,) -> * mut u8 { unsafe {
                         $($path_to_types)*:: _export_call_service_cabi::<$ty > (arg0,
                         arg1, arg2, arg3, arg4) } } #[unsafe (export_name =
-                        "cabi_post_farever:addon/plugin@1.0.0#call-service")] unsafe
+                        "cabi_post_farever:addon/plugin@1.1.0#call-service")] unsafe
                         extern "C" fn _post_return_call_service(arg0 : * mut u8,) {
                         unsafe { $($path_to_types)*:: __post_return_call_service::<$ty >
                         (arg0) } } #[unsafe (export_name =
-                        "farever:addon/plugin@1.0.0#on-ui-event")] unsafe extern "C" fn
+                        "farever:addon/plugin@1.1.0#on-ui-event")] unsafe extern "C" fn
                         export_on_ui_event(arg0 : i32, arg1 : * mut u8, arg2 : * mut u8,
                         arg3 : ::core::mem::MaybeUninit::< u64 >, arg4 : * mut u8, arg5 :
                         usize, arg6 : f64, arg7 : f64,) -> * mut u8 { unsafe {
                         $($path_to_types)*:: _export_on_ui_event_cabi::<$ty > (arg0,
                         arg1, arg2, arg3, arg4, arg5, arg6, arg7) } } #[unsafe
                         (export_name =
-                        "cabi_post_farever:addon/plugin@1.0.0#on-ui-event")] unsafe
+                        "cabi_post_farever:addon/plugin@1.1.0#on-ui-event")] unsafe
                         extern "C" fn _post_return_on_ui_event(arg0 : * mut u8,) { unsafe
                         { $($path_to_types)*:: __post_return_on_ui_event::<$ty > (arg0) }
-                        } #[unsafe (export_name = "farever:addon/plugin@1.0.0#on-event")]
+                        } #[unsafe (export_name = "farever:addon/plugin@1.1.0#on-event")]
                         unsafe extern "C" fn export_on_event(arg0 : i64, arg1 : i32, arg2
                         : i64, arg3 : i64, arg4 : i64, arg5 : i32, arg6 : * mut u8, arg7
                         : usize,) -> * mut u8 { unsafe { $($path_to_types)*::
                         _export_on_event_cabi::<$ty > (arg0, arg1, arg2, arg3, arg4,
                         arg5, arg6, arg7) } } #[unsafe (export_name =
-                        "cabi_post_farever:addon/plugin@1.0.0#on-event")] unsafe extern
+                        "cabi_post_farever:addon/plugin@1.1.0#on-event")] unsafe extern
                         "C" fn _post_return_on_event(arg0 : * mut u8,) { unsafe {
                         $($path_to_types)*:: __post_return_on_event::<$ty > (arg0) } }
-                        #[unsafe (export_name = "farever:addon/plugin@1.0.0#on-message")]
+                        #[unsafe (export_name = "farever:addon/plugin@1.1.0#on-message")]
                         unsafe extern "C" fn export_on_message(arg0 : i64, arg1 : * mut
                         u8, arg2 : usize,) -> * mut u8 { unsafe { $($path_to_types)*::
                         _export_on_message_cabi::<$ty > (arg0, arg1, arg2) } } #[unsafe
                         (export_name =
-                        "cabi_post_farever:addon/plugin@1.0.0#on-message")] unsafe extern
+                        "cabi_post_farever:addon/plugin@1.1.0#on-message")] unsafe extern
                         "C" fn _post_return_on_message(arg0 : * mut u8,) { unsafe {
                         $($path_to_types)*:: __post_return_on_message::<$ty > (arg0) } }
-                        #[unsafe (export_name = "farever:addon/plugin@1.0.0#on-tick")]
+                        #[unsafe (export_name = "farever:addon/plugin@1.1.0#on-tick")]
                         unsafe extern "C" fn export_on_tick(arg0 : i64, arg1 : i64, arg2
                         : i64, arg3 : i32, arg4 : i32,) -> * mut u8 { unsafe {
                         $($path_to_types)*:: _export_on_tick_cabi::<$ty > (arg0, arg1,
                         arg2, arg3, arg4) } } #[unsafe (export_name =
-                        "cabi_post_farever:addon/plugin@1.0.0#on-tick")] unsafe extern
+                        "cabi_post_farever:addon/plugin@1.1.0#on-tick")] unsafe extern
                         "C" fn _post_return_on_tick(arg0 : * mut u8,) { unsafe {
                         $($path_to_types)*:: __post_return_on_tick::<$ty > (arg0) } }
-                        #[unsafe (export_name = "farever:addon/plugin@1.0.0#deactivate")]
+                        #[unsafe (export_name = "farever:addon/plugin@1.1.0#deactivate")]
                         unsafe extern "C" fn export_deactivate(arg0 : i32,) { unsafe {
                         $($path_to_types)*:: _export_deactivate_cabi::<$ty > (arg0) } }
                         };
                     };
                 }
                 #[doc(hidden)]
-                pub use __export_farever_addon_plugin_1_0_0_cabi;
+                pub use __export_farever_addon_plugin_1_1_0_cabi;
                 #[cfg_attr(target_pointer_width = "64", repr(align(8)))]
                 #[cfg_attr(target_pointer_width = "32", repr(align(4)))]
                 struct _RetArea(
@@ -24832,386 +25194,404 @@ macro_rules! __export_farever_addon_impl {
     };
     ($ty:ident with_types_in $($path_to_types_root:tt)*) => {
         $($path_to_types_root)*::
-        exports::farever::addon::plugin::__export_farever_addon_plugin_1_0_0_cabi!($ty
+        exports::farever::addon::plugin::__export_farever_addon_plugin_1_1_0_cabi!($ty
         with_types_in $($path_to_types_root)*:: exports::farever::addon::plugin); const _
         : () = { #[cfg(target_arch = "wasm32")] #[unsafe (link_section =
-        "component-type:wit-bindgen:0.41.0:farever:addon@1.0.0:farever-addon:imports and exports")]
+        "component-type:wit-bindgen:0.41.0:farever:addon@1.1.0:farever-addon:imports and exports")]
         #[doc(hidden)] #[allow(clippy::octal_escapes)] pub static
-        __WIT_BINDGEN_COMPONENT_TYPE : [u8; 8859] = *
+        __WIT_BINDGEN_COMPONENT_TYPE : [u8; 9256] = *
         b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\x97D\x01A\x02\x01A3\x01\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xa4G\x01A\x02\x01A7\x01\
 B\x06\x01m\x04\x05trace\x04info\x07warning\x05error\x04\0\x09log-level\x03\0\0\x01\
 @\x02\x05level\x01\x07messages\x01\0\x04\0\x03log\x01\x02\x01@\x01\x0binterval-m\
-sy\0y\x04\0\x0dschedule-tick\x01\x03\x03\0\x1bfarever:addon/runtime@1.0.0\x05\0\x01\
+sy\0y\x04\0\x0dschedule-tick\x01\x03\x03\0\x1bfarever:addon/runtime@1.1.0\x05\0\x01\
 B\x0c\x01r\x01\x02ids\x04\0\x09image-ref\x03\0\0\x01m\x05\x04body\x05small\x06st\
 rong\x07heading\x09monospace\x04\0\x0atext-style\x03\0\x02\x01p\x03\x01p}\x01j\0\
 \x01s\x01@\x03\x02ids\x06styles\x04\x05bytes\x05\0\x06\x04\0\x0dregister-font\x01\
 \x07\x01j\x01\x01\x01s\x01@\x02\x02ids\x03png\x05\0\x08\x04\0\x0eregister-image\x01\
-\x09\x03\0\x1afarever:addon/assets@1.0.0\x05\x01\x01B\x08\x01r\x03\x08sequencew\x0e\
-captured-at-msw\x0fprocess-sessionw\x04\0\x14observation-metadata\x03\0\0\x01r\x02\
-\x0fprocess-sessionw\x08in-world\x7f\x04\0\x0dsession-state\x03\0\x02\x01@\0\0\x01\
-\x04\0\x0bobservation\x01\x04\x01@\0\0\x03\x04\0\x07session\x01\x05\x03\0\x18far\
-ever:addon/game@1.0.0\x05\x02\x01B\x0a\x01m\x06\x0cnot-in-world\x07loading\x10no\
-t-yet-observed\x0bunsupported\x11permission-denied\x0fprovider-failed\x04\0\x12u\
-navailable-reason\x03\0\0\x01kw\x01k\x01\x01r\x03\x0eobserved-at-ms\x02\x08revis\
-ionw\x06reason\x03\x04\0\x0cstate-status\x03\0\x04\x01r\x03\x01xv\x01yv\x01zv\x04\
-\0\x04vec3\x03\0\x06\x01r\x02\x08sequencew\x0cmonotonic-msw\x04\0\x0cevent-heade\
-r\x03\0\x08\x03\0\x1afarever:addon/common@1.0.0\x05\x03\x02\x03\0\x03\x0cstate-s\
-tatus\x02\x03\0\x03\x04vec3\x01B\x10\x02\x03\x02\x01\x04\x04\0\x0cstate-status\x03\
-\0\0\x02\x03\x02\x01\x05\x04\0\x04vec3\x03\0\x02\x01ks\x01ky\x01k\x03\x01kv\x01k\
-u\x01r\x08\x0aruntime-id\x04\x04name\x04\x08class-id\x04\x05level\x05\x08positio\
-n\x06\x0fheading-radians\x07\x06health\x08\x0amax-health\x08\x04\0\x0cplayer-sta\
-te\x03\0\x09\x01k\x0a\x01r\x02\x06status\x01\x05value\x0b\x04\0\x0fplayer-snapsh\
-ot\x03\0\x0c\x01@\0\0\x0d\x04\0\x07current\x01\x0e\x03\0\x1afarever:addon/player\
-@1.0.0\x05\x06\x02\x03\0\x01\x09image-ref\x02\x03\0\x03\x0cevent-header\x01B\x15\
-\x02\x03\x02\x01\x07\x04\0\x09image-ref\x03\0\0\x02\x03\x02\x01\x08\x04\0\x0ceve\
-nt-header\x03\0\x02\x02\x03\x02\x01\x04\x04\0\x0cstate-status\x03\0\x04\x01ks\x01\
-k\x01\x01k\x7f\x01r\x06\x08actor-ids\x08is-local\x7f\x04name\x06\x08class-id\x06\
-\x0aclass-icon\x07\x09in-combat\x08\x04\0\x0cparty-member\x03\0\x09\x01p\x0a\x01\
-r\x02\x08party-id\x06\x07members\x0b\x04\0\x0bparty-state\x03\0\x0c\x01k\x0d\x01\
-r\x02\x06status\x05\x05value\x0e\x04\0\x0eparty-snapshot\x03\0\x0f\x01r\x02\x06h\
-eader\x03\x08revisionw\x04\0\x0bparty-event\x03\0\x11\x01@\0\0\x10\x04\0\x07curr\
-ent\x01\x13\x03\0\x19farever:addon/party@1.0.0\x05\x09\x01B\x09\x02\x03\x02\x01\x04\
-\x04\0\x0cstate-status\x03\0\0\x01r\x01\x0fheading-radiansv\x04\0\x0ccamera-stat\
-e\x03\0\x02\x01k\x03\x01r\x02\x06status\x01\x05value\x04\x04\0\x0fcamera-snapsho\
-t\x03\0\x05\x01@\0\0\x06\x04\0\x07current\x01\x07\x03\0\x1afarever:addon/camera@\
-1.0.0\x05\x0a\x01B!\x02\x03\x02\x01\x07\x04\0\x09image-ref\x03\0\0\x02\x03\x02\x01\
-\x08\x04\0\x0cevent-header\x03\0\x02\x02\x03\x02\x01\x04\x04\0\x0cstate-status\x03\
-\0\x04\x02\x03\x02\x01\x05\x04\0\x04vec3\x03\0\x06\x01m\x03\x06target\x0dlocked-\
-target\x0bauto-target\x04\0\x15combat-reference-slot\x03\0\x08\x01k\x07\x01r\x02\
-\x04slot\x09\x08position\x0a\x04\0\x10combat-reference\x03\0\x0b\x01k\x7f\x01p\x0c\
-\x01r\x02\x09in-combat\x0d\x0areferences\x0e\x04\0\x0ccombat-state\x03\0\x0f\x01\
-k\x10\x01r\x02\x06status\x05\x05value\x11\x04\0\x0fcombat-snapshot\x03\0\x12\x01\
-m\x04\x0clocal-player\x0cgroup-member\x05other\x07unknown\x04\0\x0eactor-relatio\
-n\x03\0\x14\x01ks\x01r\x03\x08actor-id\x16\x08relation\x15\x04kind\x16\x04\0\x10\
-combat-actor-ref\x03\0\x17\x01k\x01\x01ku\x01r\x0b\x06header\x03\x06source\x18\x06\
-target\x18\x08skill-ids\x12skill-display-name\x16\x0askill-icon\x19\x06amountu\x09\
-hit-county\x08critical\x7f\x06killed\x7f\x07blocked\x1a\x04\0\x0cdamage-event\x03\
-\0\x1b\x01r\x02\x06header\x03\x08fight-idw\x04\0\x0ccombat-event\x03\0\x1d\x01@\0\
-\0\x13\x04\0\x07current\x01\x1f\x03\0\x1afarever:addon/combat@1.0.0\x05\x0b\x01B\
-\x10\x02\x03\x02\x01\x08\x04\0\x0cevent-header\x03\0\0\x02\x03\x02\x01\x04\x04\0\
-\x0cstate-status\x03\0\x02\x01m\x04\x0aopen-world\x07dungeon\x05other\x07unknown\
-\x04\0\x0dinstance-kind\x03\0\x04\x01ks\x01r\x03\x0asession-idw\x04kind\x05\x07a\
-rea-id\x06\x04\0\x0einstance-state\x03\0\x07\x01k\x08\x01r\x02\x06status\x03\x05\
-value\x09\x04\0\x11instance-snapshot\x03\0\x0a\x01r\x03\x06header\x01\x08previou\
-s\x09\x07current\x09\x04\0\x0einstance-event\x03\0\x0c\x01@\0\0\x0b\x04\0\x07cur\
-rent\x01\x0e\x03\0$farever:addon/instance-session@1.0.0\x05\x0c\x01B\x0e\x02\x03\
-\x02\x01\x08\x04\0\x0cevent-header\x03\0\0\x02\x03\x02\x01\x04\x04\0\x0cstate-st\
-atus\x03\0\x02\x01ks\x01r\x02\x07area-id\x04\x0cdisplay-name\x04\x04\0\x0azone-s\
-tate\x03\0\x05\x01k\x06\x01r\x02\x06status\x03\x05value\x07\x04\0\x0dzone-snapsh\
-ot\x03\0\x08\x01r\x03\x06header\x01\x10previous-area-id\x04\x07area-id\x04\x04\0\
-\x0azone-event\x03\0\x0a\x01@\0\0\x09\x04\0\x07current\x01\x0c\x03\0\x18farever:\
-addon/zone@1.0.0\x05\x0d\x01B\x0f\x02\x03\x02\x01\x08\x04\0\x0cevent-header\x03\0\
-\0\x02\x03\x02\x01\x04\x04\0\x0cstate-status\x03\0\x02\x01ps\x01ks\x01r\x02\x0co\
-pen-windows\x04\x0efocused-window\x05\x04\0\x0dwindows-state\x03\0\x06\x01k\x07\x01\
-r\x02\x06status\x03\x05value\x08\x04\0\x10windows-snapshot\x03\0\x09\x01r\x02\x06\
-header\x01\x09window-ids\x04\0\x0cwindow-event\x03\0\x0b\x01@\0\0\x0a\x04\0\x07c\
-urrent\x01\x0d\x03\0\x1bfarever:addon/windows@1.0.0\x05\x0e\x01B\x0e\x01q\x02\x0b\
-subscribers\0\0\x05addon\x01s\0\x04\0\x0emessage-target\x03\0\0\x01kw\x01p}\x01r\
-\x06\x02idw\x0cmonotonic-msw\x0fsource-addon-ids\x05topics\x0ecorrelation-id\x02\
-\x07payload\x03\x04\0\x0daddon-message\x03\0\x04\x01m\x05\x0dinvalid-topic\x11pa\
-yload-too-large\x16too-many-subscriptions\x0equota-exceeded\x15wrong-lifecycle-p\
-hase\x04\0\x0dmessage-error\x03\0\x06\x01j\0\x01\x07\x01@\x01\x05topics\0\x08\x04\
-\0\x09subscribe\x01\x09\x01j\x01y\x01\x07\x01@\x04\x05topics\x06target\x01\x0eco\
-rrelation-id\x02\x07payload\x03\0\x0a\x04\0\x07publish\x01\x0b\x03\0\x17farever:\
-addon/bus@1.0.0\x05\x0f\x01B\x0d\x01r\x02\x02idy\x07versions\x04\0\x0eservice-ha\
-ndle\x03\0\0\x01q\x05\x15undeclared-dependency\0\0\x0bunavailable\0\0\x13unavail\
-able-service\0\0\x14incompatible-version\0\0\x0equota-exceeded\0\0\x04\0\x0aopen\
--error\x03\0\x02\x01q\x07\x0einvalid-handle\0\0\x0bunavailable\0\0\x11request-to\
-o-large\0\0\x12response-too-large\0\0\x0equota-exceeded\0\0\x0fprovider-failed\x01\
-s\0\x0eprovider-error\x01s\0\x04\0\x0acall-error\x03\0\x04\x01j\x01\x01\x01\x03\x01\
-@\x02\x0adependencys\x07services\0\x06\x04\0\x04open\x01\x07\x01p}\x01j\x01\x08\x01\
-\x05\x01@\x03\x07service\x01\x09operationy\x07request\x08\0\x09\x04\0\x04call\x01\
-\x0a\x03\0\x20farever:addon/dependencies@1.0.0\x05\x10\x01B\x18\x01m\x05\x07bool\
-ean\x07integer\x06number\x04text\x05bytes\x04\0\x11config-value-kind\x03\0\0\x01\
-p}\x01q\x05\x07boolean\x01\x7f\0\x07integer\x01x\0\x06number\x01u\0\x04text\x01s\
-\0\x05bytes\x01\x02\0\x04\0\x0cconfig-value\x03\0\x03\x01m\x03\x08editable\x08re\
-adonly\x06hidden\x04\0\x16config-property-access\x03\0\x05\x01ks\x01r\x06\x03key\
-s\x05labels\x0bdescription\x07\x0avalue-kind\x01\x0ddefault-value\x04\x06access\x06\
-\x04\0\x1aconfig-property-descriptor\x03\0\x08\x01r\x04\x08revisionw\x16saved-by\
--addon-version\x07\x0aused-bytesw\x0bquota-bytesw\x04\0\x0dconfig-status\x03\0\x0a\
-\x01j\x01\x04\x01s\x01@\x01\x0adescriptor\x09\0\x0c\x04\0\x11register-property\x01\
-\x0d\x01@\0\0\x0b\x04\0\x06status\x01\x0e\x01@\x01\x03keys\0\x0c\x04\0\x03get\x01\
-\x0f\x01j\x01\x0b\x01s\x01@\x02\x03keys\x05value\x04\0\x10\x04\0\x03set\x01\x11\x01\
-@\x01\x03keys\0\x10\x04\0\x06remove\x01\x12\x03\0\x1afarever:addon/config@1.0.0\x05\
-\x11\x01B\x03\x01@\x01\x04texts\x01\0\x04\0\x05print\x01\0\x04\0\x0bprint-error\x01\
-\0\x03\0\x18farever:addon/chat@1.0.0\x05\x12\x02\x03\0\x07\x0ccombat-event\x02\x03\
-\0\x07\x0cdamage-event\x02\x03\0\x08\x0einstance-event\x02\x03\0\x05\x0bparty-ev\
-ent\x02\x03\0\x09\x0azone-event\x02\x03\0\x0a\x0cwindow-event\x01B\x18\x02\x03\x02\
-\x01\x13\x04\0\x0ccombat-event\x03\0\0\x02\x03\x02\x01\x14\x04\0\x0cdamage-event\
-\x03\0\x02\x02\x03\x02\x01\x08\x04\0\x0cevent-header\x03\0\x04\x02\x03\x02\x01\x15\
-\x04\0\x0einstance-event\x03\0\x06\x02\x03\x02\x01\x16\x04\0\x0bparty-event\x03\0\
-\x08\x02\x03\x02\x01\x17\x04\0\x0azone-event\x03\0\x0a\x02\x03\x02\x01\x18\x04\0\
-\x0cwindow-event\x03\0\x0c\x01m\x05\x0bmanual-exit\x04kick\x07timeout\x10switchi\
-ng-server\x07unknown\x04\0\x11disconnect-reason\x03\0\x0e\x01r\x02\x06header\x05\
-\x06reason\x0f\x04\0\x19player-disconnected-event\x03\0\x10\x01q\x09\x06damage\x01\
-\x03\0\x0ecombat-started\x01\x01\0\x0ccombat-ended\x01\x01\0\x0dparty-changed\x01\
-\x09\0\x10instance-changed\x01\x07\0\x0czone-changed\x01\x0b\0\x0dwindow-opened\x01\
-\x0d\0\x0dwindow-closed\x01\x0d\0\x13player-disconnected\x01\x11\0\x04\0\x05even\
-t\x03\0\x12\x01kw\x01p\x13\x01r\x06\x0fprocess-sessionw\x0efirst-sequence\x14\x0d\
-next-sequencew\x0edropped-beforew\x11snapshot-required\x7f\x06events\x15\x04\0\x0b\
-event-batch\x03\0\x16\x03\0\x1afarever:addon/events@1.0.0\x05\x19\x02\x03\0\x01\x0a\
-text-style\x01Bs\x02\x03\x02\x01\x07\x04\0\x09image-ref\x03\0\0\x02\x03\x02\x01\x1a\
-\x04\0\x0atext-style\x03\0\x02\x01r\x04\x03redv\x05greenv\x04bluev\x05alphav\x04\
-\0\x04rgba\x03\0\x04\x01r\x02\x01xv\x01yv\x04\0\x05point\x03\0\x06\x01r\x02\x05w\
-idthv\x06heightv\x04\0\x04size\x03\0\x08\x01m\x06\x08top-left\x09top-right\x0bbo\
-ttom-left\x0cbottom-right\x06center\x0atop-center\x04\0\x0esurface-anchor\x03\0\x0a\
-\x01m\x02\x08vertical\x0ahorizontal\x04\0\x10layout-direction\x03\0\x0c\x01m\x03\
-\x05plain\x05group\x06scroll\x04\0\x0fcontainer-style\x03\0\x0e\x01m\x03\x04left\
-\x06center\x05right\x04\0\x14horizontal-alignment\x03\0\x10\x01q\x03\x04auto\0\0\
-\x05exact\x01v\0\x09remainder\0\0\x04\0\x13table-column-sizing\x03\0\x12\x01kv\x01\
-r\x04\x06sizing\x13\x09alignment\x11\x12visible-from-width\x14\x0fcontent-paddin\
-g\x14\x04\0\x0ctable-column\x03\0\x15\x01p\x16\x01r\x03\x07columns\x17\x07stripe\
-d\x7f\x0fmax-body-height\x14\x04\0\x0ctable-widget\x03\0\x18\x01m\x02\x06header\x04\
-body\x04\0\x0etable-row-kind\x03\0\x1a\x01ky\x01r\x03\x08fractionv\x05color\x05\x0c\
-start-column\x1c\x04\0\x12table-row-progress\x03\0\x1d\x01k\x05\x01k\x1e\x01r\x04\
-\x04kind\x1b\x06heightv\x0abackground\x1f\x08progress\x20\x04\0\x10table-row-wid\
-get\x03\0!\x01r\x01\x06columny\x04\0\x11table-cell-widget\x03\0#\x01r\x04\x09dir\
-ection\x0d\x05style\x0f\x07spacing\x14\x0amax-height\x14\x04\0\x10container-widg\
-et\x03\0%\x01ks\x01r\x02\x05titles\x0bdescription'\x04\0\x0esection-widget\x03\0\
-(\x01r\x02\x05widthv\x05color\x05\x04\0\x06stroke\x03\0*\x01k+\x01r\x05\x04texts\
-\x05style\x03\x05color\x1f\x07outline,\x04wrap\x7f\x04\0\x0btext-widget\x03\0-\x01\
-r\x03\x06source\x01\x04size\x09\x04tint\x1f\x04\0\x0cimage-widget\x03\0/\x01r\x02\
-\x05labels\x07enabled\x7f\x04\0\x0dbutton-widget\x03\01\x01r\x03\x05labels\x07ch\
-ecked\x7f\x07enabled\x7f\x04\0\x0fcheckbox-widget\x03\03\x01r\x02\x02ids\x05labe\
-ls\x04\0\x0fdropdown-option\x03\05\x01p6\x01r\x04\x05labels\x0bselected-ids\x07o\
-ptions7\x07enabled\x7f\x04\0\x0fdropdown-widget\x03\08\x01ku\x01r\x06\x05labels\x05\
-valueu\x07minimumu\x07maximumu\x04step:\x07enabled\x7f\x04\0\x0dslider-widget\x03\
-\0;\x01r\x03\x08fractionv\x05label'\x05color\x1f\x04\0\x0fprogress-widget\x03\0=\
-\x01r\x01\x04sizev\x04\0\x0dspacer-widget\x03\0?\x01r\x01\x04size\x09\x04\0\x0dc\
-anvas-widget\x03\0A\x01q\x0f\x09container\x01&\0\x07section\x01)\0\x04text\x01.\0\
-\x05image\x010\0\x06button\x012\0\x08checkbox\x014\0\x08dropdown\x019\0\x06slide\
-r\x01<\0\x08progress\x01>\0\x09separator\0\0\x06spacer\x01\xc0\0\0\x06canvas\x01\
-\xc2\0\0\x05table\x01\x19\0\x09table-row\x01\"\0\x0atable-cell\x01$\0\x04\0\x06w\
-idget\x03\0C\x01r\x03\x02ids\x06parent'\x06widget\xc4\0\x04\0\x07ui-node\x03\0E\x01\
-r\x03\x05start\x07\x03end\x07\x06stroke+\x04\0\x0eline-primitive\x03\0G\x01r\x05\
-\x03min\x07\x03max\x07\x0dcorner-radiusv\x04fill\x1f\x06stroke,\x04\0\x0erect-pr\
-imitive\x03\0I\x01r\x04\x06center\x07\x06radiusv\x04fill\x1f\x06stroke,\x04\0\x10\
-circle-primitive\x03\0K\x01p\x07\x01r\x04\x06points\xcd\0\x06closed\x7f\x04fill\x1f\
-\x06stroke,\x04\0\x0epath-primitive\x03\0N\x01r\x04\x08position\x07\x04texts\x05\
-color\x05\x04sizev\x04\0\x15canvas-text-primitive\x03\0P\x01r\x08\x06source\x01\x0f\
-destination-min\x07\x0fdestination-max\x07\x06uv-min\x07\x06uv-max\x07\x10rotati\
-on-radiansv\x04tint\x1f\x0dcorner-radiusv\x04\0\x16canvas-image-primitive\x03\0R\
-\x01q\x06\x04line\x01\xc8\0\0\x04rect\x01\xca\0\0\x06circle\x01\xcc\0\0\x04path\x01\
-\xcf\0\0\x04text\x01\xd1\0\0\x05image\x01\xd3\0\0\x04\0\x10canvas-primitive\x03\0\
-T\x01r\x02\x09canvas-ids\x09primitive\xd5\0\x04\0\x0ecanvas-command\x03\0V\x01r\x05\
-\x09title-bar\x7f\x04fill\x05\x06stroke,\x0dcorner-radiusv\x07paddingv\x04\0\x0d\
-surface-style\x03\0X\x01k\xd9\0\x01p\xc6\0\x01p\xd7\0\x01r\x09\x02ids\x05titles\x06\
-anchor\x0b\x08margin-xv\x08margin-yv\x05width\x14\x05style\xda\0\x05nodes\xdb\0\x06\
-canvas\xdc\0\x04\0\x0aui-surface\x03\0]\x01r\x04\x02ids\x05titles\x05nodes\xdb\0\
-\x06canvas\xdc\0\x04\0\x0bconfig-menu\x03\0_\x01p\xde\0\x01p\xe0\0\x01r\x02\x08s\
-urfaces\xe1\0\x0cconfig-menus\xe2\0\x04\0\x08ui-frame\x03\0c\x01q\x02\x07surface\
-\x01s\0\x0bconfig-menu\x01s\0\x04\0\x07ui-view\x03\0e\x01r\x02\x04view\xe6\0\x07\
-node-ids\x04\0\x0ebutton-pressed\x03\0g\x01o\x02uu\x01r\x03\x04view\xe6\0\x07nod\
-e-ids\x08position\xe9\0\x04\0\x0ecanvas-pressed\x03\0j\x01o\x02s\x7f\x01o\x02ss\x01\
-o\x02su\x01q\x07\x11config-menu-shown\x01s\0\x12config-menu-hidden\x01s\0\x0ebut\
-ton-pressed\x01\xe8\0\0\x0ecanvas-pressed\x01\xeb\0\0\x10checkbox-changed\x01\xec\
-\0\0\x10dropdown-changed\x01\xed\0\0\x0eslider-changed\x01\xee\0\0\x04\0\x08ui-e\
-vent\x03\0o\x01q\x03\x09unchanged\0\0\x07replace\x01\xe4\0\0\x05clear\0\0\x04\0\x09\
-ui-update\x03\0q\x03\0\x1bfarever:addon/overlay@1.0.0\x05\x1b\x02\x03\0\x0b\x0da\
-ddon-message\x02\x03\0\x0f\x0bevent-batch\x02\x03\0\x10\x08ui-event\x02\x03\0\x10\
-\x09ui-update\x01B)\x02\x03\x02\x01\x1c\x04\0\x0daddon-message\x03\0\0\x02\x03\x02\
-\x01\x1d\x04\0\x0bevent-batch\x03\0\x02\x02\x03\x02\x01\x1e\x04\0\x08ui-event\x03\
-\0\x04\x02\x03\x02\x01\x1f\x04\0\x09ui-update\x03\0\x06\x01ks\x01r\x04\x08addon-\
-ids\x0daddon-version\x08\x0binstance-idw\x0cmonotonic-msw\x04\0\x12activation-co\
-ntext\x03\0\x09\x01r\x05\x0fscheduled-at-msw\x0fdelivered-at-msw\x0aelapsed-msw\x0b\
-interval-msy\x06missedy\x04\0\x04tick\x03\0\x0b\x01r\x01\x02ui\x07\x04\0\x11acti\
-vation-output\x03\0\x0d\x01r\x01\x02ui\x07\x04\0\x0fcallback-output\x03\0\x0f\x01\
-r\x02\x10continue-ticking\x7f\x02ui\x07\x04\0\x0btick-output\x03\0\x11\x01m\x05\x0d\
-host-shutdown\x08reloaded\x08disabled\x07removed\x10repeated-failure\x04\0\x13de\
-activation-reason\x03\0\x13\x01j\x01\x0e\x01s\x01@\x01\x07context\x0a\0\x15\x04\0\
-\x08activate\x01\x16\x01p}\x01j\x01\x17\x01s\x01@\x03\x07services\x09operationy\x07\
-request\x17\0\x18\x04\0\x0ccall-service\x01\x19\x01j\x01\x10\x01s\x01@\x01\x05ev\
-ent\x05\0\x1a\x04\0\x0bon-ui-event\x01\x1b\x01@\x01\x05batch\x03\0\x1a\x04\0\x08\
-on-event\x01\x1c\x01p\x01\x01@\x02\x0edropped-beforew\x08messages\x1d\0\x1a\x04\0\
-\x0aon-message\x01\x1e\x01j\x01\x12\x01s\x01@\x01\x04tick\x0c\0\x1f\x04\0\x07on-\
-tick\x01\x20\x01@\x01\x06reason\x14\x01\0\x04\0\x0adeactivate\x01!\x04\0\x1afare\
-ver:addon/plugin@1.0.0\x05\x20\x04\0!farever:addon/farever-addon@1.0.0\x04\0\x0b\
-\x13\x01\0\x0dfarever-addon\x03\0\0\0G\x09producers\x01\x0cprocessed-by\x02\x0dw\
-it-component\x070.227.1\x10wit-bindgen-rust\x060.41.0";
+\x09\x03\0\x1afarever:addon/assets@1.1.0\x05\x01\x01B\x06\x01r\x02\x0asurface-id\
+s\x07node-ids\x04\0\x0acanvas-ref\x03\0\0\x01p\x01\x01j\0\x01s\x01@\x01\x08canva\
+ses\x02\0\x03\x04\0\x14set-passive-canvases\x01\x04\x03\0\"farever:addon/canvas-\
+options@1.1.0\x05\x02\x01B\x08\x01r\x03\x08sequencew\x0ecaptured-at-msw\x0fproce\
+ss-sessionw\x04\0\x14observation-metadata\x03\0\0\x01r\x02\x0fprocess-sessionw\x08\
+in-world\x7f\x04\0\x0dsession-state\x03\0\x02\x01@\0\0\x01\x04\0\x0bobservation\x01\
+\x04\x01@\0\0\x03\x04\0\x07session\x01\x05\x03\0\x18farever:addon/game@1.1.0\x05\
+\x03\x01B\x0a\x01m\x06\x0cnot-in-world\x07loading\x10not-yet-observed\x0bunsuppo\
+rted\x11permission-denied\x0fprovider-failed\x04\0\x12unavailable-reason\x03\0\0\
+\x01kw\x01k\x01\x01r\x03\x0eobserved-at-ms\x02\x08revisionw\x06reason\x03\x04\0\x0c\
+state-status\x03\0\x04\x01r\x03\x01xv\x01yv\x01zv\x04\0\x04vec3\x03\0\x06\x01r\x02\
+\x08sequencew\x0cmonotonic-msw\x04\0\x0cevent-header\x03\0\x08\x03\0\x1afarever:\
+addon/common@1.1.0\x05\x04\x02\x03\0\x04\x0cstate-status\x02\x03\0\x04\x04vec3\x01\
+B\x10\x02\x03\x02\x01\x05\x04\0\x0cstate-status\x03\0\0\x02\x03\x02\x01\x06\x04\0\
+\x04vec3\x03\0\x02\x01ks\x01ky\x01k\x03\x01kv\x01ku\x01r\x08\x0aruntime-id\x04\x04\
+name\x04\x08class-id\x04\x05level\x05\x08position\x06\x0fheading-radians\x07\x06\
+health\x08\x0amax-health\x08\x04\0\x0cplayer-state\x03\0\x09\x01k\x0a\x01r\x02\x06\
+status\x01\x05value\x0b\x04\0\x0fplayer-snapshot\x03\0\x0c\x01@\0\0\x0d\x04\0\x07\
+current\x01\x0e\x03\0\x1afarever:addon/player@1.1.0\x05\x07\x02\x03\0\x01\x09ima\
+ge-ref\x02\x03\0\x04\x0cevent-header\x01B\x15\x02\x03\x02\x01\x08\x04\0\x09image\
+-ref\x03\0\0\x02\x03\x02\x01\x09\x04\0\x0cevent-header\x03\0\x02\x02\x03\x02\x01\
+\x05\x04\0\x0cstate-status\x03\0\x04\x01ks\x01k\x01\x01k\x7f\x01r\x06\x08actor-i\
+ds\x08is-local\x7f\x04name\x06\x08class-id\x06\x0aclass-icon\x07\x09in-combat\x08\
+\x04\0\x0cparty-member\x03\0\x09\x01p\x0a\x01r\x02\x08party-id\x06\x07members\x0b\
+\x04\0\x0bparty-state\x03\0\x0c\x01k\x0d\x01r\x02\x06status\x05\x05value\x0e\x04\
+\0\x0eparty-snapshot\x03\0\x0f\x01r\x02\x06header\x03\x08revisionw\x04\0\x0bpart\
+y-event\x03\0\x11\x01@\0\0\x10\x04\0\x07current\x01\x13\x03\0\x19farever:addon/p\
+arty@1.1.0\x05\x0a\x01B\x09\x02\x03\x02\x01\x05\x04\0\x0cstate-status\x03\0\0\x01\
+r\x01\x0fheading-radiansv\x04\0\x0ccamera-state\x03\0\x02\x01k\x03\x01r\x02\x06s\
+tatus\x01\x05value\x04\x04\0\x0fcamera-snapshot\x03\0\x05\x01@\0\0\x06\x04\0\x07\
+current\x01\x07\x03\0\x1afarever:addon/camera@1.1.0\x05\x0b\x01B!\x02\x03\x02\x01\
+\x08\x04\0\x09image-ref\x03\0\0\x02\x03\x02\x01\x09\x04\0\x0cevent-header\x03\0\x02\
+\x02\x03\x02\x01\x05\x04\0\x0cstate-status\x03\0\x04\x02\x03\x02\x01\x06\x04\0\x04\
+vec3\x03\0\x06\x01m\x03\x06target\x0dlocked-target\x0bauto-target\x04\0\x15comba\
+t-reference-slot\x03\0\x08\x01k\x07\x01r\x02\x04slot\x09\x08position\x0a\x04\0\x10\
+combat-reference\x03\0\x0b\x01k\x7f\x01p\x0c\x01r\x02\x09in-combat\x0d\x0arefere\
+nces\x0e\x04\0\x0ccombat-state\x03\0\x0f\x01k\x10\x01r\x02\x06status\x05\x05valu\
+e\x11\x04\0\x0fcombat-snapshot\x03\0\x12\x01m\x04\x0clocal-player\x0cgroup-membe\
+r\x05other\x07unknown\x04\0\x0eactor-relation\x03\0\x14\x01ks\x01r\x03\x08actor-\
+id\x16\x08relation\x15\x04kind\x16\x04\0\x10combat-actor-ref\x03\0\x17\x01k\x01\x01\
+ku\x01r\x0b\x06header\x03\x06source\x18\x06target\x18\x08skill-ids\x12skill-disp\
+lay-name\x16\x0askill-icon\x19\x06amountu\x09hit-county\x08critical\x7f\x06kille\
+d\x7f\x07blocked\x1a\x04\0\x0cdamage-event\x03\0\x1b\x01r\x02\x06header\x03\x08f\
+ight-idw\x04\0\x0ccombat-event\x03\0\x1d\x01@\0\0\x13\x04\0\x07current\x01\x1f\x03\
+\0\x1afarever:addon/combat@1.1.0\x05\x0c\x01B\x10\x02\x03\x02\x01\x09\x04\0\x0ce\
+vent-header\x03\0\0\x02\x03\x02\x01\x05\x04\0\x0cstate-status\x03\0\x02\x01m\x04\
+\x0aopen-world\x07dungeon\x05other\x07unknown\x04\0\x0dinstance-kind\x03\0\x04\x01\
+ks\x01r\x03\x0asession-idw\x04kind\x05\x07area-id\x06\x04\0\x0einstance-state\x03\
+\0\x07\x01k\x08\x01r\x02\x06status\x03\x05value\x09\x04\0\x11instance-snapshot\x03\
+\0\x0a\x01r\x03\x06header\x01\x08previous\x09\x07current\x09\x04\0\x0einstance-e\
+vent\x03\0\x0c\x01@\0\0\x0b\x04\0\x07current\x01\x0e\x03\0$farever:addon/instanc\
+e-session@1.1.0\x05\x0d\x01B\x0e\x02\x03\x02\x01\x09\x04\0\x0cevent-header\x03\0\
+\0\x02\x03\x02\x01\x05\x04\0\x0cstate-status\x03\0\x02\x01ks\x01r\x02\x07area-id\
+\x04\x0cdisplay-name\x04\x04\0\x0azone-state\x03\0\x05\x01k\x06\x01r\x02\x06stat\
+us\x03\x05value\x07\x04\0\x0dzone-snapshot\x03\0\x08\x01r\x03\x06header\x01\x10p\
+revious-area-id\x04\x07area-id\x04\x04\0\x0azone-event\x03\0\x0a\x01@\0\0\x09\x04\
+\0\x07current\x01\x0c\x03\0\x18farever:addon/zone@1.1.0\x05\x0e\x01B\x0f\x02\x03\
+\x02\x01\x09\x04\0\x0cevent-header\x03\0\0\x02\x03\x02\x01\x05\x04\0\x0cstate-st\
+atus\x03\0\x02\x01ps\x01ks\x01r\x02\x0copen-windows\x04\x0efocused-window\x05\x04\
+\0\x0dwindows-state\x03\0\x06\x01k\x07\x01r\x02\x06status\x03\x05value\x08\x04\0\
+\x10windows-snapshot\x03\0\x09\x01r\x02\x06header\x01\x09window-ids\x04\0\x0cwin\
+dow-event\x03\0\x0b\x01@\0\0\x0a\x04\0\x07current\x01\x0d\x03\0\x1bfarever:addon\
+/windows@1.1.0\x05\x0f\x01B\x0d\x02\x03\x02\x01\x05\x04\0\x0cstate-status\x03\0\0\
+\x01r\x04\x04leftv\x03topv\x05widthv\x06heightv\x04\0\x0amap-bounds\x03\0\x02\x01\
+r\x06\x01av\x01bv\x01cv\x01dv\x02txv\x02tyv\x04\0\x0dmap-transform\x03\0\x04\x01\
+r\x04\x05worlds\x06bounds\x03\x0fworld-to-client\x05\x10pixels-per-pointv\x04\0\x0b\
+visible-map\x03\0\x06\x01k\x07\x01r\x02\x06status\x01\x05value\x08\x04\0\x0cmap-\
+snapshot\x03\0\x09\x01@\0\0\x0a\x04\0\x07current\x01\x0b\x03\0\x17farever:addon/\
+map@1.1.0\x05\x10\x01B\x0e\x01q\x02\x0bsubscribers\0\0\x05addon\x01s\0\x04\0\x0e\
+message-target\x03\0\0\x01kw\x01p}\x01r\x06\x02idw\x0cmonotonic-msw\x0fsource-ad\
+don-ids\x05topics\x0ecorrelation-id\x02\x07payload\x03\x04\0\x0daddon-message\x03\
+\0\x04\x01m\x05\x0dinvalid-topic\x11payload-too-large\x16too-many-subscriptions\x0e\
+quota-exceeded\x15wrong-lifecycle-phase\x04\0\x0dmessage-error\x03\0\x06\x01j\0\x01\
+\x07\x01@\x01\x05topics\0\x08\x04\0\x09subscribe\x01\x09\x01j\x01y\x01\x07\x01@\x04\
+\x05topics\x06target\x01\x0ecorrelation-id\x02\x07payload\x03\0\x0a\x04\0\x07pub\
+lish\x01\x0b\x03\0\x17farever:addon/bus@1.1.0\x05\x11\x01B\x0d\x01r\x02\x02idy\x07\
+versions\x04\0\x0eservice-handle\x03\0\0\x01q\x05\x15undeclared-dependency\0\0\x0b\
+unavailable\0\0\x13unavailable-service\0\0\x14incompatible-version\0\0\x0equota-\
+exceeded\0\0\x04\0\x0aopen-error\x03\0\x02\x01q\x07\x0einvalid-handle\0\0\x0buna\
+vailable\0\0\x11request-too-large\0\0\x12response-too-large\0\0\x0equota-exceede\
+d\0\0\x0fprovider-failed\x01s\0\x0eprovider-error\x01s\0\x04\0\x0acall-error\x03\
+\0\x04\x01j\x01\x01\x01\x03\x01@\x02\x0adependencys\x07services\0\x06\x04\0\x04o\
+pen\x01\x07\x01p}\x01j\x01\x08\x01\x05\x01@\x03\x07service\x01\x09operationy\x07\
+request\x08\0\x09\x04\0\x04call\x01\x0a\x03\0\x20farever:addon/dependencies@1.1.\
+0\x05\x12\x01B\x18\x01m\x05\x07boolean\x07integer\x06number\x04text\x05bytes\x04\
+\0\x11config-value-kind\x03\0\0\x01p}\x01q\x05\x07boolean\x01\x7f\0\x07integer\x01\
+x\0\x06number\x01u\0\x04text\x01s\0\x05bytes\x01\x02\0\x04\0\x0cconfig-value\x03\
+\0\x03\x01m\x03\x08editable\x08readonly\x06hidden\x04\0\x16config-property-acces\
+s\x03\0\x05\x01ks\x01r\x06\x03keys\x05labels\x0bdescription\x07\x0avalue-kind\x01\
+\x0ddefault-value\x04\x06access\x06\x04\0\x1aconfig-property-descriptor\x03\0\x08\
+\x01r\x04\x08revisionw\x16saved-by-addon-version\x07\x0aused-bytesw\x0bquota-byt\
+esw\x04\0\x0dconfig-status\x03\0\x0a\x01j\x01\x04\x01s\x01@\x01\x0adescriptor\x09\
+\0\x0c\x04\0\x11register-property\x01\x0d\x01@\0\0\x0b\x04\0\x06status\x01\x0e\x01\
+@\x01\x03keys\0\x0c\x04\0\x03get\x01\x0f\x01j\x01\x0b\x01s\x01@\x02\x03keys\x05v\
+alue\x04\0\x10\x04\0\x03set\x01\x11\x01@\x01\x03keys\0\x10\x04\0\x06remove\x01\x12\
+\x03\0\x1afarever:addon/config@1.1.0\x05\x13\x01B\x03\x01@\x01\x04texts\x01\0\x04\
+\0\x05print\x01\0\x04\0\x0bprint-error\x01\0\x03\0\x18farever:addon/chat@1.1.0\x05\
+\x14\x02\x03\0\x08\x0ccombat-event\x02\x03\0\x08\x0cdamage-event\x02\x03\0\x09\x0e\
+instance-event\x02\x03\0\x06\x0bparty-event\x02\x03\0\x0a\x0azone-event\x02\x03\0\
+\x0b\x0cwindow-event\x01B\x18\x02\x03\x02\x01\x15\x04\0\x0ccombat-event\x03\0\0\x02\
+\x03\x02\x01\x16\x04\0\x0cdamage-event\x03\0\x02\x02\x03\x02\x01\x09\x04\0\x0cev\
+ent-header\x03\0\x04\x02\x03\x02\x01\x17\x04\0\x0einstance-event\x03\0\x06\x02\x03\
+\x02\x01\x18\x04\0\x0bparty-event\x03\0\x08\x02\x03\x02\x01\x19\x04\0\x0azone-ev\
+ent\x03\0\x0a\x02\x03\x02\x01\x1a\x04\0\x0cwindow-event\x03\0\x0c\x01m\x05\x0bma\
+nual-exit\x04kick\x07timeout\x10switching-server\x07unknown\x04\0\x11disconnect-\
+reason\x03\0\x0e\x01r\x02\x06header\x05\x06reason\x0f\x04\0\x19player-disconnect\
+ed-event\x03\0\x10\x01q\x09\x06damage\x01\x03\0\x0ecombat-started\x01\x01\0\x0cc\
+ombat-ended\x01\x01\0\x0dparty-changed\x01\x09\0\x10instance-changed\x01\x07\0\x0c\
+zone-changed\x01\x0b\0\x0dwindow-opened\x01\x0d\0\x0dwindow-closed\x01\x0d\0\x13\
+player-disconnected\x01\x11\0\x04\0\x05event\x03\0\x12\x01kw\x01p\x13\x01r\x06\x0f\
+process-sessionw\x0efirst-sequence\x14\x0dnext-sequencew\x0edropped-beforew\x11s\
+napshot-required\x7f\x06events\x15\x04\0\x0bevent-batch\x03\0\x16\x03\0\x1afarev\
+er:addon/events@1.1.0\x05\x1b\x02\x03\0\x01\x0atext-style\x01Bs\x02\x03\x02\x01\x08\
+\x04\0\x09image-ref\x03\0\0\x02\x03\x02\x01\x1c\x04\0\x0atext-style\x03\0\x02\x01\
+r\x04\x03redv\x05greenv\x04bluev\x05alphav\x04\0\x04rgba\x03\0\x04\x01r\x02\x01x\
+v\x01yv\x04\0\x05point\x03\0\x06\x01r\x02\x05widthv\x06heightv\x04\0\x04size\x03\
+\0\x08\x01m\x06\x08top-left\x09top-right\x0bbottom-left\x0cbottom-right\x06cente\
+r\x0atop-center\x04\0\x0esurface-anchor\x03\0\x0a\x01m\x02\x08vertical\x0ahorizo\
+ntal\x04\0\x10layout-direction\x03\0\x0c\x01m\x03\x05plain\x05group\x06scroll\x04\
+\0\x0fcontainer-style\x03\0\x0e\x01m\x03\x04left\x06center\x05right\x04\0\x14hor\
+izontal-alignment\x03\0\x10\x01q\x03\x04auto\0\0\x05exact\x01v\0\x09remainder\0\0\
+\x04\0\x13table-column-sizing\x03\0\x12\x01kv\x01r\x04\x06sizing\x13\x09alignmen\
+t\x11\x12visible-from-width\x14\x0fcontent-padding\x14\x04\0\x0ctable-column\x03\
+\0\x15\x01p\x16\x01r\x03\x07columns\x17\x07striped\x7f\x0fmax-body-height\x14\x04\
+\0\x0ctable-widget\x03\0\x18\x01m\x02\x06header\x04body\x04\0\x0etable-row-kind\x03\
+\0\x1a\x01ky\x01r\x03\x08fractionv\x05color\x05\x0cstart-column\x1c\x04\0\x12tab\
+le-row-progress\x03\0\x1d\x01k\x05\x01k\x1e\x01r\x04\x04kind\x1b\x06heightv\x0ab\
+ackground\x1f\x08progress\x20\x04\0\x10table-row-widget\x03\0!\x01r\x01\x06colum\
+ny\x04\0\x11table-cell-widget\x03\0#\x01r\x04\x09direction\x0d\x05style\x0f\x07s\
+pacing\x14\x0amax-height\x14\x04\0\x10container-widget\x03\0%\x01ks\x01r\x02\x05\
+titles\x0bdescription'\x04\0\x0esection-widget\x03\0(\x01r\x02\x05widthv\x05colo\
+r\x05\x04\0\x06stroke\x03\0*\x01k+\x01r\x05\x04texts\x05style\x03\x05color\x1f\x07\
+outline,\x04wrap\x7f\x04\0\x0btext-widget\x03\0-\x01r\x03\x06source\x01\x04size\x09\
+\x04tint\x1f\x04\0\x0cimage-widget\x03\0/\x01r\x02\x05labels\x07enabled\x7f\x04\0\
+\x0dbutton-widget\x03\01\x01r\x03\x05labels\x07checked\x7f\x07enabled\x7f\x04\0\x0f\
+checkbox-widget\x03\03\x01r\x02\x02ids\x05labels\x04\0\x0fdropdown-option\x03\05\
+\x01p6\x01r\x04\x05labels\x0bselected-ids\x07options7\x07enabled\x7f\x04\0\x0fdr\
+opdown-widget\x03\08\x01ku\x01r\x06\x05labels\x05valueu\x07minimumu\x07maximumu\x04\
+step:\x07enabled\x7f\x04\0\x0dslider-widget\x03\0;\x01r\x03\x08fractionv\x05labe\
+l'\x05color\x1f\x04\0\x0fprogress-widget\x03\0=\x01r\x01\x04sizev\x04\0\x0dspace\
+r-widget\x03\0?\x01r\x01\x04size\x09\x04\0\x0dcanvas-widget\x03\0A\x01q\x0f\x09c\
+ontainer\x01&\0\x07section\x01)\0\x04text\x01.\0\x05image\x010\0\x06button\x012\0\
+\x08checkbox\x014\0\x08dropdown\x019\0\x06slider\x01<\0\x08progress\x01>\0\x09se\
+parator\0\0\x06spacer\x01\xc0\0\0\x06canvas\x01\xc2\0\0\x05table\x01\x19\0\x09ta\
+ble-row\x01\"\0\x0atable-cell\x01$\0\x04\0\x06widget\x03\0C\x01r\x03\x02ids\x06p\
+arent'\x06widget\xc4\0\x04\0\x07ui-node\x03\0E\x01r\x03\x05start\x07\x03end\x07\x06\
+stroke+\x04\0\x0eline-primitive\x03\0G\x01r\x05\x03min\x07\x03max\x07\x0dcorner-\
+radiusv\x04fill\x1f\x06stroke,\x04\0\x0erect-primitive\x03\0I\x01r\x04\x06center\
+\x07\x06radiusv\x04fill\x1f\x06stroke,\x04\0\x10circle-primitive\x03\0K\x01p\x07\
+\x01r\x04\x06points\xcd\0\x06closed\x7f\x04fill\x1f\x06stroke,\x04\0\x0epath-pri\
+mitive\x03\0N\x01r\x04\x08position\x07\x04texts\x05color\x05\x04sizev\x04\0\x15c\
+anvas-text-primitive\x03\0P\x01r\x08\x06source\x01\x0fdestination-min\x07\x0fdes\
+tination-max\x07\x06uv-min\x07\x06uv-max\x07\x10rotation-radiansv\x04tint\x1f\x0d\
+corner-radiusv\x04\0\x16canvas-image-primitive\x03\0R\x01q\x06\x04line\x01\xc8\0\
+\0\x04rect\x01\xca\0\0\x06circle\x01\xcc\0\0\x04path\x01\xcf\0\0\x04text\x01\xd1\
+\0\0\x05image\x01\xd3\0\0\x04\0\x10canvas-primitive\x03\0T\x01r\x02\x09canvas-id\
+s\x09primitive\xd5\0\x04\0\x0ecanvas-command\x03\0V\x01r\x05\x09title-bar\x7f\x04\
+fill\x05\x06stroke,\x0dcorner-radiusv\x07paddingv\x04\0\x0dsurface-style\x03\0X\x01\
+k\xd9\0\x01p\xc6\0\x01p\xd7\0\x01r\x09\x02ids\x05titles\x06anchor\x0b\x08margin-\
+xv\x08margin-yv\x05width\x14\x05style\xda\0\x05nodes\xdb\0\x06canvas\xdc\0\x04\0\
+\x0aui-surface\x03\0]\x01r\x04\x02ids\x05titles\x05nodes\xdb\0\x06canvas\xdc\0\x04\
+\0\x0bconfig-menu\x03\0_\x01p\xde\0\x01p\xe0\0\x01r\x02\x08surfaces\xe1\0\x0ccon\
+fig-menus\xe2\0\x04\0\x08ui-frame\x03\0c\x01q\x02\x07surface\x01s\0\x0bconfig-me\
+nu\x01s\0\x04\0\x07ui-view\x03\0e\x01r\x02\x04view\xe6\0\x07node-ids\x04\0\x0ebu\
+tton-pressed\x03\0g\x01o\x02uu\x01r\x03\x04view\xe6\0\x07node-ids\x08position\xe9\
+\0\x04\0\x0ecanvas-pressed\x03\0j\x01o\x02s\x7f\x01o\x02ss\x01o\x02su\x01q\x07\x11\
+config-menu-shown\x01s\0\x12config-menu-hidden\x01s\0\x0ebutton-pressed\x01\xe8\0\
+\0\x0ecanvas-pressed\x01\xeb\0\0\x10checkbox-changed\x01\xec\0\0\x10dropdown-cha\
+nged\x01\xed\0\0\x0eslider-changed\x01\xee\0\0\x04\0\x08ui-event\x03\0o\x01q\x03\
+\x09unchanged\0\0\x07replace\x01\xe4\0\0\x05clear\0\0\x04\0\x09ui-update\x03\0q\x03\
+\0\x1bfarever:addon/overlay@1.1.0\x05\x1d\x02\x03\0\x0d\x0daddon-message\x02\x03\
+\0\x11\x0bevent-batch\x02\x03\0\x12\x08ui-event\x02\x03\0\x12\x09ui-update\x01B)\
+\x02\x03\x02\x01\x1e\x04\0\x0daddon-message\x03\0\0\x02\x03\x02\x01\x1f\x04\0\x0b\
+event-batch\x03\0\x02\x02\x03\x02\x01\x20\x04\0\x08ui-event\x03\0\x04\x02\x03\x02\
+\x01!\x04\0\x09ui-update\x03\0\x06\x01ks\x01r\x04\x08addon-ids\x0daddon-version\x08\
+\x0binstance-idw\x0cmonotonic-msw\x04\0\x12activation-context\x03\0\x09\x01r\x05\
+\x0fscheduled-at-msw\x0fdelivered-at-msw\x0aelapsed-msw\x0binterval-msy\x06misse\
+dy\x04\0\x04tick\x03\0\x0b\x01r\x01\x02ui\x07\x04\0\x11activation-output\x03\0\x0d\
+\x01r\x01\x02ui\x07\x04\0\x0fcallback-output\x03\0\x0f\x01r\x02\x10continue-tick\
+ing\x7f\x02ui\x07\x04\0\x0btick-output\x03\0\x11\x01m\x05\x0dhost-shutdown\x08re\
+loaded\x08disabled\x07removed\x10repeated-failure\x04\0\x13deactivation-reason\x03\
+\0\x13\x01j\x01\x0e\x01s\x01@\x01\x07context\x0a\0\x15\x04\0\x08activate\x01\x16\
+\x01p}\x01j\x01\x17\x01s\x01@\x03\x07services\x09operationy\x07request\x17\0\x18\
+\x04\0\x0ccall-service\x01\x19\x01j\x01\x10\x01s\x01@\x01\x05event\x05\0\x1a\x04\
+\0\x0bon-ui-event\x01\x1b\x01@\x01\x05batch\x03\0\x1a\x04\0\x08on-event\x01\x1c\x01\
+p\x01\x01@\x02\x0edropped-beforew\x08messages\x1d\0\x1a\x04\0\x0aon-message\x01\x1e\
+\x01j\x01\x12\x01s\x01@\x01\x04tick\x0c\0\x1f\x04\0\x07on-tick\x01\x20\x01@\x01\x06\
+reason\x14\x01\0\x04\0\x0adeactivate\x01!\x04\0\x1afarever:addon/plugin@1.1.0\x05\
+\"\x04\0!farever:addon/farever-addon@1.1.0\x04\0\x0b\x13\x01\0\x0dfarever-addon\x03\
+\0\0\0G\x09producers\x01\x0cprocessed-by\x02\x0dwit-component\x070.227.1\x10wit-\
+bindgen-rust\x060.41.0";
         };
     };
 }
 #[doc(inline)]
 pub use __export_farever_addon_impl as export;
 #[cfg(target_arch = "wasm32")]
-#[unsafe(link_section = "component-type:wit-bindgen:0.41.0:farever:addon@1.0.0:farever-addon-with-all-of-its-exports-removed:encoded world")]
+#[unsafe(link_section = "component-type:wit-bindgen:0.41.0:farever:addon@1.1.0:farever-addon-with-all-of-its-exports-removed:encoded world")]
 #[doc(hidden)]
 #[allow(clippy::octal_escapes)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 8138] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xa6>\x01A\x02\x01A-\x01\
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 8535] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xb3A\x01A\x02\x01A1\x01\
 B\x06\x01m\x04\x05trace\x04info\x07warning\x05error\x04\0\x09log-level\x03\0\0\x01\
 @\x02\x05level\x01\x07messages\x01\0\x04\0\x03log\x01\x02\x01@\x01\x0binterval-m\
-sy\0y\x04\0\x0dschedule-tick\x01\x03\x03\0\x1bfarever:addon/runtime@1.0.0\x05\0\x01\
+sy\0y\x04\0\x0dschedule-tick\x01\x03\x03\0\x1bfarever:addon/runtime@1.1.0\x05\0\x01\
 B\x0c\x01r\x01\x02ids\x04\0\x09image-ref\x03\0\0\x01m\x05\x04body\x05small\x06st\
 rong\x07heading\x09monospace\x04\0\x0atext-style\x03\0\x02\x01p\x03\x01p}\x01j\0\
 \x01s\x01@\x03\x02ids\x06styles\x04\x05bytes\x05\0\x06\x04\0\x0dregister-font\x01\
 \x07\x01j\x01\x01\x01s\x01@\x02\x02ids\x03png\x05\0\x08\x04\0\x0eregister-image\x01\
-\x09\x03\0\x1afarever:addon/assets@1.0.0\x05\x01\x01B\x08\x01r\x03\x08sequencew\x0e\
-captured-at-msw\x0fprocess-sessionw\x04\0\x14observation-metadata\x03\0\0\x01r\x02\
-\x0fprocess-sessionw\x08in-world\x7f\x04\0\x0dsession-state\x03\0\x02\x01@\0\0\x01\
-\x04\0\x0bobservation\x01\x04\x01@\0\0\x03\x04\0\x07session\x01\x05\x03\0\x18far\
-ever:addon/game@1.0.0\x05\x02\x01B\x0a\x01m\x06\x0cnot-in-world\x07loading\x10no\
-t-yet-observed\x0bunsupported\x11permission-denied\x0fprovider-failed\x04\0\x12u\
-navailable-reason\x03\0\0\x01kw\x01k\x01\x01r\x03\x0eobserved-at-ms\x02\x08revis\
-ionw\x06reason\x03\x04\0\x0cstate-status\x03\0\x04\x01r\x03\x01xv\x01yv\x01zv\x04\
-\0\x04vec3\x03\0\x06\x01r\x02\x08sequencew\x0cmonotonic-msw\x04\0\x0cevent-heade\
-r\x03\0\x08\x03\0\x1afarever:addon/common@1.0.0\x05\x03\x02\x03\0\x03\x0cstate-s\
-tatus\x02\x03\0\x03\x04vec3\x01B\x10\x02\x03\x02\x01\x04\x04\0\x0cstate-status\x03\
-\0\0\x02\x03\x02\x01\x05\x04\0\x04vec3\x03\0\x02\x01ks\x01ky\x01k\x03\x01kv\x01k\
-u\x01r\x08\x0aruntime-id\x04\x04name\x04\x08class-id\x04\x05level\x05\x08positio\
-n\x06\x0fheading-radians\x07\x06health\x08\x0amax-health\x08\x04\0\x0cplayer-sta\
-te\x03\0\x09\x01k\x0a\x01r\x02\x06status\x01\x05value\x0b\x04\0\x0fplayer-snapsh\
-ot\x03\0\x0c\x01@\0\0\x0d\x04\0\x07current\x01\x0e\x03\0\x1afarever:addon/player\
-@1.0.0\x05\x06\x02\x03\0\x01\x09image-ref\x02\x03\0\x03\x0cevent-header\x01B\x15\
-\x02\x03\x02\x01\x07\x04\0\x09image-ref\x03\0\0\x02\x03\x02\x01\x08\x04\0\x0ceve\
-nt-header\x03\0\x02\x02\x03\x02\x01\x04\x04\0\x0cstate-status\x03\0\x04\x01ks\x01\
-k\x01\x01k\x7f\x01r\x06\x08actor-ids\x08is-local\x7f\x04name\x06\x08class-id\x06\
-\x0aclass-icon\x07\x09in-combat\x08\x04\0\x0cparty-member\x03\0\x09\x01p\x0a\x01\
-r\x02\x08party-id\x06\x07members\x0b\x04\0\x0bparty-state\x03\0\x0c\x01k\x0d\x01\
-r\x02\x06status\x05\x05value\x0e\x04\0\x0eparty-snapshot\x03\0\x0f\x01r\x02\x06h\
-eader\x03\x08revisionw\x04\0\x0bparty-event\x03\0\x11\x01@\0\0\x10\x04\0\x07curr\
-ent\x01\x13\x03\0\x19farever:addon/party@1.0.0\x05\x09\x01B\x09\x02\x03\x02\x01\x04\
-\x04\0\x0cstate-status\x03\0\0\x01r\x01\x0fheading-radiansv\x04\0\x0ccamera-stat\
-e\x03\0\x02\x01k\x03\x01r\x02\x06status\x01\x05value\x04\x04\0\x0fcamera-snapsho\
-t\x03\0\x05\x01@\0\0\x06\x04\0\x07current\x01\x07\x03\0\x1afarever:addon/camera@\
-1.0.0\x05\x0a\x01B!\x02\x03\x02\x01\x07\x04\0\x09image-ref\x03\0\0\x02\x03\x02\x01\
-\x08\x04\0\x0cevent-header\x03\0\x02\x02\x03\x02\x01\x04\x04\0\x0cstate-status\x03\
-\0\x04\x02\x03\x02\x01\x05\x04\0\x04vec3\x03\0\x06\x01m\x03\x06target\x0dlocked-\
-target\x0bauto-target\x04\0\x15combat-reference-slot\x03\0\x08\x01k\x07\x01r\x02\
-\x04slot\x09\x08position\x0a\x04\0\x10combat-reference\x03\0\x0b\x01k\x7f\x01p\x0c\
-\x01r\x02\x09in-combat\x0d\x0areferences\x0e\x04\0\x0ccombat-state\x03\0\x0f\x01\
-k\x10\x01r\x02\x06status\x05\x05value\x11\x04\0\x0fcombat-snapshot\x03\0\x12\x01\
-m\x04\x0clocal-player\x0cgroup-member\x05other\x07unknown\x04\0\x0eactor-relatio\
-n\x03\0\x14\x01ks\x01r\x03\x08actor-id\x16\x08relation\x15\x04kind\x16\x04\0\x10\
-combat-actor-ref\x03\0\x17\x01k\x01\x01ku\x01r\x0b\x06header\x03\x06source\x18\x06\
-target\x18\x08skill-ids\x12skill-display-name\x16\x0askill-icon\x19\x06amountu\x09\
-hit-county\x08critical\x7f\x06killed\x7f\x07blocked\x1a\x04\0\x0cdamage-event\x03\
-\0\x1b\x01r\x02\x06header\x03\x08fight-idw\x04\0\x0ccombat-event\x03\0\x1d\x01@\0\
-\0\x13\x04\0\x07current\x01\x1f\x03\0\x1afarever:addon/combat@1.0.0\x05\x0b\x01B\
-\x10\x02\x03\x02\x01\x08\x04\0\x0cevent-header\x03\0\0\x02\x03\x02\x01\x04\x04\0\
-\x0cstate-status\x03\0\x02\x01m\x04\x0aopen-world\x07dungeon\x05other\x07unknown\
-\x04\0\x0dinstance-kind\x03\0\x04\x01ks\x01r\x03\x0asession-idw\x04kind\x05\x07a\
-rea-id\x06\x04\0\x0einstance-state\x03\0\x07\x01k\x08\x01r\x02\x06status\x03\x05\
-value\x09\x04\0\x11instance-snapshot\x03\0\x0a\x01r\x03\x06header\x01\x08previou\
-s\x09\x07current\x09\x04\0\x0einstance-event\x03\0\x0c\x01@\0\0\x0b\x04\0\x07cur\
-rent\x01\x0e\x03\0$farever:addon/instance-session@1.0.0\x05\x0c\x01B\x0e\x02\x03\
-\x02\x01\x08\x04\0\x0cevent-header\x03\0\0\x02\x03\x02\x01\x04\x04\0\x0cstate-st\
-atus\x03\0\x02\x01ks\x01r\x02\x07area-id\x04\x0cdisplay-name\x04\x04\0\x0azone-s\
-tate\x03\0\x05\x01k\x06\x01r\x02\x06status\x03\x05value\x07\x04\0\x0dzone-snapsh\
-ot\x03\0\x08\x01r\x03\x06header\x01\x10previous-area-id\x04\x07area-id\x04\x04\0\
-\x0azone-event\x03\0\x0a\x01@\0\0\x09\x04\0\x07current\x01\x0c\x03\0\x18farever:\
-addon/zone@1.0.0\x05\x0d\x01B\x0f\x02\x03\x02\x01\x08\x04\0\x0cevent-header\x03\0\
-\0\x02\x03\x02\x01\x04\x04\0\x0cstate-status\x03\0\x02\x01ps\x01ks\x01r\x02\x0co\
-pen-windows\x04\x0efocused-window\x05\x04\0\x0dwindows-state\x03\0\x06\x01k\x07\x01\
-r\x02\x06status\x03\x05value\x08\x04\0\x10windows-snapshot\x03\0\x09\x01r\x02\x06\
-header\x01\x09window-ids\x04\0\x0cwindow-event\x03\0\x0b\x01@\0\0\x0a\x04\0\x07c\
-urrent\x01\x0d\x03\0\x1bfarever:addon/windows@1.0.0\x05\x0e\x01B\x0e\x01q\x02\x0b\
-subscribers\0\0\x05addon\x01s\0\x04\0\x0emessage-target\x03\0\0\x01kw\x01p}\x01r\
-\x06\x02idw\x0cmonotonic-msw\x0fsource-addon-ids\x05topics\x0ecorrelation-id\x02\
-\x07payload\x03\x04\0\x0daddon-message\x03\0\x04\x01m\x05\x0dinvalid-topic\x11pa\
-yload-too-large\x16too-many-subscriptions\x0equota-exceeded\x15wrong-lifecycle-p\
-hase\x04\0\x0dmessage-error\x03\0\x06\x01j\0\x01\x07\x01@\x01\x05topics\0\x08\x04\
-\0\x09subscribe\x01\x09\x01j\x01y\x01\x07\x01@\x04\x05topics\x06target\x01\x0eco\
-rrelation-id\x02\x07payload\x03\0\x0a\x04\0\x07publish\x01\x0b\x03\0\x17farever:\
-addon/bus@1.0.0\x05\x0f\x01B\x0d\x01r\x02\x02idy\x07versions\x04\0\x0eservice-ha\
-ndle\x03\0\0\x01q\x05\x15undeclared-dependency\0\0\x0bunavailable\0\0\x13unavail\
-able-service\0\0\x14incompatible-version\0\0\x0equota-exceeded\0\0\x04\0\x0aopen\
--error\x03\0\x02\x01q\x07\x0einvalid-handle\0\0\x0bunavailable\0\0\x11request-to\
-o-large\0\0\x12response-too-large\0\0\x0equota-exceeded\0\0\x0fprovider-failed\x01\
-s\0\x0eprovider-error\x01s\0\x04\0\x0acall-error\x03\0\x04\x01j\x01\x01\x01\x03\x01\
-@\x02\x0adependencys\x07services\0\x06\x04\0\x04open\x01\x07\x01p}\x01j\x01\x08\x01\
-\x05\x01@\x03\x07service\x01\x09operationy\x07request\x08\0\x09\x04\0\x04call\x01\
-\x0a\x03\0\x20farever:addon/dependencies@1.0.0\x05\x10\x01B\x18\x01m\x05\x07bool\
-ean\x07integer\x06number\x04text\x05bytes\x04\0\x11config-value-kind\x03\0\0\x01\
-p}\x01q\x05\x07boolean\x01\x7f\0\x07integer\x01x\0\x06number\x01u\0\x04text\x01s\
-\0\x05bytes\x01\x02\0\x04\0\x0cconfig-value\x03\0\x03\x01m\x03\x08editable\x08re\
-adonly\x06hidden\x04\0\x16config-property-access\x03\0\x05\x01ks\x01r\x06\x03key\
-s\x05labels\x0bdescription\x07\x0avalue-kind\x01\x0ddefault-value\x04\x06access\x06\
-\x04\0\x1aconfig-property-descriptor\x03\0\x08\x01r\x04\x08revisionw\x16saved-by\
--addon-version\x07\x0aused-bytesw\x0bquota-bytesw\x04\0\x0dconfig-status\x03\0\x0a\
-\x01j\x01\x04\x01s\x01@\x01\x0adescriptor\x09\0\x0c\x04\0\x11register-property\x01\
-\x0d\x01@\0\0\x0b\x04\0\x06status\x01\x0e\x01@\x01\x03keys\0\x0c\x04\0\x03get\x01\
-\x0f\x01j\x01\x0b\x01s\x01@\x02\x03keys\x05value\x04\0\x10\x04\0\x03set\x01\x11\x01\
-@\x01\x03keys\0\x10\x04\0\x06remove\x01\x12\x03\0\x1afarever:addon/config@1.0.0\x05\
-\x11\x01B\x03\x01@\x01\x04texts\x01\0\x04\0\x05print\x01\0\x04\0\x0bprint-error\x01\
-\0\x03\0\x18farever:addon/chat@1.0.0\x05\x12\x02\x03\0\x07\x0ccombat-event\x02\x03\
-\0\x07\x0cdamage-event\x02\x03\0\x08\x0einstance-event\x02\x03\0\x05\x0bparty-ev\
-ent\x02\x03\0\x09\x0azone-event\x02\x03\0\x0a\x0cwindow-event\x01B\x18\x02\x03\x02\
-\x01\x13\x04\0\x0ccombat-event\x03\0\0\x02\x03\x02\x01\x14\x04\0\x0cdamage-event\
-\x03\0\x02\x02\x03\x02\x01\x08\x04\0\x0cevent-header\x03\0\x04\x02\x03\x02\x01\x15\
-\x04\0\x0einstance-event\x03\0\x06\x02\x03\x02\x01\x16\x04\0\x0bparty-event\x03\0\
-\x08\x02\x03\x02\x01\x17\x04\0\x0azone-event\x03\0\x0a\x02\x03\x02\x01\x18\x04\0\
-\x0cwindow-event\x03\0\x0c\x01m\x05\x0bmanual-exit\x04kick\x07timeout\x10switchi\
-ng-server\x07unknown\x04\0\x11disconnect-reason\x03\0\x0e\x01r\x02\x06header\x05\
-\x06reason\x0f\x04\0\x19player-disconnected-event\x03\0\x10\x01q\x09\x06damage\x01\
-\x03\0\x0ecombat-started\x01\x01\0\x0ccombat-ended\x01\x01\0\x0dparty-changed\x01\
-\x09\0\x10instance-changed\x01\x07\0\x0czone-changed\x01\x0b\0\x0dwindow-opened\x01\
-\x0d\0\x0dwindow-closed\x01\x0d\0\x13player-disconnected\x01\x11\0\x04\0\x05even\
-t\x03\0\x12\x01kw\x01p\x13\x01r\x06\x0fprocess-sessionw\x0efirst-sequence\x14\x0d\
-next-sequencew\x0edropped-beforew\x11snapshot-required\x7f\x06events\x15\x04\0\x0b\
-event-batch\x03\0\x16\x03\0\x1afarever:addon/events@1.0.0\x05\x19\x02\x03\0\x01\x0a\
-text-style\x01Bs\x02\x03\x02\x01\x07\x04\0\x09image-ref\x03\0\0\x02\x03\x02\x01\x1a\
-\x04\0\x0atext-style\x03\0\x02\x01r\x04\x03redv\x05greenv\x04bluev\x05alphav\x04\
-\0\x04rgba\x03\0\x04\x01r\x02\x01xv\x01yv\x04\0\x05point\x03\0\x06\x01r\x02\x05w\
-idthv\x06heightv\x04\0\x04size\x03\0\x08\x01m\x06\x08top-left\x09top-right\x0bbo\
-ttom-left\x0cbottom-right\x06center\x0atop-center\x04\0\x0esurface-anchor\x03\0\x0a\
-\x01m\x02\x08vertical\x0ahorizontal\x04\0\x10layout-direction\x03\0\x0c\x01m\x03\
-\x05plain\x05group\x06scroll\x04\0\x0fcontainer-style\x03\0\x0e\x01m\x03\x04left\
-\x06center\x05right\x04\0\x14horizontal-alignment\x03\0\x10\x01q\x03\x04auto\0\0\
-\x05exact\x01v\0\x09remainder\0\0\x04\0\x13table-column-sizing\x03\0\x12\x01kv\x01\
-r\x04\x06sizing\x13\x09alignment\x11\x12visible-from-width\x14\x0fcontent-paddin\
-g\x14\x04\0\x0ctable-column\x03\0\x15\x01p\x16\x01r\x03\x07columns\x17\x07stripe\
-d\x7f\x0fmax-body-height\x14\x04\0\x0ctable-widget\x03\0\x18\x01m\x02\x06header\x04\
-body\x04\0\x0etable-row-kind\x03\0\x1a\x01ky\x01r\x03\x08fractionv\x05color\x05\x0c\
-start-column\x1c\x04\0\x12table-row-progress\x03\0\x1d\x01k\x05\x01k\x1e\x01r\x04\
-\x04kind\x1b\x06heightv\x0abackground\x1f\x08progress\x20\x04\0\x10table-row-wid\
-get\x03\0!\x01r\x01\x06columny\x04\0\x11table-cell-widget\x03\0#\x01r\x04\x09dir\
-ection\x0d\x05style\x0f\x07spacing\x14\x0amax-height\x14\x04\0\x10container-widg\
-et\x03\0%\x01ks\x01r\x02\x05titles\x0bdescription'\x04\0\x0esection-widget\x03\0\
-(\x01r\x02\x05widthv\x05color\x05\x04\0\x06stroke\x03\0*\x01k+\x01r\x05\x04texts\
-\x05style\x03\x05color\x1f\x07outline,\x04wrap\x7f\x04\0\x0btext-widget\x03\0-\x01\
-r\x03\x06source\x01\x04size\x09\x04tint\x1f\x04\0\x0cimage-widget\x03\0/\x01r\x02\
-\x05labels\x07enabled\x7f\x04\0\x0dbutton-widget\x03\01\x01r\x03\x05labels\x07ch\
-ecked\x7f\x07enabled\x7f\x04\0\x0fcheckbox-widget\x03\03\x01r\x02\x02ids\x05labe\
-ls\x04\0\x0fdropdown-option\x03\05\x01p6\x01r\x04\x05labels\x0bselected-ids\x07o\
-ptions7\x07enabled\x7f\x04\0\x0fdropdown-widget\x03\08\x01ku\x01r\x06\x05labels\x05\
-valueu\x07minimumu\x07maximumu\x04step:\x07enabled\x7f\x04\0\x0dslider-widget\x03\
-\0;\x01r\x03\x08fractionv\x05label'\x05color\x1f\x04\0\x0fprogress-widget\x03\0=\
-\x01r\x01\x04sizev\x04\0\x0dspacer-widget\x03\0?\x01r\x01\x04size\x09\x04\0\x0dc\
-anvas-widget\x03\0A\x01q\x0f\x09container\x01&\0\x07section\x01)\0\x04text\x01.\0\
-\x05image\x010\0\x06button\x012\0\x08checkbox\x014\0\x08dropdown\x019\0\x06slide\
-r\x01<\0\x08progress\x01>\0\x09separator\0\0\x06spacer\x01\xc0\0\0\x06canvas\x01\
-\xc2\0\0\x05table\x01\x19\0\x09table-row\x01\"\0\x0atable-cell\x01$\0\x04\0\x06w\
-idget\x03\0C\x01r\x03\x02ids\x06parent'\x06widget\xc4\0\x04\0\x07ui-node\x03\0E\x01\
-r\x03\x05start\x07\x03end\x07\x06stroke+\x04\0\x0eline-primitive\x03\0G\x01r\x05\
-\x03min\x07\x03max\x07\x0dcorner-radiusv\x04fill\x1f\x06stroke,\x04\0\x0erect-pr\
-imitive\x03\0I\x01r\x04\x06center\x07\x06radiusv\x04fill\x1f\x06stroke,\x04\0\x10\
-circle-primitive\x03\0K\x01p\x07\x01r\x04\x06points\xcd\0\x06closed\x7f\x04fill\x1f\
-\x06stroke,\x04\0\x0epath-primitive\x03\0N\x01r\x04\x08position\x07\x04texts\x05\
-color\x05\x04sizev\x04\0\x15canvas-text-primitive\x03\0P\x01r\x08\x06source\x01\x0f\
-destination-min\x07\x0fdestination-max\x07\x06uv-min\x07\x06uv-max\x07\x10rotati\
-on-radiansv\x04tint\x1f\x0dcorner-radiusv\x04\0\x16canvas-image-primitive\x03\0R\
-\x01q\x06\x04line\x01\xc8\0\0\x04rect\x01\xca\0\0\x06circle\x01\xcc\0\0\x04path\x01\
-\xcf\0\0\x04text\x01\xd1\0\0\x05image\x01\xd3\0\0\x04\0\x10canvas-primitive\x03\0\
-T\x01r\x02\x09canvas-ids\x09primitive\xd5\0\x04\0\x0ecanvas-command\x03\0V\x01r\x05\
-\x09title-bar\x7f\x04fill\x05\x06stroke,\x0dcorner-radiusv\x07paddingv\x04\0\x0d\
-surface-style\x03\0X\x01k\xd9\0\x01p\xc6\0\x01p\xd7\0\x01r\x09\x02ids\x05titles\x06\
-anchor\x0b\x08margin-xv\x08margin-yv\x05width\x14\x05style\xda\0\x05nodes\xdb\0\x06\
-canvas\xdc\0\x04\0\x0aui-surface\x03\0]\x01r\x04\x02ids\x05titles\x05nodes\xdb\0\
-\x06canvas\xdc\0\x04\0\x0bconfig-menu\x03\0_\x01p\xde\0\x01p\xe0\0\x01r\x02\x08s\
-urfaces\xe1\0\x0cconfig-menus\xe2\0\x04\0\x08ui-frame\x03\0c\x01q\x02\x07surface\
-\x01s\0\x0bconfig-menu\x01s\0\x04\0\x07ui-view\x03\0e\x01r\x02\x04view\xe6\0\x07\
-node-ids\x04\0\x0ebutton-pressed\x03\0g\x01o\x02uu\x01r\x03\x04view\xe6\0\x07nod\
-e-ids\x08position\xe9\0\x04\0\x0ecanvas-pressed\x03\0j\x01o\x02s\x7f\x01o\x02ss\x01\
-o\x02su\x01q\x07\x11config-menu-shown\x01s\0\x12config-menu-hidden\x01s\0\x0ebut\
-ton-pressed\x01\xe8\0\0\x0ecanvas-pressed\x01\xeb\0\0\x10checkbox-changed\x01\xec\
-\0\0\x10dropdown-changed\x01\xed\0\0\x0eslider-changed\x01\xee\0\0\x04\0\x08ui-e\
-vent\x03\0o\x01q\x03\x09unchanged\0\0\x07replace\x01\xe4\0\0\x05clear\0\0\x04\0\x09\
-ui-update\x03\0q\x03\0\x1bfarever:addon/overlay@1.0.0\x05\x1b\x04\0Afarever:addo\
-n/farever-addon-with-all-of-its-exports-removed@1.0.0\x04\0\x0b3\x01\0-farever-a\
-ddon-with-all-of-its-exports-removed\x03\0\0\0G\x09producers\x01\x0cprocessed-by\
-\x02\x0dwit-component\x070.227.1\x10wit-bindgen-rust\x060.41.0";
+\x09\x03\0\x1afarever:addon/assets@1.1.0\x05\x01\x01B\x06\x01r\x02\x0asurface-id\
+s\x07node-ids\x04\0\x0acanvas-ref\x03\0\0\x01p\x01\x01j\0\x01s\x01@\x01\x08canva\
+ses\x02\0\x03\x04\0\x14set-passive-canvases\x01\x04\x03\0\"farever:addon/canvas-\
+options@1.1.0\x05\x02\x01B\x08\x01r\x03\x08sequencew\x0ecaptured-at-msw\x0fproce\
+ss-sessionw\x04\0\x14observation-metadata\x03\0\0\x01r\x02\x0fprocess-sessionw\x08\
+in-world\x7f\x04\0\x0dsession-state\x03\0\x02\x01@\0\0\x01\x04\0\x0bobservation\x01\
+\x04\x01@\0\0\x03\x04\0\x07session\x01\x05\x03\0\x18farever:addon/game@1.1.0\x05\
+\x03\x01B\x0a\x01m\x06\x0cnot-in-world\x07loading\x10not-yet-observed\x0bunsuppo\
+rted\x11permission-denied\x0fprovider-failed\x04\0\x12unavailable-reason\x03\0\0\
+\x01kw\x01k\x01\x01r\x03\x0eobserved-at-ms\x02\x08revisionw\x06reason\x03\x04\0\x0c\
+state-status\x03\0\x04\x01r\x03\x01xv\x01yv\x01zv\x04\0\x04vec3\x03\0\x06\x01r\x02\
+\x08sequencew\x0cmonotonic-msw\x04\0\x0cevent-header\x03\0\x08\x03\0\x1afarever:\
+addon/common@1.1.0\x05\x04\x02\x03\0\x04\x0cstate-status\x02\x03\0\x04\x04vec3\x01\
+B\x10\x02\x03\x02\x01\x05\x04\0\x0cstate-status\x03\0\0\x02\x03\x02\x01\x06\x04\0\
+\x04vec3\x03\0\x02\x01ks\x01ky\x01k\x03\x01kv\x01ku\x01r\x08\x0aruntime-id\x04\x04\
+name\x04\x08class-id\x04\x05level\x05\x08position\x06\x0fheading-radians\x07\x06\
+health\x08\x0amax-health\x08\x04\0\x0cplayer-state\x03\0\x09\x01k\x0a\x01r\x02\x06\
+status\x01\x05value\x0b\x04\0\x0fplayer-snapshot\x03\0\x0c\x01@\0\0\x0d\x04\0\x07\
+current\x01\x0e\x03\0\x1afarever:addon/player@1.1.0\x05\x07\x02\x03\0\x01\x09ima\
+ge-ref\x02\x03\0\x04\x0cevent-header\x01B\x15\x02\x03\x02\x01\x08\x04\0\x09image\
+-ref\x03\0\0\x02\x03\x02\x01\x09\x04\0\x0cevent-header\x03\0\x02\x02\x03\x02\x01\
+\x05\x04\0\x0cstate-status\x03\0\x04\x01ks\x01k\x01\x01k\x7f\x01r\x06\x08actor-i\
+ds\x08is-local\x7f\x04name\x06\x08class-id\x06\x0aclass-icon\x07\x09in-combat\x08\
+\x04\0\x0cparty-member\x03\0\x09\x01p\x0a\x01r\x02\x08party-id\x06\x07members\x0b\
+\x04\0\x0bparty-state\x03\0\x0c\x01k\x0d\x01r\x02\x06status\x05\x05value\x0e\x04\
+\0\x0eparty-snapshot\x03\0\x0f\x01r\x02\x06header\x03\x08revisionw\x04\0\x0bpart\
+y-event\x03\0\x11\x01@\0\0\x10\x04\0\x07current\x01\x13\x03\0\x19farever:addon/p\
+arty@1.1.0\x05\x0a\x01B\x09\x02\x03\x02\x01\x05\x04\0\x0cstate-status\x03\0\0\x01\
+r\x01\x0fheading-radiansv\x04\0\x0ccamera-state\x03\0\x02\x01k\x03\x01r\x02\x06s\
+tatus\x01\x05value\x04\x04\0\x0fcamera-snapshot\x03\0\x05\x01@\0\0\x06\x04\0\x07\
+current\x01\x07\x03\0\x1afarever:addon/camera@1.1.0\x05\x0b\x01B!\x02\x03\x02\x01\
+\x08\x04\0\x09image-ref\x03\0\0\x02\x03\x02\x01\x09\x04\0\x0cevent-header\x03\0\x02\
+\x02\x03\x02\x01\x05\x04\0\x0cstate-status\x03\0\x04\x02\x03\x02\x01\x06\x04\0\x04\
+vec3\x03\0\x06\x01m\x03\x06target\x0dlocked-target\x0bauto-target\x04\0\x15comba\
+t-reference-slot\x03\0\x08\x01k\x07\x01r\x02\x04slot\x09\x08position\x0a\x04\0\x10\
+combat-reference\x03\0\x0b\x01k\x7f\x01p\x0c\x01r\x02\x09in-combat\x0d\x0arefere\
+nces\x0e\x04\0\x0ccombat-state\x03\0\x0f\x01k\x10\x01r\x02\x06status\x05\x05valu\
+e\x11\x04\0\x0fcombat-snapshot\x03\0\x12\x01m\x04\x0clocal-player\x0cgroup-membe\
+r\x05other\x07unknown\x04\0\x0eactor-relation\x03\0\x14\x01ks\x01r\x03\x08actor-\
+id\x16\x08relation\x15\x04kind\x16\x04\0\x10combat-actor-ref\x03\0\x17\x01k\x01\x01\
+ku\x01r\x0b\x06header\x03\x06source\x18\x06target\x18\x08skill-ids\x12skill-disp\
+lay-name\x16\x0askill-icon\x19\x06amountu\x09hit-county\x08critical\x7f\x06kille\
+d\x7f\x07blocked\x1a\x04\0\x0cdamage-event\x03\0\x1b\x01r\x02\x06header\x03\x08f\
+ight-idw\x04\0\x0ccombat-event\x03\0\x1d\x01@\0\0\x13\x04\0\x07current\x01\x1f\x03\
+\0\x1afarever:addon/combat@1.1.0\x05\x0c\x01B\x10\x02\x03\x02\x01\x09\x04\0\x0ce\
+vent-header\x03\0\0\x02\x03\x02\x01\x05\x04\0\x0cstate-status\x03\0\x02\x01m\x04\
+\x0aopen-world\x07dungeon\x05other\x07unknown\x04\0\x0dinstance-kind\x03\0\x04\x01\
+ks\x01r\x03\x0asession-idw\x04kind\x05\x07area-id\x06\x04\0\x0einstance-state\x03\
+\0\x07\x01k\x08\x01r\x02\x06status\x03\x05value\x09\x04\0\x11instance-snapshot\x03\
+\0\x0a\x01r\x03\x06header\x01\x08previous\x09\x07current\x09\x04\0\x0einstance-e\
+vent\x03\0\x0c\x01@\0\0\x0b\x04\0\x07current\x01\x0e\x03\0$farever:addon/instanc\
+e-session@1.1.0\x05\x0d\x01B\x0e\x02\x03\x02\x01\x09\x04\0\x0cevent-header\x03\0\
+\0\x02\x03\x02\x01\x05\x04\0\x0cstate-status\x03\0\x02\x01ks\x01r\x02\x07area-id\
+\x04\x0cdisplay-name\x04\x04\0\x0azone-state\x03\0\x05\x01k\x06\x01r\x02\x06stat\
+us\x03\x05value\x07\x04\0\x0dzone-snapshot\x03\0\x08\x01r\x03\x06header\x01\x10p\
+revious-area-id\x04\x07area-id\x04\x04\0\x0azone-event\x03\0\x0a\x01@\0\0\x09\x04\
+\0\x07current\x01\x0c\x03\0\x18farever:addon/zone@1.1.0\x05\x0e\x01B\x0f\x02\x03\
+\x02\x01\x09\x04\0\x0cevent-header\x03\0\0\x02\x03\x02\x01\x05\x04\0\x0cstate-st\
+atus\x03\0\x02\x01ps\x01ks\x01r\x02\x0copen-windows\x04\x0efocused-window\x05\x04\
+\0\x0dwindows-state\x03\0\x06\x01k\x07\x01r\x02\x06status\x03\x05value\x08\x04\0\
+\x10windows-snapshot\x03\0\x09\x01r\x02\x06header\x01\x09window-ids\x04\0\x0cwin\
+dow-event\x03\0\x0b\x01@\0\0\x0a\x04\0\x07current\x01\x0d\x03\0\x1bfarever:addon\
+/windows@1.1.0\x05\x0f\x01B\x0d\x02\x03\x02\x01\x05\x04\0\x0cstate-status\x03\0\0\
+\x01r\x04\x04leftv\x03topv\x05widthv\x06heightv\x04\0\x0amap-bounds\x03\0\x02\x01\
+r\x06\x01av\x01bv\x01cv\x01dv\x02txv\x02tyv\x04\0\x0dmap-transform\x03\0\x04\x01\
+r\x04\x05worlds\x06bounds\x03\x0fworld-to-client\x05\x10pixels-per-pointv\x04\0\x0b\
+visible-map\x03\0\x06\x01k\x07\x01r\x02\x06status\x01\x05value\x08\x04\0\x0cmap-\
+snapshot\x03\0\x09\x01@\0\0\x0a\x04\0\x07current\x01\x0b\x03\0\x17farever:addon/\
+map@1.1.0\x05\x10\x01B\x0e\x01q\x02\x0bsubscribers\0\0\x05addon\x01s\0\x04\0\x0e\
+message-target\x03\0\0\x01kw\x01p}\x01r\x06\x02idw\x0cmonotonic-msw\x0fsource-ad\
+don-ids\x05topics\x0ecorrelation-id\x02\x07payload\x03\x04\0\x0daddon-message\x03\
+\0\x04\x01m\x05\x0dinvalid-topic\x11payload-too-large\x16too-many-subscriptions\x0e\
+quota-exceeded\x15wrong-lifecycle-phase\x04\0\x0dmessage-error\x03\0\x06\x01j\0\x01\
+\x07\x01@\x01\x05topics\0\x08\x04\0\x09subscribe\x01\x09\x01j\x01y\x01\x07\x01@\x04\
+\x05topics\x06target\x01\x0ecorrelation-id\x02\x07payload\x03\0\x0a\x04\0\x07pub\
+lish\x01\x0b\x03\0\x17farever:addon/bus@1.1.0\x05\x11\x01B\x0d\x01r\x02\x02idy\x07\
+versions\x04\0\x0eservice-handle\x03\0\0\x01q\x05\x15undeclared-dependency\0\0\x0b\
+unavailable\0\0\x13unavailable-service\0\0\x14incompatible-version\0\0\x0equota-\
+exceeded\0\0\x04\0\x0aopen-error\x03\0\x02\x01q\x07\x0einvalid-handle\0\0\x0buna\
+vailable\0\0\x11request-too-large\0\0\x12response-too-large\0\0\x0equota-exceede\
+d\0\0\x0fprovider-failed\x01s\0\x0eprovider-error\x01s\0\x04\0\x0acall-error\x03\
+\0\x04\x01j\x01\x01\x01\x03\x01@\x02\x0adependencys\x07services\0\x06\x04\0\x04o\
+pen\x01\x07\x01p}\x01j\x01\x08\x01\x05\x01@\x03\x07service\x01\x09operationy\x07\
+request\x08\0\x09\x04\0\x04call\x01\x0a\x03\0\x20farever:addon/dependencies@1.1.\
+0\x05\x12\x01B\x18\x01m\x05\x07boolean\x07integer\x06number\x04text\x05bytes\x04\
+\0\x11config-value-kind\x03\0\0\x01p}\x01q\x05\x07boolean\x01\x7f\0\x07integer\x01\
+x\0\x06number\x01u\0\x04text\x01s\0\x05bytes\x01\x02\0\x04\0\x0cconfig-value\x03\
+\0\x03\x01m\x03\x08editable\x08readonly\x06hidden\x04\0\x16config-property-acces\
+s\x03\0\x05\x01ks\x01r\x06\x03keys\x05labels\x0bdescription\x07\x0avalue-kind\x01\
+\x0ddefault-value\x04\x06access\x06\x04\0\x1aconfig-property-descriptor\x03\0\x08\
+\x01r\x04\x08revisionw\x16saved-by-addon-version\x07\x0aused-bytesw\x0bquota-byt\
+esw\x04\0\x0dconfig-status\x03\0\x0a\x01j\x01\x04\x01s\x01@\x01\x0adescriptor\x09\
+\0\x0c\x04\0\x11register-property\x01\x0d\x01@\0\0\x0b\x04\0\x06status\x01\x0e\x01\
+@\x01\x03keys\0\x0c\x04\0\x03get\x01\x0f\x01j\x01\x0b\x01s\x01@\x02\x03keys\x05v\
+alue\x04\0\x10\x04\0\x03set\x01\x11\x01@\x01\x03keys\0\x10\x04\0\x06remove\x01\x12\
+\x03\0\x1afarever:addon/config@1.1.0\x05\x13\x01B\x03\x01@\x01\x04texts\x01\0\x04\
+\0\x05print\x01\0\x04\0\x0bprint-error\x01\0\x03\0\x18farever:addon/chat@1.1.0\x05\
+\x14\x02\x03\0\x08\x0ccombat-event\x02\x03\0\x08\x0cdamage-event\x02\x03\0\x09\x0e\
+instance-event\x02\x03\0\x06\x0bparty-event\x02\x03\0\x0a\x0azone-event\x02\x03\0\
+\x0b\x0cwindow-event\x01B\x18\x02\x03\x02\x01\x15\x04\0\x0ccombat-event\x03\0\0\x02\
+\x03\x02\x01\x16\x04\0\x0cdamage-event\x03\0\x02\x02\x03\x02\x01\x09\x04\0\x0cev\
+ent-header\x03\0\x04\x02\x03\x02\x01\x17\x04\0\x0einstance-event\x03\0\x06\x02\x03\
+\x02\x01\x18\x04\0\x0bparty-event\x03\0\x08\x02\x03\x02\x01\x19\x04\0\x0azone-ev\
+ent\x03\0\x0a\x02\x03\x02\x01\x1a\x04\0\x0cwindow-event\x03\0\x0c\x01m\x05\x0bma\
+nual-exit\x04kick\x07timeout\x10switching-server\x07unknown\x04\0\x11disconnect-\
+reason\x03\0\x0e\x01r\x02\x06header\x05\x06reason\x0f\x04\0\x19player-disconnect\
+ed-event\x03\0\x10\x01q\x09\x06damage\x01\x03\0\x0ecombat-started\x01\x01\0\x0cc\
+ombat-ended\x01\x01\0\x0dparty-changed\x01\x09\0\x10instance-changed\x01\x07\0\x0c\
+zone-changed\x01\x0b\0\x0dwindow-opened\x01\x0d\0\x0dwindow-closed\x01\x0d\0\x13\
+player-disconnected\x01\x11\0\x04\0\x05event\x03\0\x12\x01kw\x01p\x13\x01r\x06\x0f\
+process-sessionw\x0efirst-sequence\x14\x0dnext-sequencew\x0edropped-beforew\x11s\
+napshot-required\x7f\x06events\x15\x04\0\x0bevent-batch\x03\0\x16\x03\0\x1afarev\
+er:addon/events@1.1.0\x05\x1b\x02\x03\0\x01\x0atext-style\x01Bs\x02\x03\x02\x01\x08\
+\x04\0\x09image-ref\x03\0\0\x02\x03\x02\x01\x1c\x04\0\x0atext-style\x03\0\x02\x01\
+r\x04\x03redv\x05greenv\x04bluev\x05alphav\x04\0\x04rgba\x03\0\x04\x01r\x02\x01x\
+v\x01yv\x04\0\x05point\x03\0\x06\x01r\x02\x05widthv\x06heightv\x04\0\x04size\x03\
+\0\x08\x01m\x06\x08top-left\x09top-right\x0bbottom-left\x0cbottom-right\x06cente\
+r\x0atop-center\x04\0\x0esurface-anchor\x03\0\x0a\x01m\x02\x08vertical\x0ahorizo\
+ntal\x04\0\x10layout-direction\x03\0\x0c\x01m\x03\x05plain\x05group\x06scroll\x04\
+\0\x0fcontainer-style\x03\0\x0e\x01m\x03\x04left\x06center\x05right\x04\0\x14hor\
+izontal-alignment\x03\0\x10\x01q\x03\x04auto\0\0\x05exact\x01v\0\x09remainder\0\0\
+\x04\0\x13table-column-sizing\x03\0\x12\x01kv\x01r\x04\x06sizing\x13\x09alignmen\
+t\x11\x12visible-from-width\x14\x0fcontent-padding\x14\x04\0\x0ctable-column\x03\
+\0\x15\x01p\x16\x01r\x03\x07columns\x17\x07striped\x7f\x0fmax-body-height\x14\x04\
+\0\x0ctable-widget\x03\0\x18\x01m\x02\x06header\x04body\x04\0\x0etable-row-kind\x03\
+\0\x1a\x01ky\x01r\x03\x08fractionv\x05color\x05\x0cstart-column\x1c\x04\0\x12tab\
+le-row-progress\x03\0\x1d\x01k\x05\x01k\x1e\x01r\x04\x04kind\x1b\x06heightv\x0ab\
+ackground\x1f\x08progress\x20\x04\0\x10table-row-widget\x03\0!\x01r\x01\x06colum\
+ny\x04\0\x11table-cell-widget\x03\0#\x01r\x04\x09direction\x0d\x05style\x0f\x07s\
+pacing\x14\x0amax-height\x14\x04\0\x10container-widget\x03\0%\x01ks\x01r\x02\x05\
+titles\x0bdescription'\x04\0\x0esection-widget\x03\0(\x01r\x02\x05widthv\x05colo\
+r\x05\x04\0\x06stroke\x03\0*\x01k+\x01r\x05\x04texts\x05style\x03\x05color\x1f\x07\
+outline,\x04wrap\x7f\x04\0\x0btext-widget\x03\0-\x01r\x03\x06source\x01\x04size\x09\
+\x04tint\x1f\x04\0\x0cimage-widget\x03\0/\x01r\x02\x05labels\x07enabled\x7f\x04\0\
+\x0dbutton-widget\x03\01\x01r\x03\x05labels\x07checked\x7f\x07enabled\x7f\x04\0\x0f\
+checkbox-widget\x03\03\x01r\x02\x02ids\x05labels\x04\0\x0fdropdown-option\x03\05\
+\x01p6\x01r\x04\x05labels\x0bselected-ids\x07options7\x07enabled\x7f\x04\0\x0fdr\
+opdown-widget\x03\08\x01ku\x01r\x06\x05labels\x05valueu\x07minimumu\x07maximumu\x04\
+step:\x07enabled\x7f\x04\0\x0dslider-widget\x03\0;\x01r\x03\x08fractionv\x05labe\
+l'\x05color\x1f\x04\0\x0fprogress-widget\x03\0=\x01r\x01\x04sizev\x04\0\x0dspace\
+r-widget\x03\0?\x01r\x01\x04size\x09\x04\0\x0dcanvas-widget\x03\0A\x01q\x0f\x09c\
+ontainer\x01&\0\x07section\x01)\0\x04text\x01.\0\x05image\x010\0\x06button\x012\0\
+\x08checkbox\x014\0\x08dropdown\x019\0\x06slider\x01<\0\x08progress\x01>\0\x09se\
+parator\0\0\x06spacer\x01\xc0\0\0\x06canvas\x01\xc2\0\0\x05table\x01\x19\0\x09ta\
+ble-row\x01\"\0\x0atable-cell\x01$\0\x04\0\x06widget\x03\0C\x01r\x03\x02ids\x06p\
+arent'\x06widget\xc4\0\x04\0\x07ui-node\x03\0E\x01r\x03\x05start\x07\x03end\x07\x06\
+stroke+\x04\0\x0eline-primitive\x03\0G\x01r\x05\x03min\x07\x03max\x07\x0dcorner-\
+radiusv\x04fill\x1f\x06stroke,\x04\0\x0erect-primitive\x03\0I\x01r\x04\x06center\
+\x07\x06radiusv\x04fill\x1f\x06stroke,\x04\0\x10circle-primitive\x03\0K\x01p\x07\
+\x01r\x04\x06points\xcd\0\x06closed\x7f\x04fill\x1f\x06stroke,\x04\0\x0epath-pri\
+mitive\x03\0N\x01r\x04\x08position\x07\x04texts\x05color\x05\x04sizev\x04\0\x15c\
+anvas-text-primitive\x03\0P\x01r\x08\x06source\x01\x0fdestination-min\x07\x0fdes\
+tination-max\x07\x06uv-min\x07\x06uv-max\x07\x10rotation-radiansv\x04tint\x1f\x0d\
+corner-radiusv\x04\0\x16canvas-image-primitive\x03\0R\x01q\x06\x04line\x01\xc8\0\
+\0\x04rect\x01\xca\0\0\x06circle\x01\xcc\0\0\x04path\x01\xcf\0\0\x04text\x01\xd1\
+\0\0\x05image\x01\xd3\0\0\x04\0\x10canvas-primitive\x03\0T\x01r\x02\x09canvas-id\
+s\x09primitive\xd5\0\x04\0\x0ecanvas-command\x03\0V\x01r\x05\x09title-bar\x7f\x04\
+fill\x05\x06stroke,\x0dcorner-radiusv\x07paddingv\x04\0\x0dsurface-style\x03\0X\x01\
+k\xd9\0\x01p\xc6\0\x01p\xd7\0\x01r\x09\x02ids\x05titles\x06anchor\x0b\x08margin-\
+xv\x08margin-yv\x05width\x14\x05style\xda\0\x05nodes\xdb\0\x06canvas\xdc\0\x04\0\
+\x0aui-surface\x03\0]\x01r\x04\x02ids\x05titles\x05nodes\xdb\0\x06canvas\xdc\0\x04\
+\0\x0bconfig-menu\x03\0_\x01p\xde\0\x01p\xe0\0\x01r\x02\x08surfaces\xe1\0\x0ccon\
+fig-menus\xe2\0\x04\0\x08ui-frame\x03\0c\x01q\x02\x07surface\x01s\0\x0bconfig-me\
+nu\x01s\0\x04\0\x07ui-view\x03\0e\x01r\x02\x04view\xe6\0\x07node-ids\x04\0\x0ebu\
+tton-pressed\x03\0g\x01o\x02uu\x01r\x03\x04view\xe6\0\x07node-ids\x08position\xe9\
+\0\x04\0\x0ecanvas-pressed\x03\0j\x01o\x02s\x7f\x01o\x02ss\x01o\x02su\x01q\x07\x11\
+config-menu-shown\x01s\0\x12config-menu-hidden\x01s\0\x0ebutton-pressed\x01\xe8\0\
+\0\x0ecanvas-pressed\x01\xeb\0\0\x10checkbox-changed\x01\xec\0\0\x10dropdown-cha\
+nged\x01\xed\0\0\x0eslider-changed\x01\xee\0\0\x04\0\x08ui-event\x03\0o\x01q\x03\
+\x09unchanged\0\0\x07replace\x01\xe4\0\0\x05clear\0\0\x04\0\x09ui-update\x03\0q\x03\
+\0\x1bfarever:addon/overlay@1.1.0\x05\x1d\x04\0Afarever:addon/farever-addon-with\
+-all-of-its-exports-removed@1.1.0\x04\0\x0b3\x01\0-farever-addon-with-all-of-its\
+-exports-removed\x03\0\0\0G\x09producers\x01\x0cprocessed-by\x02\x0dwit-componen\
+t\x070.227.1\x10wit-bindgen-rust\x060.41.0";
 #[inline(never)]
 #[doc(hidden)]
 pub fn __link_custom_section_describing_imports() {

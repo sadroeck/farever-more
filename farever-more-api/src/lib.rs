@@ -211,6 +211,17 @@ pub struct MapState {
     pub data_revision: u64,
 }
 
+/// Validated geometry of the game's visible full map.
+#[derive(Clone, Debug, PartialEq)]
+pub struct VisibleMap {
+    pub world: String,
+    /// Left, top, width, height in physical game-client pixels.
+    pub bounds: [f32; 4],
+    /// a, b, c, d, tx, ty; world X/Y to client pixels.
+    pub world_to_client: [f32; 6],
+    pub pixels_per_point: f32,
+}
+
 /// Snapshot of the host's known game-window registry.
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct UiState {
@@ -236,6 +247,7 @@ pub struct GameSnapshot {
     pub combat_references: StateSnapshot<CombatReferencesState>,
     pub instance_session: StateSnapshot<InstanceState>,
     pub map: MapState,
+    pub map_view: StateSnapshot<VisibleMap>,
     pub ui: UiState,
 }
 
@@ -623,6 +635,7 @@ pub enum Widget {
     Separator,
     Spacer(f32),
     Canvas(Size),
+    PassiveCanvas(Size),
     Table(TableWidget),
     TableRow(TableRowWidget),
     TableCell(TableCellWidget),

@@ -26,9 +26,17 @@
       "super_type": "h3d.scene.Object",
       "fields": {
         "curDirection": "f64",
-        "enabled": "bool"
+        "enabled": "bool",
+        "scene": "h3d.scene.Scene"
       },
-      "methods": {},
+      "methods": {
+        "onRemove": {
+          "arguments": [
+            "client.BaseCamera"
+          ],
+          "return_type": "void"
+        }
+      },
       "bindings": {},
       "variants": []
     },
@@ -57,6 +65,12 @@
           "arguments": [
             "ent.Entity",
             "i32"
+          ],
+          "return_type": "void"
+        },
+        "onRemove": {
+          "arguments": [
+            "ent.Entity"
           ],
           "return_type": "void"
         }
@@ -96,6 +110,12 @@
           "arguments": [
             "ent.GameObject",
             "i32"
+          ],
+          "return_type": "void"
+        },
+        "onRemove": {
+          "arguments": [
+            "ent.GameObject"
           ],
           "return_type": "void"
         },
@@ -147,6 +167,12 @@
           ],
           "return_type": "void"
         },
+        "onRemove": {
+          "arguments": [
+            "ent.Hero"
+          ],
+          "return_type": "void"
+        },
         "set_autoTarget": {
           "arguments": [
             "ent.Hero",
@@ -194,6 +220,12 @@
           "arguments": [
             "ent.Unit",
             "st.skill.DamageResult"
+          ],
+          "return_type": "void"
+        },
+        "onRemove": {
+          "arguments": [
+            "ent.Unit"
           ],
           "return_type": "void"
         },
@@ -307,7 +339,15 @@
         "debug": "nullable<bool>",
         "layout": "h2d.FlowLayout"
       },
-      "methods": {},
+      "methods": {
+        "sync": {
+          "arguments": [
+            "h2d.Flow",
+            "h2d.RenderContext"
+          ],
+          "return_type": "void"
+        }
+      },
       "bindings": {},
       "variants": []
     },
@@ -368,7 +408,39 @@
         "x": "f64",
         "y": "f64"
       },
-      "methods": {},
+      "methods": {
+        "onRemove": {
+          "arguments": [
+            "h2d.Object"
+          ],
+          "return_type": "void"
+        },
+        "sync": {
+          "arguments": [
+            "h2d.Object",
+            "h2d.RenderContext"
+          ],
+          "return_type": "void"
+        }
+      },
+      "bindings": {},
+      "variants": []
+    },
+    {
+      "name": "h2d.RenderContext",
+      "kind": "object",
+      "super_type": "h3d.impl.RenderContext",
+      "fields": {
+        "scene": "h2d.Scene"
+      },
+      "methods": {
+        "dispose": {
+          "arguments": [
+            "h2d.RenderContext"
+          ],
+          "return_type": "void"
+        }
+      },
       "bindings": {},
       "variants": []
     },
@@ -388,6 +460,19 @@
             "h2d.Scene"
           ],
           "return_type": "void"
+        },
+        "onRemove": {
+          "arguments": [
+            "h2d.Scene"
+          ],
+          "return_type": "void"
+        },
+        "sync": {
+          "arguments": [
+            "h2d.Scene",
+            "h2d.RenderContext"
+          ],
+          "return_type": "void"
         }
       },
       "bindings": {},
@@ -400,7 +485,15 @@
       "fields": {
         "text": "String"
       },
-      "methods": {},
+      "methods": {
+        "sync": {
+          "arguments": [
+            "h2d.Text",
+            "h2d.RenderContext"
+          ],
+          "return_type": "void"
+        }
+      },
       "bindings": {},
       "variants": []
     },
@@ -423,6 +516,24 @@
       "variants": []
     },
     {
+      "name": "h3d.impl.RenderContext",
+      "kind": "object",
+      "super_type": null,
+      "fields": {
+        "engine": "h3d.Engine"
+      },
+      "methods": {
+        "dispose": {
+          "arguments": [
+            "h3d.impl.RenderContext"
+          ],
+          "return_type": "void"
+        }
+      },
+      "bindings": {},
+      "variants": []
+    },
+    {
       "name": "h3d.scene.Object",
       "kind": "object",
       "super_type": null,
@@ -433,7 +544,55 @@
         "y": "f64",
         "z": "f64"
       },
-      "methods": {},
+      "methods": {
+        "onRemove": {
+          "arguments": [
+            "h3d.scene.Object"
+          ],
+          "return_type": "void"
+        },
+        "sync": {
+          "arguments": [
+            "h3d.scene.Object",
+            "h3d.scene.RenderContext"
+          ],
+          "return_type": "void"
+        }
+      },
+      "bindings": {},
+      "variants": []
+    },
+    {
+      "name": "h3d.scene.RenderContext",
+      "kind": "object",
+      "super_type": "h3d.impl.RenderContext",
+      "fields": {
+        "scene": "h3d.scene.Scene"
+      },
+      "methods": {
+        "dispose": {
+          "arguments": [
+            "h3d.scene.RenderContext"
+          ],
+          "return_type": "void"
+        }
+      },
+      "bindings": {},
+      "variants": []
+    },
+    {
+      "name": "h3d.scene.Scene",
+      "kind": "object",
+      "super_type": "h3d.scene.Object",
+      "fields": {},
+      "methods": {
+        "dispose": {
+          "arguments": [
+            "h3d.scene.Scene"
+          ],
+          "return_type": "void"
+        }
+      },
       "bindings": {},
       "variants": []
     },
@@ -649,6 +808,12 @@
             "i32"
           ],
           "return_type": "void"
+        },
+        "onRemove": {
+          "arguments": [
+            "st.Activity"
+          ],
+          "return_type": "void"
         }
       },
       "bindings": {},
@@ -738,6 +903,12 @@
             "i32"
           ],
           "return_type": "void"
+        },
+        "onRemove": {
+          "arguments": [
+            "st.ActivityContext"
+          ],
+          "return_type": "void"
         }
       },
       "bindings": {},
@@ -755,6 +926,12 @@
           "arguments": [
             "st.BaseState",
             "i32"
+          ],
+          "return_type": "void"
+        },
+        "onRemove": {
+          "arguments": [
+            "st.BaseState"
           ],
           "return_type": "void"
         }
@@ -937,6 +1114,12 @@
           ],
           "return_type": "void"
         },
+        "onRemove": {
+          "arguments": [
+            "st.Inventory"
+          ],
+          "return_type": "void"
+        },
         "set_content": {
           "arguments": [
             "st.Inventory",
@@ -1036,6 +1219,12 @@
             "i32"
           ],
           "return_type": "void"
+        },
+        "onRemove": {
+          "arguments": [
+            "st.Loadout"
+          ],
+          "return_type": "void"
         }
       },
       "bindings": {},
@@ -1130,6 +1319,12 @@
             "i32"
           ],
           "return_type": "void"
+        },
+        "onRemove": {
+          "arguments": [
+            "st.player.HeroData"
+          ],
+          "return_type": "void"
         }
       },
       "bindings": {},
@@ -1150,6 +1345,12 @@
           "arguments": [
             "st.skill.BaseSkill",
             "i32"
+          ],
+          "return_type": "void"
+        },
+        "onRemove": {
+          "arguments": [
+            "st.skill.BaseSkill"
           ],
           "return_type": "void"
         },
@@ -1215,6 +1416,12 @@
           "arguments": [
             "st.skill.Skill",
             "i32"
+          ],
+          "return_type": "void"
+        },
+        "onRemove": {
+          "arguments": [
+            "st.skill.Skill"
           ],
           "return_type": "void"
         },
@@ -1322,6 +1529,12 @@
           ],
           "return_type": "void"
         },
+        "onRemove": {
+          "arguments": [
+            "st.skill.Status"
+          ],
+          "return_type": "void"
+        },
         "set_shieldAmount": {
           "arguments": [
             "st.skill.Status",
@@ -1353,6 +1566,12 @@
           "arguments": [
             "st.State",
             "i32"
+          ],
+          "return_type": "void"
+        },
+        "onRemove": {
+          "arguments": [
+            "st.State"
           ],
           "return_type": "void"
         }
@@ -1394,7 +1613,21 @@
       "kind": "object",
       "super_type": "h2d.Flow",
       "fields": {},
-      "methods": {},
+      "methods": {
+        "onRemove": {
+          "arguments": [
+            "ui.BaseElement"
+          ],
+          "return_type": "void"
+        },
+        "sync": {
+          "arguments": [
+            "ui.BaseElement",
+            "h2d.RenderContext"
+          ],
+          "return_type": "void"
+        }
+      },
       "bindings": {},
       "variants": []
     },
@@ -1437,7 +1670,15 @@
       "kind": "object",
       "super_type": "h2d.Flow",
       "fields": {},
-      "methods": {},
+      "methods": {
+        "sync": {
+          "arguments": [
+            "ui.BaseUIRoot",
+            "h2d.RenderContext"
+          ],
+          "return_type": "void"
+        }
+      },
       "bindings": {},
       "variants": []
     },
@@ -1458,7 +1699,15 @@
       "kind": "object",
       "super_type": "h2d.HtmlText",
       "fields": {},
-      "methods": {},
+      "methods": {
+        "sync": {
+          "arguments": [
+            "ui.comp.FmtText",
+            "h2d.RenderContext"
+          ],
+          "return_type": "void"
+        }
+      },
       "bindings": {},
       "variants": []
     },
@@ -1569,6 +1818,12 @@
           ],
           "return_type": "void"
         },
+        "onRemove": {
+          "arguments": [
+            "ui.UIElement"
+          ],
+          "return_type": "void"
+        },
         "release": {
           "arguments": [
             "ui.UIElement",
@@ -1586,7 +1841,14 @@
       "kind": "object",
       "super_type": "ui.UIElement",
       "fields": {},
-      "methods": {},
+      "methods": {
+        "onRemove": {
+          "arguments": [
+            "ui.win.BaseWindow"
+          ],
+          "return_type": "void"
+        }
+      },
       "bindings": {},
       "variants": []
     },
@@ -1595,7 +1857,14 @@
       "kind": "object",
       "super_type": "ui.win.TitleWindow",
       "fields": {},
-      "methods": {},
+      "methods": {
+        "onRemove": {
+          "arguments": [
+            "ui.win.CharacterUI"
+          ],
+          "return_type": "void"
+        }
+      },
       "bindings": {},
       "variants": []
     },
@@ -1686,9 +1955,23 @@
       "super_type": "ui.win.TitleWindow",
       "fields": {
         "markers": "hl.types.ArrayObj",
-        "onClickWorld": "fn(f64,f64)->void"
+        "onClickWorld": "fn(f64,f64)->void",
+        "scroll": "h2d.Layers",
+        "scrollContainer": "ui.BaseElement"
       },
       "methods": {
+        "get_tileScale": {
+          "arguments": [
+            "ui.win.MapWindow"
+          ],
+          "return_type": "f64"
+        },
+        "onRemove": {
+          "arguments": [
+            "ui.win.MapWindow"
+          ],
+          "return_type": "void"
+        },
         "popupActivityMenu": {
           "arguments": [
             "ui.win.MapWindow",
@@ -1714,7 +1997,15 @@
       "kind": "object",
       "super_type": "ui.win.TitleWindow",
       "fields": {},
-      "methods": {},
+      "methods": {
+        "sync": {
+          "arguments": [
+            "ui.win.PopupWindow",
+            "h2d.RenderContext"
+          ],
+          "return_type": "void"
+        }
+      },
       "bindings": {},
       "variants": []
     },
@@ -1726,7 +2017,14 @@
         "header": "ui.comp.WindowHeader",
         "icon": "virtual{desc:String,gfx:virtual{file:String,height:nullable<i32>,size:i32,width:nullable<i32>,x:i32,y:i32},group:i32,id:String,name:String,props:virtual{cursor:virtual{hoverAmplitude:nullable<f64>,hoverFreq:nullable<f64>,offsetX:nullable<i32>,offsetY:nullable<i32>,position:nullable<i32>},dialogVerb:virtual{notSpoken:nullable<bool>},filterOption:String,hud:nullable<i32>,keybind:String,sound:String,windowBanner:virtual{colorDark:i32,colorLight:i32,desc:String,illustration:virtual{file:String,height:nullable<i32>,size:i32,width:nullable<i32>,x:i32,y:i32},liner:bool,title:String},worldFx:String}}"
       },
-      "methods": {},
+      "methods": {
+        "onRemove": {
+          "arguments": [
+            "ui.win.TitleWindow"
+          ],
+          "return_type": "void"
+        }
+      },
       "bindings": {},
       "variants": []
     },
@@ -1745,7 +2043,8 @@
       "super_type": "h3d.scene.Object",
       "fields": {
         "debug": "world.WorldDebug",
-        "level": "String"
+        "level": "String",
+        "scene": "h3d.scene.Scene"
       },
       "methods": {
         "dispose": {
@@ -1772,7 +2071,15 @@
       "fields": {
         "world": "world.World"
       },
-      "methods": {},
+      "methods": {
+        "sync": {
+          "arguments": [
+            "world.WorldDebug",
+            "h3d.scene.RenderContext"
+          ],
+          "return_type": "void"
+        }
+      },
       "bindings": {},
       "variants": []
     }

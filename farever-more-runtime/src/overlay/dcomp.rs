@@ -218,6 +218,9 @@ pub(super) fn run(
             window.place(bounds)?;
             interaction_window.place(bounds)?;
             renderer.resize(bounds.width as u32, bounds.height as u32)?;
+            shared
+                .pixels_per_point
+                .store(renderer.ui_scale().to_bits(), Ordering::Release);
             last_bounds = Some(bounds);
             last_revision = u64::MAX;
         }

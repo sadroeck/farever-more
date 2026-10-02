@@ -58,15 +58,15 @@ static CLICKS: OnceLock<ArrayQueue<MapClick>> = OnceLock::new();
 static QUEUE_DROPS: AtomicU64 = AtomicU64::new(0);
 static INVALID_COPIES: AtomicU64 = AtomicU64::new(0);
 
-struct Hook {
-    status: AtomicUsize,
-    target: AtomicUsize,
-    original: AtomicUsize,
-    error: OnceLock<String>,
+pub(crate) struct Hook {
+    pub(crate) status: AtomicUsize,
+    pub(crate) target: AtomicUsize,
+    pub(crate) original: AtomicUsize,
+    pub(crate) error: OnceLock<String>,
 }
 
 impl Hook {
-    const fn new() -> Self {
+    pub(crate) const fn new() -> Self {
         Self {
             status: AtomicUsize::new(0),
             target: AtomicUsize::new(0),
@@ -75,7 +75,7 @@ impl Hook {
         }
     }
 
-    fn install(
+    pub(crate) fn install(
         &self,
         resolve: impl FnOnce() -> Result<ValidatedHashLinkMethod, String>,
         detour: *mut c_void,

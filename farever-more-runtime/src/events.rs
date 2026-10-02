@@ -531,6 +531,7 @@ impl EventTracker {
                 display_name: area.as_deref().map(area_display_name),
                 data_revision: self.map_revision,
             },
+            map_view: StateSnapshot::default(),
             ui: UiState {
                 open_windows: windows.into_iter().collect(),
                 focused_window,

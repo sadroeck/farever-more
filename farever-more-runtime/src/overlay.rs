@@ -7,7 +7,7 @@ use farever_more_api as api;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::mem::zeroed;
-use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU32, AtomicU64, Ordering};
 use std::sync::{mpsc, Arc, RwLock};
 use std::thread::{self, JoinHandle};
 use windows_sys::Win32::Foundation::{BOOL, HWND, LPARAM, POINT, RECT};
@@ -247,6 +247,7 @@ pub(super) struct SharedState {
     pub(super) revision: AtomicU64,
     pub(super) running: AtomicBool,
     pub(super) stop: AtomicBool,
+    pub(super) pixels_per_point: AtomicU32,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -297,6 +298,7 @@ impl Overlay {
             revision: AtomicU64::new(0),
             running: AtomicBool::new(true),
             stop: AtomicBool::new(false),
+            pixels_per_point: AtomicU32::new(0),
         });
         let (diagnostic_tx, diagnostics) = mpsc::channel();
         let (ui_event_tx, ui_events) = mpsc::sync_channel(MAX_PENDING_UI_EVENTS);
@@ -312,6 +314,7 @@ impl Overlay {
                 host_ui_event_tx,
             );
             thread_shared.running.store(false, Ordering::Release);
+            thread_shared.pixels_per_point.store(0, Ordering::Release);
             if let Err(error) = result {
                 let _ = diagnostic_tx
                     .send((Level::Error, format!("egui renderer stopped error={error}")));
@@ -329,6 +332,11 @@ impl Overlay {
 
     pub fn take_diagnostics(&mut self) -> Vec<(Level, String)> {
         self.diagnostics.try_iter().collect()
+    }
+
+    pub(crate) fn pixels_per_point(&self) -> Option<f32> {
+        let value = f32::from_bits(self.shared.pixels_per_point.load(Ordering::Acquire));
+        (value.is_finite() && value > 0.0).then_some(value)
     }
 
     pub fn take_ui_events(&mut self, addon_revision: u64) -> Vec<api::RoutedUiEvent> {
@@ -423,6 +431,32 @@ pub(super) fn render_interactive_frame(
     let interactions = RefCell::new(Vec::new());
     for surface in &frame.surfaces {
         let (anchor, offset) = surface_placement(surface);
+        if let [node] = surface.nodes.as_slice() {
+            if let api::Widget::PassiveCanvas(size) = node.widget {
+                // Paint directly: a native-map annotation must have neither
+                // Window's layout adjustments nor an input hit rectangle.
+                let rect = anchor
+                    .align_size_within_rect(
+                        egui::vec2(size.width, size.height),
+                        context.content_rect(),
+                    )
+                    .translate(offset);
+                let painter = context
+                    .layer_painter(egui::LayerId::new(
+                        egui::Order::Middle,
+                        egui::Id::new(("farever-passive-canvas", &surface.owner, &surface.id)),
+                    ))
+                    .with_clip_rect(rect.intersect(context.content_rect()));
+                let primitives: Vec<_> = surface
+                    .canvas
+                    .iter()
+                    .filter(|command| command.canvas == 0)
+                    .map(|command| &command.primitive)
+                    .collect();
+                paint_canvas(&painter, rect.min, &primitives, images);
+                continue;
+            }
+        }
         let mut window = egui::Window::new(&surface.title)
             .id(egui::Id::new((
                 "farever-addon-surface",
@@ -1565,12 +1599,12 @@ fn render_node(ui: &mut egui::Ui, context: DocumentRenderContext<'_>, index: usi
         api::Widget::Spacer(size) => {
             ui.add_space(*size);
         }
-        api::Widget::Canvas(size) => {
+        api::Widget::Canvas(size) | api::Widget::PassiveCanvas(size) => {
             let rect = render_canvas(ui, *size, &context.canvas[index], context.images);
             // A canvas that draws something can be clicked: the press is routed
             // back to the add-on in canvas-local points so it can decide what,
             // if anything, was hit.
-            if !context.canvas[index].is_empty() {
+            if matches!(node.widget, api::Widget::Canvas(_)) && !context.canvas[index].is_empty() {
                 if let Some(region) = clipped_interaction_rect(ui, rect) {
                     let pixels_per_point = ui.pixels_per_point();
                     context.interactions.borrow_mut().push(InteractiveRegion {
@@ -1901,6 +1935,16 @@ fn render_canvas(
     let (response, painter) =
         ui.allocate_painter(egui::vec2(size.width, size.height), egui::Sense::click());
     let origin = response.rect.min;
+    paint_canvas(&painter, origin, primitives, images);
+    response.rect
+}
+
+fn paint_canvas(
+    painter: &egui::Painter,
+    origin: egui::Pos2,
+    primitives: &[&api::CanvasPrimitive],
+    images: &HashMap<String, egui::TextureHandle>,
+) {
     for primitive in primitives {
         match primitive {
             api::CanvasPrimitive::Line { from, to, stroke } => {
@@ -2006,7 +2050,7 @@ fn render_canvas(
                     continue;
                 };
                 paint_canvas_image(
-                    &painter,
+                    painter,
                     texture,
                     origin,
                     *destination_min,
@@ -2020,7 +2064,6 @@ fn render_canvas(
             }
         }
     }
-    response.rect
 }
 
 fn paint_canvas_image(
@@ -2276,6 +2319,89 @@ mod tests {
 
         assert_eq!(current.len(), 1);
         assert_eq!(current[0].owner, "addon");
+    }
+
+    #[test]
+    fn passive_map_canvas_paints_at_exact_position_with_clipping_and_no_hit_regions() {
+        let frame = api::UiFrame {
+            surfaces: vec![api::UiSurface {
+                owner: "map-waypoints".into(),
+                id: "map".into(),
+                title: "".into(),
+                anchor: api::SurfaceAnchor::TopLeft,
+                margin_x: 100.0,
+                margin_y: 200.0,
+                width: None,
+                style: None,
+                nodes: vec![api::UiNode {
+                    id: "canvas".into(),
+                    parent: None,
+                    widget: api::Widget::PassiveCanvas(api::Size {
+                        width: 400.0,
+                        height: 300.0,
+                    }),
+                }],
+                canvas: vec![api::CanvasCommand {
+                    canvas: 0,
+                    primitive: api::CanvasPrimitive::Rect {
+                        min: api::Point { x: -10.0, y: 20.0 },
+                        max: api::Point { x: 22.0, y: 52.0 },
+                        corner_radius: 0.0,
+                        fill: Some(api::Rgba {
+                            red: 1.0,
+                            green: 0.0,
+                            blue: 0.0,
+                            alpha: 1.0,
+                        }),
+                        stroke: None,
+                    },
+                }],
+            }],
+            config_menus: vec![],
+        };
+        let context = egui::Context::default();
+        let mut interactions = Vec::new();
+        let output = context.run(
+            egui::RawInput {
+                screen_rect: Some(egui::Rect::from_min_size(
+                    egui::Pos2::ZERO,
+                    egui::vec2(800.0, 600.0),
+                )),
+                ..Default::default()
+            },
+            |context| {
+                interactions = render_interactive_frame(
+                    context,
+                    &frame,
+                    &HashMap::new(),
+                    false,
+                    None,
+                    true,
+                    &ConfigHostState::default(),
+                );
+            },
+        );
+        assert!(
+            interactions.is_empty(),
+            "native map must receive mouse input"
+        );
+        let shape = output
+            .shapes
+            .iter()
+            .find(|shape| matches!(shape.shape, egui::epaint::Shape::Rect(_)))
+            .unwrap();
+        assert_eq!(
+            shape.clip_rect,
+            egui::Rect::from_min_size(egui::pos2(100.0, 200.0), egui::vec2(400.0, 300.0))
+        );
+        let egui::epaint::Shape::Rect(rect) = &shape.shape else {
+            unreachable!()
+        };
+        assert_eq!(
+            rect.rect.min,
+            egui::pos2(90.0, 220.0),
+            "no window gutter or automatic repositioning"
+        );
     }
 
     #[test]

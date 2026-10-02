@@ -933,6 +933,7 @@ impl Drop for DamageCapture {
         crate::party_hooks::shutdown_hooks();
         crate::ui_windows::shutdown_hooks();
         crate::map_clicks::shutdown_hooks();
+        crate::map_view::shutdown_hooks();
         crate::inventory_clicks::shutdown_hooks();
         crate::activity_hooks::shutdown_hook();
         let target = HOOK_TARGET.load(Ordering::Acquire);
@@ -970,6 +971,7 @@ fn prepare_queues() {
     crate::chat_output::prepare_queue();
     crate::ui_windows::prepare_queues();
     crate::map_clicks::prepare_queue();
+    crate::map_view::prepare_queues();
     crate::inventory_clicks::prepare_queue();
     let _ = TYPE_CANDIDATES.get_or_init(|| ArrayQueue::new(TYPE_QUEUE_CAPACITY));
     let _ = HEROES.get_or_init(|| ArrayQueue::new(MAX_PENDING));
@@ -1386,6 +1388,7 @@ fn decode_worker(stop: Arc<AtomicBool>, game_build: GameBuildProfile) {
         crate::party_hooks::try_install_hooks(&hl, game_build);
         crate::ui_windows::try_install_hooks(&hl);
         crate::map_clicks::try_install_hooks(&hl, game_build);
+        crate::map_view::try_install_hooks(&hl);
         crate::inventory_clicks::try_install_hooks(&hl);
         crate::activity_hooks::try_install_hook(&hl);
         window_hook_decoder.decode_pending(&hl);
@@ -1814,6 +1817,7 @@ fn learn_observed_types(hl: &HashLink<'_>) {
             }
             "ui.win.MapWindow" => {
                 crate::map_clicks::observe_map_type(candidate.type_pointer);
+                crate::map_view::observe_map_type(candidate.type_pointer);
             }
             "ui.win.InventorySlot" => {
                 crate::inventory_clicks::observe_slot_type(candidate.type_pointer);

@@ -14,6 +14,18 @@ PATCH  fixes:    no contract change; compatible in both directions
 
 ## Why the numbering matters
 
+API 1.1.0 adds the read-only `map.current` snapshot and the independent
+`canvas-options` interface. Existing UI frame records and variants are
+unchanged: expanding the callback's widget variant prevents older generated
+components from linking. Compatibility is checked with actual API 1.0.0
+components, as well as the manifest version policy.
+
+To run that older-component check, set `FAREVER_OLD_ADDON_SMOKE_DIR` to a
+directory of archived, packed API 1.0.0 components, then run
+`cargo test -p farever-more-runtime previous_api_components_still_link_and_activate -- --ignored`.
+Without that directory, the optional check reports that it skipped; the normal
+component smoke suite still validates the components built from this checkout.
+
 Wasmtime matches imports by their versioned interface names. For API versions
 1.0.0 and later, it can match different minor versions within the same major.
 For 0.x versions, the minor is part of the compatibility track: a component

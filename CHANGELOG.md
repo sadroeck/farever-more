@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add API 1.1.0's read-only map snapshot and separate passive-canvas options
+  interface, retaining compatibility with API 1.0.0 components.
 - Left-clicking any of the eight soulstones in the backpack preserves its
   normal behavior and replaces the GPS destination with its fixed W1 summoning
   site. Creating a destination also shows a previously hidden GPS arrow.

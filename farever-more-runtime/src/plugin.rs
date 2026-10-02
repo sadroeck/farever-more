@@ -50,6 +50,7 @@ mod model {
     pub use super::farever::addon::instance_session::{
         InstanceEvent, InstanceKind, InstanceSnapshot, InstanceState,
     };
+    pub use super::farever::addon::map::{MapBounds, MapSnapshot, MapTransform, VisibleMap};
     pub use super::farever::addon::overlay::{
         ButtonPressed, CanvasCommand, CanvasPressed, CanvasPrimitive, ConfigMenu, ContainerStyle,
         HorizontalAlignment, LayoutDirection, Point, Rgba, Stroke, SurfaceAnchor,
@@ -79,6 +80,7 @@ mod model {
         pub instance_session: InstanceSnapshot,
         pub zone: ZoneSnapshot,
         pub windows: WindowsSnapshot,
+        pub map: MapSnapshot,
     }
 }
 
@@ -1024,6 +1026,7 @@ struct HostState {
     chat_outputs: Vec<crate::chat_output::ChatOutput>,
     chat_output_count: usize,
     chat_output_code_units: usize,
+    passive_canvases: Vec<farever::addon::canvas_options::CanvasRef>,
 }
 
 impl HostState {
@@ -1071,10 +1074,12 @@ impl HostState {
             chat_outputs: Vec::new(),
             chat_output_count: 0,
             chat_output_code_units: 0,
+            passive_canvases: Vec::new(),
         }
     }
 
     fn begin_callback(&mut self, snapshot: &api::GameSnapshot) {
+        self.passive_canvases.clear();
         self.snapshot = to_wit_snapshot(snapshot);
         self.accepting_publications = true;
         self.accepting_tick_scheduling = true;
@@ -1354,6 +1359,32 @@ impl farever::addon::zone::Host for HostState {
 impl farever::addon::windows::Host for HostState {
     fn current(&mut self) -> model::WindowsSnapshot {
         self.snapshot.windows.clone()
+    }
+}
+
+impl farever::addon::map::Host for HostState {
+    fn current(&mut self) -> model::MapSnapshot {
+        self.snapshot.map.clone()
+    }
+}
+
+impl farever::addon::canvas_options::Host for HostState {
+    fn set_passive_canvases(
+        &mut self,
+        canvases: Vec<farever::addon::canvas_options::CanvasRef>,
+    ) -> Result<(), String> {
+        if !self.accepting_tick_scheduling {
+            return Err("canvas options are only accepted during UI callbacks".into());
+        }
+        if canvases.len() > 256
+            || canvases
+                .iter()
+                .any(|item| item.surface_id.len() > 128 || item.node_id.len() > 128)
+        {
+            return Err("canvas options exceed reference or ID limits".into());
+        }
+        self.passive_canvases = canvases;
+        Ok(())
     }
 }
 
@@ -1821,7 +1852,12 @@ impl Plugin {
             .iter()
             .map(|descriptor| to_api_config_property(&namespace, descriptor))
             .collect();
-        let last_frame = match validate_ui_update(activation.ui, &namespace, &font_families)? {
+        let last_frame = match validate_ui_update(
+            activation.ui,
+            &namespace,
+            &font_families,
+            &store.data().passive_canvases,
+        )? {
             UiEffect::Replace(frame) => frame,
             UiEffect::Unchanged | UiEffect::Clear => api::UiFrame::default(),
         };
@@ -1883,7 +1919,12 @@ impl Plugin {
                 return Err(format!("call plugin.on-ui-event: {error}"));
             }
         };
-        let ui = match validate_ui_update(output.ui, &self.namespace, &self.font_families) {
+        let ui = match validate_ui_update(
+            output.ui,
+            &self.namespace,
+            &self.font_families,
+            &store.data().passive_canvases,
+        ) {
             Ok(ui) => ui,
             Err(error) => {
                 store.data_mut().finish_callback(false);
@@ -1927,7 +1968,12 @@ impl Plugin {
                 return Err(format!("call plugin.on-event: {error}"));
             }
         };
-        let ui = match validate_ui_update(output.ui, &self.namespace, &self.font_families) {
+        let ui = match validate_ui_update(
+            output.ui,
+            &self.namespace,
+            &self.font_families,
+            &store.data().passive_canvases,
+        ) {
             Ok(ui) => ui,
             Err(error) => {
                 store.data_mut().finish_callback(false);
@@ -1972,7 +2018,12 @@ impl Plugin {
                 return Err(format!("call plugin.on-message: {error}"));
             }
         };
-        let ui = match validate_ui_update(output.ui, &self.namespace, &self.font_families) {
+        let ui = match validate_ui_update(
+            output.ui,
+            &self.namespace,
+            &self.font_families,
+            &store.data().passive_canvases,
+        ) {
             Ok(ui) => ui,
             Err(error) => {
                 store.data_mut().finish_callback(false);
@@ -2015,7 +2066,12 @@ impl Plugin {
                 return Err(format!("call plugin.on-tick: {error}"));
             }
         };
-        let ui = match validate_ui_update(output.ui, &self.namespace, &self.font_families) {
+        let ui = match validate_ui_update(
+            output.ui,
+            &self.namespace,
+            &self.font_families,
+            &store.data().passive_canvases,
+        ) {
             Ok(ui) => ui,
             Err(error) => {
                 store.data_mut().finish_callback(false);
@@ -2609,6 +2665,33 @@ fn to_wit_snapshot(snapshot: &api::GameSnapshot) -> model::CallbackSnapshot {
             status: ui_status,
             value: ui_value,
         },
+        map: model::MapSnapshot {
+            status: if in_world {
+                to_wit_state_status(&snapshot.map_view)
+            } else {
+                status(snapshot.map_view.revision).0
+            },
+            value: snapshot
+                .map_view
+                .value
+                .as_ref()
+                .filter(|_| in_world)
+                .map(|value| {
+                    let [left, top, width, height] = value.bounds;
+                    let [a, b, c, d, tx, ty] = value.world_to_client;
+                    model::VisibleMap {
+                        world: value.world.clone(),
+                        bounds: model::MapBounds {
+                            left,
+                            top,
+                            width,
+                            height,
+                        },
+                        world_to_client: model::MapTransform { a, b, c, d, tx, ty },
+                        pixels_per_point: value.pixels_per_point,
+                    }
+                }),
+        },
     }
 }
 
@@ -2798,11 +2881,33 @@ fn validate_ui_update(
     update: model::UiUpdate,
     owner: &str,
     font_families: &HashMap<api::TextStyle, String>,
+    passive_canvases: &[farever::addon::canvas_options::CanvasRef],
 ) -> PluginResult<UiEffect> {
     match update {
         model::UiUpdate::Unchanged => Ok(UiEffect::Unchanged),
         model::UiUpdate::Replace(frame) => {
-            validate_wit_frame_with_fonts(frame, owner, font_families).map(UiEffect::Replace)
+            let mut frame = validate_wit_frame_with_fonts(frame, owner, font_families)?;
+            for reference in passive_canvases {
+                let node = frame
+                    .surfaces
+                    .iter_mut()
+                    .find(|surface| surface.id == reference.surface_id)
+                    .and_then(|surface| {
+                        surface
+                            .nodes
+                            .iter_mut()
+                            .find(|node| node.id == reference.node_id)
+                    })
+                    .ok_or_else(|| {
+                        "passive canvas reference does not exist in replacement frame".to_owned()
+                    })?;
+                match node.widget {
+                    api::Widget::Canvas(size) => node.widget = api::Widget::PassiveCanvas(size),
+                    api::Widget::PassiveCanvas(_) => {}
+                    _ => return Err("passive canvas reference must identify a canvas".into()),
+                }
+            }
+            Ok(UiEffect::Replace(frame))
         }
         model::UiUpdate::Clear => Ok(UiEffect::Clear),
     }
@@ -3080,7 +3185,10 @@ fn validate_wit_document(
                 command.canvas_id
             )
         })?;
-        if !matches!(nodes[canvas_index].widget, api::Widget::Canvas(_)) {
+        if !matches!(
+            nodes[canvas_index].widget,
+            api::Widget::Canvas(_) | api::Widget::PassiveCanvas(_)
+        ) {
             return Err(format!(
                 "canvas command target {:?} is not a canvas widget",
                 command.canvas_id
@@ -3766,6 +3874,7 @@ mod tests {
                 focused_window: None,
                 revision: 4,
             },
+            map_view: api::StateSnapshot::default(),
         }
     }
 
@@ -4307,6 +4416,30 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "set FAREVER_OLD_ADDON_SMOKE_DIR to API 1.0.0 components"]
+    fn previous_api_components_still_link_and_activate() {
+        let Some(directory) = std::env::var_os("FAREVER_OLD_ADDON_SMOKE_DIR").map(PathBuf::from)
+        else {
+            eprintln!("API 1.0 compatibility check skipped: set FAREVER_OLD_ADDON_SMOKE_DIR to archived components");
+            return;
+        };
+        let config = TempConfigRoot::new();
+        let mut snapshot = live_snapshot();
+        snapshot.ui.open_windows.clear();
+        let mut plugins = Plugins::load(&directory, &config.0, &snapshot);
+        assert_eq!(plugins.len(), 4, "{:?}", plugins.take_diagnostics());
+        plugins.started = plugins
+            .started
+            .checked_sub(Duration::from_millis(60))
+            .unwrap();
+        assert!(plugins
+            .dispatch(&snapshot, None, &[])
+            .surfaces
+            .iter()
+            .any(|surface| surface.owner == "minimap"));
+    }
+
+    #[test]
     #[ignore = "set FAREVER_ADDON_SMOKE_DIR to a built add-ons directory"]
     fn minimap_without_provider_is_rejected() {
         let built = std::env::var_os("FAREVER_ADDON_SMOKE_DIR")
@@ -4593,6 +4726,52 @@ mod tests {
                 .x,
             99.0
         );
+    }
+
+    #[test]
+    fn map_geometry_is_frozen_until_next_callback_and_hidden_while_loading() {
+        let mut source = live_snapshot();
+        source.map_view = api::StateSnapshot::live(
+            250,
+            1,
+            api::VisibleMap {
+                world: "World/W1_Test".into(),
+                bounds: [100.0, 200.0, 800.0, 600.0],
+                world_to_client: [2.0, 0.0, 0.0, 2.0, 120.0, 240.0],
+                pixels_per_point: 2.0,
+            },
+        );
+        let mut host = test_host_state(
+            "org.farever.map".into(),
+            &source,
+            Arc::new(Mutex::new(BusDirectory::default())),
+        );
+        source.map_view.value.as_mut().unwrap().world_to_client[4] = 320.0;
+        assert_eq!(
+            farever::addon::map::Host::current(&mut host)
+                .value
+                .unwrap()
+                .world_to_client
+                .tx,
+            120.0
+        );
+        host.begin_callback(&source);
+        assert_eq!(
+            farever::addon::map::Host::current(&mut host)
+                .value
+                .unwrap()
+                .world_to_client
+                .tx,
+            320.0
+        );
+        source.session.loading_state = Some(9);
+        host.begin_callback(&source);
+        let snapshot = farever::addon::map::Host::current(&mut host);
+        assert!(snapshot.value.is_none());
+        assert!(matches!(
+            snapshot.status.reason,
+            Some(model::UnavailableReason::Loading)
+        ));
     }
 
     #[test]

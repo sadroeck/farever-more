@@ -1,4 +1,4 @@
-//! Rust SDK for Farever add-ons targeting `farever:addon@1.0.0`.
+//! Rust SDK for Farever add-ons targeting `farever:addon@1.1.0`.
 //!
 //! Generated WIT bindings are an adapter detail. Add-ons implement [`Addon`]
 //! and use SDK-owned events, snapshots, services, and UI builders.
@@ -30,7 +30,7 @@ pub use lifecycle::{
 pub use ui::Frame;
 
 /// The exact WIT package implemented by this SDK release line.
-pub const WIT_PACKAGE: &str = "farever:addon@1.0.0";
+pub const WIT_PACKAGE: &str = "farever:addon@1.1.0";
 
 /// Common author-facing SDK types.
 pub mod prelude {
@@ -45,7 +45,8 @@ pub mod prelude {
     };
     pub use crate::game::{
         Camera, CombatReference, CombatReferenceSlot, CombatState, GameSnapshot, Instance,
-        InstanceKind, Observation, Party, PartyMember, Player, Session, Snapshot, Windows, Zone,
+        InstanceKind, MapBounds, MapTransform, Observation, Party, PartyMember, Player, Session,
+        Snapshot, VisibleMap, Windows, Zone,
     };
     pub use crate::runtime::{ShutdownReason, Tick};
     pub use crate::ui::{

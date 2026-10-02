@@ -1,0 +1,14 @@
+/// Additive rendering options without changing existing UI frame types.
+interface canvas-options {
+    record canvas-ref {
+        surface-id: string,
+        node-id: string,
+    }
+    /// Applies only to the replacement frame returned by this callback.
+    /// Listed canvases paint without mouse hit regions. A surface containing
+    /// only one listed canvas paints at the exact anchor/offset, without
+    /// window decoration or automatic repositioning. Configuration menus are
+    /// excluded. Invalid references reject the frame; failed callbacks publish
+    /// neither the frame nor its options. At most 256 references, IDs <=128 bytes.
+    set-passive-canvases: func(canvases: list<canvas-ref>) -> result<_, string>;
+}

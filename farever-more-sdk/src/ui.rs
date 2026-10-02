@@ -457,6 +457,7 @@ impl UiEvent {
 
 pub struct Frame {
     raw: raw::UiFrame,
+    passive_canvases: Vec<crate::__wit::farever::addon::canvas_options::CanvasRef>,
 }
 
 impl Frame {
@@ -502,6 +503,11 @@ impl Frame {
 
     #[doc(hidden)]
     pub fn into_raw(self) -> raw::UiFrame {
+        #[cfg(target_arch = "wasm32")]
+        crate::__wit::farever::addon::canvas_options::set_passive_canvases(&self.passive_canvases)
+            .expect("host rejected canvas options");
+        #[cfg(not(target_arch = "wasm32"))]
+        let _ = self.passive_canvases;
         self.raw
     }
 }
@@ -509,6 +515,7 @@ impl Frame {
 pub struct FrameBuilder {
     surfaces: Vec<raw::UiSurface>,
     config_menus: Vec<raw::ConfigMenu>,
+    passive_canvases: Vec<crate::__wit::farever::addon::canvas_options::CanvasRef>,
 }
 
 impl Default for FrameBuilder {
@@ -523,6 +530,7 @@ impl FrameBuilder {
         Self {
             surfaces: Vec::new(),
             config_menus: Vec::new(),
+            passive_canvases: Vec::new(),
         }
     }
 
@@ -532,7 +540,11 @@ impl FrameBuilder {
         title: impl Into<String>,
         build: impl FnOnce(&mut SurfaceBuilder<'_>),
     ) {
-        let (nodes, canvas) = build_nodes(build);
+        let (nodes, canvas, passive) = build_nodes(build);
+        assert!(
+            passive.is_empty(),
+            "passive canvases are only supported in overlay surfaces"
+        );
         self.config_menus.push(raw::ConfigMenu {
             id: id.into(),
             title: title.into(),
@@ -548,9 +560,17 @@ impl FrameBuilder {
         options: SurfaceOptions,
         build: impl FnOnce(&mut SurfaceBuilder<'_>),
     ) {
-        let (nodes, canvas) = build_nodes(build);
+        let (nodes, canvas, passive) = build_nodes(build);
+        let id = id.into();
+        self.passive_canvases
+            .extend(passive.into_iter().map(|node_id| {
+                crate::__wit::farever::addon::canvas_options::CanvasRef {
+                    surface_id: id.clone(),
+                    node_id,
+                }
+            }));
         self.surfaces.push(raw::UiSurface {
-            id: id.into(),
+            id,
             title: title.into(),
             anchor: options.anchor.into(),
             margin_x: options.margin[0],
@@ -565,6 +585,7 @@ impl FrameBuilder {
     #[must_use]
     pub fn finish(self) -> Frame {
         Frame {
+            passive_canvases: self.passive_canvases,
             raw: raw::UiFrame {
                 surfaces: self.surfaces,
                 config_menus: self.config_menus,
@@ -575,15 +596,17 @@ impl FrameBuilder {
 
 fn build_nodes(
     build: impl FnOnce(&mut SurfaceBuilder<'_>),
-) -> (Vec<raw::UiNode>, Vec<raw::CanvasCommand>) {
+) -> (Vec<raw::UiNode>, Vec<raw::CanvasCommand>, Vec<String>) {
     let mut nodes = Vec::new();
     let mut canvas = Vec::new();
+    let mut passive = Vec::new();
     build(&mut SurfaceBuilder {
         nodes: &mut nodes,
         canvas: &mut canvas,
+        passive: &mut passive,
         parent: None,
     });
-    (nodes, canvas)
+    (nodes, canvas, passive)
 }
 
 /// One titled section: the host draws the header with the same styling it uses
@@ -614,6 +637,7 @@ impl Section {
 pub struct SurfaceBuilder<'a> {
     nodes: &'a mut Vec<raw::UiNode>,
     canvas: &'a mut Vec<raw::CanvasCommand>,
+    passive: &'a mut Vec<String>,
     parent: Option<String>,
 }
 
@@ -900,16 +924,37 @@ impl SurfaceBuilder<'_> {
         size: [f32; 2],
         build: impl FnOnce(&mut CanvasBuilder<'_>),
     ) {
-        let id = id.into();
-        self.node(
-            id.clone(),
-            raw::Widget::Canvas(raw::CanvasWidget {
-                size: raw::Size {
-                    width: size[0],
-                    height: size[1],
-                },
-            }),
-        );
+        self.canvas_node(id.into(), size, false, build);
+    }
+
+    /// Paint a canvas without intercepting native mouse input. When it is the
+    /// only node in a surface, placement is exact and has no window decoration.
+    pub fn passive_canvas(
+        &mut self,
+        id: impl Into<String>,
+        size: [f32; 2],
+        build: impl FnOnce(&mut CanvasBuilder<'_>),
+    ) {
+        self.canvas_node(id.into(), size, true, build);
+    }
+
+    fn canvas_node(
+        &mut self,
+        id: String,
+        size: [f32; 2],
+        passive: bool,
+        build: impl FnOnce(&mut CanvasBuilder<'_>),
+    ) {
+        let widget = raw::CanvasWidget {
+            size: raw::Size {
+                width: size[0],
+                height: size[1],
+            },
+        };
+        self.node(id.clone(), raw::Widget::Canvas(widget));
+        if passive {
+            self.passive.push(id.clone());
+        }
         build(&mut CanvasBuilder {
             id,
             commands: self.canvas,
