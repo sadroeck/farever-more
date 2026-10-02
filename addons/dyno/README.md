@@ -135,9 +135,14 @@ The host also resolves the skill record's `gfx` metadata into an opaque image
 reference. CastleDB's omitted/non-positive tile size defaults to 96 pixels and
 its omitted/non-positive width and height default to one cell, matching the
 game's nullable tile convention. The host lazily reads and bounds-checks the
-referenced PNG atlas from the user's current Farever installation, crops the
-declared cell, and owns the decoded resource. Neither the archive path, atlas
-coordinates, PNG/RGBA bytes, nor renderer texture identifiers cross into Wasm.
+referenced atlas from the user's current Farever installation, selects PNG or
+compiled DDS/BC7 by the payload signature (the archive keeps `.png` paths),
+crops the declared cell at full resolution, and owns the decoded resource.
+DDS decoding uses the shared `farever-db` texture decoder, which validates the
+single 2D BC7 format, complete top mip, dimensions and allocation limits before
+decoding. Lower mips are ignored. The offline soulstone portrait importer uses
+that same decoder. Neither the archive path, atlas
+coordinates, encoded/RGBA bytes, nor renderer texture identifiers cross into Wasm.
 Missing or invalid metadata produces `skill-icon = none`; the add-on leaves the
 aligned icon cell empty. The lookup joins packaged metadata by raw skill ID
 rather than following the live skill instance.
@@ -200,6 +205,12 @@ how the meter looks. The framework has no damage-meter widget or built-in
 damage aggregation.
 
 ## Live QA
+
+Offline icon validation against the installed game decoded all 365 unique
+skill crops across 53 atlases (46 DDS/BC7 and seven PNG), including the original
+weapon icons and portrait-backed passive skills. The shared decoder also
+preserved all eight imported soulstone portraits byte for byte. On 2026-10-02,
+the user confirmed that the installed fix restored the DPS meter icons in-game.
 
 The encounter behavior, displayed totals, and layout still need more in-game
 QA.

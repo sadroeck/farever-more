@@ -12,8 +12,10 @@ default = ["embedded"]
 # build even when a table is stale or missing: rewriting them is its whole job,
 # and it cannot do that from a package they prevent from compiling.
 embedded = []
+# Bounded decoding of compiled game textures; enabled by the trusted host.
+texture-decoding = ["dep:image", "dep:texture2ddecoder"]
 # Offline portrait importer; never linked into the host or reference add-ons.
-portrait-import = ["dep:image", "dep:texture2ddecoder"]
+portrait-import = ["texture-decoding"]
 
 [[bin]]
 name = "placements"

@@ -283,6 +283,7 @@ mod tests {
             .read("UI/icons/atlas_weapon_GreatSword_96PX.png")
             .unwrap();
 
-        assert_eq!(bytes.get(..8), Some(b"\x89PNG\r\n\x1a\n".as_slice()));
+        // Heaps keeps authored .png names for compiled DDS payloads too.
+        assert!(bytes.starts_with(b"\x89PNG\r\n\x1a\n") || bytes.starts_with(b"DDS "));
     }
 }

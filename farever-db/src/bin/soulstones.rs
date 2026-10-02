@@ -159,19 +159,9 @@ fn portrait_png(dds: &[u8]) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
     {
         return Err("expected 256x256 2D BC7_UNORM portrait".into());
     }
-    let mut pixels = vec![0; EDGE * EDGE];
-    texture2ddecoder::decode_bc7(&dds[148..148 + DATA_BYTES], EDGE, EDGE, &mut pixels)?;
-    let rgba: Vec<u8> = pixels
-        .into_iter()
-        .flat_map(|p| {
-            let [b, g, r, a] = p.to_le_bytes();
-            [r, g, b, a]
-        })
-        .collect();
+    let portrait = farever_db::texture::decode_bc7_dds(dds, 256, EDGE * EDGE * 4)?;
     let mut output = std::io::Cursor::new(Vec::new());
-    image::RgbaImage::from_raw(256, 256, rgba)
-        .ok_or("invalid portrait pixels")?
-        .write_to(&mut output, image::ImageFormat::Png)?;
+    portrait.write_to(&mut output, image::ImageFormat::Png)?;
     Ok(output.into_inner())
 }
 
@@ -191,6 +181,7 @@ mod tests {
             (12, 256),
             (16, 256),
             (76, 32),
+            (80, 4),
             (128, 98),
             (132, 3),
             (140, 1),

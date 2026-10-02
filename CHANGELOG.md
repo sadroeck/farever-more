@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Restore DPS meter skill icons when the game packages `.png` atlas paths as
+  DDS/BC7 textures. Decode the validated top mip while retaining PNG support.
+  The user confirmed the restored icons in-game on 2026-10-02.
+
 - Make selected demon POIs more prominent with a larger portrait and a bright
   gold outline/halo. Clicking their map icons reuses the inventory-click name,
   exact destination and selection identity instead of naming them "Waypoint".

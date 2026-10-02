@@ -17,6 +17,8 @@ pub mod pak;
 pub mod placements;
 #[cfg(feature = "embedded")]
 pub mod soulstones;
+#[cfg(feature = "texture-decoding")]
+pub mod texture;
 
 pub use cdb::{discover_game, BuildFingerprint, CdbSummary, GameInstall};
 pub use inventory::{
